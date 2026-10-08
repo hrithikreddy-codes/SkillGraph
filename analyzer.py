@@ -1,0 +1,258 @@
+"""
+analyzer.py — AI-powered resume analysis functions (Gemini + Groq)
+===================================================================
+All AI logic lives here. The Streamlit UI (app.py) imports from this file.
+
+Setup:
+    Put your API keys in your .env file:
+        GEMINI_API_KEYS=key1,key2
+        GROQ_API_KEYS=groq_key1,groq_key2
+    
+    The system will try Groq first (because it is insanely fast). If Groq
+    is rate-limited or unavailable, it falls back to Gemini.
+"""
+
+import os
+import google.generativeai as genai
+from groq import Groq
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# ---------------------------------------------------------------------------
+# SHARED HELPER — Load API keys & call LLMs with auto-rotation
+# ---------------------------------------------------------------------------
+
+def _get_api_keys(env_var_name):
+    """Reads all API keys for a given service from the .env file."""
+    raw = os.getenv(env_var_name, "")
+    if raw:
+        keys = [k.strip() for k in raw.split(",") if k.strip()]
+        if keys:
+            return keys
+    # Fallback to singular just in case (e.g., GEMINI_API_KEY instead of KEYS)
+    single = os.getenv(env_var_name.replace("_KEYS", "_KEY"), "")
+    if single.strip():
+        return [single.strip()]
+    return []
+
+
+# Gemini Models
+_GEMINI_MODELS = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-3.8-flash"]
+
+# Groq Models (Fast open-source models)
+_GROQ_MODELS = [
+    "llama-3.1-70b-versatile", # extremely smart LLaMA 3.1
+    "mixtral-8x7b-32768",      # great fallback
+    "llama-3.1-8b-instant",    # ultra fast
+]
+
+def _call_groq(prompt):
+    """Tries Groq models. Returns text if successful, or None if rate limited/failed."""
+    keys = _get_api_keys("GROQ_API_KEYS")
+    if not keys:
+        return None  # No Groq keys provided, skip to Gemini
+        
+    for api_key in keys:
+        client = Groq(api_key=api_key)
+        for model_name in _GROQ_MODELS:
+            try:
+                completion = client.chat.completions.create(
+                    model=model_name,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.2,
+                    max_tokens=2048,
+                    timeout=60
+                )
+                return completion.choices[0].message.content
+            except Exception as e:
+                error_msg = str(e).lower()
+                
+                # If the key itself is invalid, stop and tell the user!
+                if "401" in error_msg or "400" in error_msg or "invalid" in error_msg:
+                    return f"❌ Groq API error: Invalid API Key. Please check GROQ_API_KEYS in your .env file."
+                    
+                # If rate limited -> try next model/key
+                if "429" in error_msg or "rate limit" in error_msg or "quota" in error_msg:
+                    continue
+                    
+                # For other errors, skip to next model
+                continue
+                
+    return None
+
+def _call_gemini(prompt):
+    """Tries Gemini models. Returns text if successful, or None if rate limited/failed."""
+    keys = _get_api_keys("GEMINI_API_KEYS")
+    if not keys:
+        return None
+
+    for api_key in keys:
+        genai.configure(api_key=api_key)
+        for model_name in _GEMINI_MODELS:
+            try:
+                model = genai.GenerativeModel(
+                    model_name,
+                    generation_config=genai.types.GenerationConfig(
+                        max_output_tokens=2048,
+                        temperature=0.2,
+                    ),
+                )
+                response = model.generate_content(
+                    prompt,
+                    request_options={"timeout": 60},
+                )
+                return response.text
+            except Exception as e:
+                error_msg = str(e).lower()
+                
+                # If the key itself is invalid, stop and tell the user
+                if "400" in error_msg or "invalid" in error_msg or "api_key_invalid" in error_msg:
+                    return f"❌ Gemini API error: Invalid API Key. Please check GEMINI_API_KEYS in your .env file.\n\n(Error details: {e})"
+                    
+                if "429" in error_msg or "quota" in error_msg:
+                    continue
+                continue
+                
+    return None
+
+def _call_llm(prompt):
+    """
+    Master function: 
+    1. Tries Groq (fastest)
+    2. Falls back to Gemini
+    3. Returns an error message if all fail.
+    """
+    # 1. Try Groq
+    groq_result = _call_groq(prompt)
+    if groq_result:
+        return groq_result
+        
+    # 2. Try Gemini
+    gemini_result = _call_gemini(prompt)
+    if gemini_result:
+        return gemini_result
+        
+    # 3. Both failed
+    return (
+        "⏱️ **All API keys (Groq & Gemini) are rate-limited or missing.**\n\n"
+        "Please check your `.env` file and make sure you have valid API keys for "
+        "either `GROQ_API_KEYS` or `GEMINI_API_KEYS`."
+    )
+
+
+# ---------------------------------------------------------------------------
+# FUNCTION — Extract structured skills/data from resume text
+# ---------------------------------------------------------------------------
+
+def extract_resume_skills(text):
+    """
+    Sends resume text to the LLM and asks for a JSON object with:
+        - skills:           list of short skill names (e.g. "Python", "SQL")
+        - experience_years: total years of experience (number)
+        - education:        list of degrees/certifications
+        - projects:         list of project names/titles
+
+    Returns the raw text from the model (should be JSON).
+    """
+    prompt = f"""
+You are a resume parser. Read the resume below and return ONLY valid JSON.
+No markdown formatting blocks like ```json, no explanation, no extra text — just the raw JSON object.
+
+Return this exact shape:
+{{
+    "skills": [],
+    "experience_years": 0,
+    "education": [],
+    "projects": []
+}}
+
+Rules you MUST follow:
+1. "skills" — short names only, like "Python", "SQL", "React", "AWS".
+   Never use sentences. Never duplicate. Only include skills that are
+   explicitly written in the resume text. NEVER invent or guess skills.
+2. "experience_years" — total years of professional experience.
+   If not stated, estimate from job date ranges. If unknown, use 0.
+3. "education" — each entry is a short string like
+   "B.Sc. Computer Science, XYZ University (2022)".
+4. "projects" — each entry is the project name/title only.
+   If no projects section exists, return an empty list.
+
+--- RESUME TEXT ---
+{text}
+--- END RESUME TEXT ---
+"""
+    return _call_llm(prompt)
+
+
+# ---------------------------------------------------------------------------
+# FUNCTION — Full resume analysis
+# ---------------------------------------------------------------------------
+
+def analyze_resume(resume_text, job_description=""):
+    """
+    Sends the resume (and optional job description) to the LLM
+    and returns a detailed analysis report as markdown text.
+    """
+    prompt = f"""
+You are a ruthlessly specific resume reviewer. You MUST reference and quote
+actual words, phrases, bullet points, and section titles from the resume
+provided below. Do NOT give generic advice — every single point you make
+must cite something specific from this resume.
+
+Analyze the resume below and return a STRUCTURED report with these exact
+sections:
+
+### 📊 Overall Score (out of 10)
+Give a single number. Justify it by referencing 2–3 specific things
+from the resume (quote them).
+
+### ✅ Strengths (3–5 points)
+For each strength, QUOTE the exact phrase or bullet from the resume that
+is strong and explain WHY it works. Example format:
+- ✅ **"Led a team of 5 to deliver X"** — Strong because it shows
+  leadership and quantifies the impact.
+
+### ⚠️ Weaknesses (3–5 points)
+For each weakness, QUOTE the exact phrase or bullet that is weak and
+explain what's wrong with it and how to fix it. Example format:
+- ⚠️ **"Responsible for handling tasks"** — Too vague. Rewrite as:
+  "Managed 15+ daily customer requests, reducing response time by 30%."
+
+### 🛠️ Rewrite Suggestions
+Pick the 3 weakest bullet points from the resume. For each one, show:
+- **Original:** (quote the exact text)
+- **Rewritten:** (your improved version with action verbs & metrics)
+
+### 📝 Missing Sections
+List any standard resume sections that are completely absent from this
+resume. Only flag sections that are truly missing — check carefully
+before listing. Common sections: Summary/Objective, Skills, Work
+Experience, Projects, Education, Certifications, Awards.
+
+### 🎯 ATS Compatibility (score out of 10)
+- List 5 keywords that ARE present in the resume.
+- List 5 important keywords that are MISSING and should be added.
+- Flag any formatting issues that could break an ATS parser
+  (e.g., tables, images, fancy characters).
+"""
+
+    if job_description.strip():
+        prompt += f"""
+### 🔗 Job-Match Analysis
+Compare the resume against the job description below.
+- List skills from the job description that APPEAR in the resume (quote them).
+- List skills from the job description that are MISSING from the resume.
+- Give a match percentage and explain what to add to increase it.
+
+--- JOB DESCRIPTION ---
+{job_description}
+--- END JOB DESCRIPTION ---
+"""
+
+    prompt += f"""
+--- RESUME TEXT ---
+{resume_text}
+--- END RESUME TEXT ---
+"""
+    return _call_llm(prompt)
