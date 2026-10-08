@@ -56,17 +56,43 @@ def main():
     )
 
     # --- Text areas ---
-    st.subheader("1️⃣  Paste your resume")
-    resume_text_area = st.text_area(
-        "Paste your resume",
-        height=200,
-    )
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("1️⃣  Your Resume")
+        tab1, tab2 = st.tabs(["Paste text", "Upload file"])
+        with tab1:
+            resume_text_area = st.text_area(
+                "Resume text",
+                height=150,
+                label_visibility="collapsed",
+                placeholder="Paste your resume here..."
+            )
+        with tab2:
+            uploaded_resume = st.file_uploader(
+                "Upload resume file", 
+                type=["pdf", "docx", "txt"], 
+                label_visibility="collapsed"
+            )
+            extracted_text = ""
+            if uploaded_resume:
+                from file_reader import extract_text
+                extracted_text = extract_text(uploaded_resume)
+                if not extracted_text:
+                    st.warning("Couldn't read text from this file (scanned PDF?). Please paste the text instead.")
+                else:
+                    with st.expander("Preview extracted text"):
+                        st.text(extracted_text[:500] + ("..." if len(extracted_text) > 500 else ""))
 
-    st.subheader("2️⃣  Paste the job description")
-    job_description_area = st.text_area(
-        "Paste the job description",
-        height=200,
-    )
+    with col2:
+        st.subheader("2️⃣  Job Description")
+        job_tab, = st.tabs(["Paste text"])
+        with job_tab:
+            job_description_area = st.text_area(
+                "Job description text",
+                height=150,
+                label_visibility="collapsed",
+                placeholder="Paste the job description here..."
+            )
 
     # --- Analyze button ---
     st.subheader("3️⃣  Run the analysis")
@@ -74,18 +100,19 @@ def main():
 
     if analyze_button:
         try:
-            if not resume_text_area.strip() or not job_description_area.strip():
+            final_resume_text = resume_text_area.strip()
+            if not final_resume_text and uploaded_resume:
+                final_resume_text = extracted_text
+
+            if not final_resume_text or not job_description_area.strip():
                 st.warning("⚠️ Please provide both a resume and a job description.")
                 return
                 
             with st.spinner("🤖 Analyzing skills..."):
-                from analyzer import extract_resume_skills, extract_job_skills, compare, build_graph, verify_missing, apply_verification
-                resume_data = extract_resume_skills(resume_text_area)
+                from analyzer import extract_resume_skills, extract_job_skills, compare, build_graph
+                resume_data = extract_resume_skills(final_resume_text)
                 job_data = extract_job_skills(job_description_area)
-                match_results = compare(resume_data, job_data)
-                
-                verification = verify_missing(resume_text_area, match_results["missing"])
-                match_results = apply_verification(match_results, verification)
+                match_results = compare(final_resume_text, resume_data, job_data)
                 
                 from analyzer import score_breakdown
                 scores = score_breakdown(match_results)
@@ -111,22 +138,54 @@ def main():
                     if match_results.get('bonus_matched'):
                         st.info(f"**Bonus Matched:** {', '.join(match_results['bonus_matched'])}")
                 with col2:
-                    st.error(f"**Missing Skills:** {', '.join(match_results['missing']) if match_results['missing'] else 'None'}")
+                    st.error(f"**Not demonstrated yet:** {', '.join(match_results['missing']) if match_results['missing'] else 'None'}")
                     if match_results.get('bonus_missing'):
                         st.warning(f"**Bonus Missing:** {', '.join(match_results['bonus_missing'])}")
                         
-                if match_results.get("evidence"):
-                    with st.expander("Why these skills count"):
-                        for skill, evidence in match_results["evidence"].items():
-                            st.write(f"- **{skill}**: \"{evidence}\"")
+                verified_skills = set(match_results.get("evidence", {}).keys()) | set(match_results.get("reasons", {}).keys())
+                if verified_skills:
+                    with st.expander("Why we classified skills this way"):
+                        for skill in sorted(verified_skills):
+                            if skill in match_results.get("matched", []):
+                                icon = "🟢"
+                            elif skill in match_results.get("partial", []):
+                                icon = "🟡"
+                            else:
+                                icon = "🔴"
+                                
+                            conf = match_results.get("confidence", {}).get(skill, "")
+                            conf_text = " (inferred)" if conf.lower() == "low" else ""
+                            
+                            evidence = match_results.get("evidence", {}).get(skill, "")
+                            reason = match_results.get("reasons", {}).get(skill, "")
+                            
+                            parts = []
+                            if evidence:
+                                parts.append(f'"{evidence}"')
+                            if reason:
+                                parts.append(reason)
+                                
+                            desc = " — ".join(parts)
+                            if not desc:
+                                desc = "No additional details."
+                                
+                            st.write(f"{icon} **{skill}**{conf_text}: {desc}")
                 
                 # Graph
                 st.markdown("---")
                 st.subheader("Your Skill Graph")
                 job_role = job_data.get("role", "Job Role")
                 dot_string = build_graph(job_role, match_results)
+                
+                @st.dialog("Full Screen Skill Graph", width="large")
+                def show_full_graph():
+                    st.graphviz_chart(dot_string, use_container_width=True)
+                
+                if st.button("🔍 View Full Screen Graph"):
+                    show_full_graph()
+                    
                 st.graphviz_chart(dot_string)
-                st.caption("🟢 Green = skills you have | 🔴 Red dashed = skills to learn")
+                st.caption("🟢 Green ✓ = skills you have | 🟡 Amber ~ = partial | 🔴 Red ✗ = skills to learn")
                 
                 # Next Steps / Roadmap
                 st.markdown("---")

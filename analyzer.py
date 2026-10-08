@@ -153,40 +153,72 @@ def normalize(skill):
     """
     Normalizes a skill name by trimming, lowercasing, and mapping common
     aliases to a standard professional name. If no alias is found, it
-    returns the skill in Title Case.
+    returns the original string if it contains any uppercase letters,
+    otherwise capitalizes the first letter of each word.
     """
     if not skill:
         return ""
         
-    cleaned = skill.strip().lower()
+    cleaned = skill.strip()
+    key = cleaned.lower()
     
-    # Map of ~30 common aliases to their standard names
     aliases = {
-        "js": "JavaScript",
-        "javascript": "JavaScript",
-        "reactjs": "React",
-        "react.js": "React",
+        "rest api": "REST APIs",
+        "rest apis": "REST APIs",
+        "css": "CSS",
+        "css3": "CSS",
+        "html": "HTML",
+        "html5": "HTML",
+        "github": "GitHub",
+        "github actions": "GitHub Actions",
+        "mongodb": "MongoDB",
+        "mongo": "MongoDB",
+        "mysql": "MySQL",
+        "postgresql": "PostgreSQL",
+        "postgres": "PostgreSQL",
+        "express": "Express.js",
+        "express.js": "Express.js",
+        "expressjs": "Express.js",
         "node": "Node.js",
         "nodejs": "Node.js",
         "node.js": "Node.js",
-        "py": "Python",
-        "python3": "Python",
-        "ml": "Machine Learning",
-        "machinelearning": "Machine Learning",
-        "ai": "Artificial Intelligence",
-        "html5": "HTML",
-        "css3": "CSS",
-        "postgres": "PostgreSQL",
-        "postgresql": "PostgreSQL",
-        "ts": "TypeScript",
-        "vuejs": "Vue.js",
-        "vue.js": "Vue.js",
+        "react": "React",
+        "react.js": "React",
+        "reactjs": "React",
+        "scikit-learn": "scikit-learn",
+        "sklearn": "scikit-learn",
+        "numpy": "NumPy",
+        "pandas": "Pandas",
+        "tensorflow": "TensorFlow",
+        "tf": "TensorFlow",
+        "ci/cd": "CI/CD",
+        "cicd": "CI/CD",
         "aws": "AWS",
         "amazon web services": "AWS",
+        "javascript": "JavaScript",
+        "js": "JavaScript",
+        "typescript": "TypeScript",
+        "ts": "TypeScript",
+        "docker": "Docker",
+        "jest": "Jest",
+        "git": "Git",
+        "python": "Python",
+        "python3": "Python",
+        "sql": "SQL",
+        "machine learning": "Machine Learning",
+        "ml": "Machine Learning",
+        "unit testing": "Unit Testing",
+        "integration testing": "Integration Testing",
+        "agile": "Agile/Scrum",
+        "scrum": "Agile/Scrum",
+        "agile/scrum": "Agile/Scrum",
+        "state management": "State Management",
+        "responsive web design": "Responsive Web Design",
+        "vuejs": "Vue.js",
+        "vue.js": "Vue.js",
         "gcp": "Google Cloud",
         "google cloud platform": "Google Cloud",
         "k8s": "Kubernetes",
-        "mongo": "MongoDB",
         "c++": "C++",
         "cpp": "C++",
         "c#": "C#",
@@ -194,10 +226,17 @@ def normalize(skill):
         "dl": "Deep Learning",
         "cv": "Computer Vision",
         "nlp": "Natural Language Processing",
+        "ai": "Artificial Intelligence"
     }
     
-    # Return the mapped skill, or fallback to Title Casing the cleaned string
-    return aliases.get(cleaned, cleaned.title())
+    if key in aliases:
+        return aliases[key]
+        
+    has_upper = any(c.isupper() for c in cleaned)
+    if has_upper:
+        return cleaned
+    
+    return " ".join(word.capitalize() for word in cleaned.split())
 
 # ---------------------------------------------------------------------------
 # FUNCTION — Extract structured skills/data from resume text
@@ -277,6 +316,7 @@ def extract_job_skills(text):
         - role:                 the job title/role
         - required_skills:      list of mandatory skills
         - nice_to_have_skills:  list of bonus/preferred skills
+        - alternatives:         list of lists of alternative skills
 
     Returns a Python dictionary parsed from the model's response.
     """
@@ -288,13 +328,16 @@ Return this exact shape:
 {{
     "role": "",
     "required_skills": [],
-    "nice_to_have_skills": []
+    "nice_to_have_skills": [],
+    "alternatives": []
 }}
 
 Rules you MUST follow:
 1. "role" — the core job title (e.g., "Software Engineer", "Data Scientist").
 2. "required_skills" — short skill names only (e.g., "Python", "React", "AWS"). Never use sentences.
 3. "nice_to_have_skills" — short skill names only. These are bonus, preferred, or "nice to have" skills.
+4. "alternatives" — a list of lists, where each inner list holds skills of which any ONE satisfies the job (for example "AWS, Azure or GCP" gives [["AWS", "Azure", "GCP"]]).
+5. Skills in an alternatives group must NOT also appear in required_skills.
 
 --- JOB DESCRIPTION TEXT ---
 {text}
@@ -303,7 +346,7 @@ Rules you MUST follow:
     raw_response = _call_llm(prompt)
     
     # Fallback default dictionary
-    default_dict = {"role": "", "required_skills": [], "nice_to_have_skills": []}
+    default_dict = {"role": "", "required_skills": [], "nice_to_have_skills": [], "alternatives": []}
     
     if not raw_response or "⏱️" in raw_response:
         return default_dict
@@ -324,7 +367,7 @@ Rules you MUST follow:
         return default_dict
 
 
-def compare(resume, job):
+def compare(resume_text, resume, job):
     """
     Compares resume skills and job requirements.
     Normalizes all skills and returns matched/missing lists and a match percentage.
@@ -334,23 +377,60 @@ def compare(resume, job):
     job_req = set(normalize(s) for s in job.get("required_skills", []) if s)
     job_nice = set(normalize(s) for s in job.get("nice_to_have_skills", []) if s)
     
-    # 2. Calculate intersections and differences
+    # 2. Calculate initial intersections and differences
     matched = list(job_req.intersection(res_skills))
     missing = list(job_req.difference(res_skills))
     
     bonus_matched = list(job_nice.intersection(res_skills))
     bonus_missing = list(job_nice.difference(res_skills))
     
-    # 3. Calculate percentage (matched / total required)
+    partial = []
+    evidence = {}
+    reasons = {}
+    confidence = {}
+    
+    # 3. Verify missing skills via LLM
+    if missing:
+        verification = verify_missing_skills(resume_text, missing)
+        for result in verification.get("results", []):
+            skill = result.get("skill")
+            status = result.get("status")
+            ev = result.get("evidence", "")
+            reason = result.get("reason", "")
+            conf = result.get("confidence", "")
+            
+            if not skill or skill not in missing:
+                continue
+                
+            if ev:
+                evidence[skill] = ev
+            if reason:
+                reasons[skill] = reason
+            if conf:
+                confidence[skill] = conf
+                
+            if status == "matched":
+                missing.remove(skill)
+                matched.append(skill)
+            elif status == "partial":
+                missing.remove(skill)
+                partial.append(skill)
+                
+    # 4. Calculate percentage
     match_percent = 0
-    if len(job_req) > 0:
-        match_percent = int((len(matched) / len(job_req)) * 100)
+    total_req = len(matched) + len(partial) + len(missing)
+    if total_req > 0:
+        match_percent = int((len(matched) + 0.5 * len(partial)) / total_req * 100)
         
     return {
         "matched": matched,
+        "partial": partial,
         "missing": missing,
         "bonus_matched": bonus_matched,
         "bonus_missing": bonus_missing,
+        "evidence": evidence,
+        "reasons": reasons,
+        "confidence": confidence,
         "match_percent": match_percent
     }
 
@@ -428,29 +508,119 @@ Compare the resume against the job description below.
     return _call_llm(prompt)
 
 # ---------------------------------------------------------------------------
+# FUNCTION — Skill Categorization
+# ---------------------------------------------------------------------------
+
+CATEGORY_MAP = {
+    # Frontend
+    "React": "Frontend", "JavaScript": "Frontend", "TypeScript": "Frontend", 
+    "HTML": "Frontend", "CSS": "Frontend", "State Management": "Frontend", 
+    "Responsive Web Design": "Frontend", "Vue.js": "Frontend", "Angular": "Frontend", 
+    "Next.js": "Frontend",
+    
+    # Backend
+    "Node.js": "Backend", "REST APIs": "Backend", "FastAPI": "Backend", 
+    "Django": "Backend", "Flask": "Backend", "Spring Boot": "Backend", 
+    "Express.js": "Backend", "GraphQL": "Backend", "Microservices": "Backend",
+    
+    # Database
+    "MongoDB": "Database", "MySQL": "Database", "PostgreSQL": "Database", 
+    "Redis": "Database", "SQL": "Database", "NoSQL": "Database", 
+    "Cassandra": "Database", "Elasticsearch": "Database", "SQLite": "Database",
+    
+    # DevOps & Cloud
+    "Docker": "DevOps & Cloud", "AWS": "DevOps & Cloud", "CI/CD": "DevOps & Cloud", 
+    "GitHub Actions": "DevOps & Cloud", "Kubernetes": "DevOps & Cloud", 
+    "Google Cloud": "DevOps & Cloud", "Azure": "DevOps & Cloud", 
+    "Terraform": "DevOps & Cloud", "Linux": "DevOps & Cloud",
+    
+    # Testing
+    "Jest": "Testing", "Unit Testing": "Testing", "Integration Testing": "Testing", 
+    "Cypress": "Testing", "Selenium": "Testing", "Mocha": "Testing", "PyTest": "Testing",
+    
+    # AI/ML
+    "Machine Learning": "AI/ML", "NumPy": "AI/ML", "Pandas": "AI/ML", 
+    "Scikit-learn": "AI/ML", "TensorFlow": "AI/ML", "Artificial Intelligence": "AI/ML", 
+    "Deep Learning": "AI/ML", "Computer Vision": "AI/ML", 
+    "Natural Language Processing": "AI/ML", "PyTorch": "AI/ML",
+    
+    # Tools
+    "Git": "Tools", "GitHub": "Tools", "Jira": "Tools", "Webpack": "Tools", 
+    "Babel": "Tools", "Figma": "Tools", "VS Code": "Tools", "Postman": "Tools",
+    
+    # Practices
+    "Agile/Scrum": "Practices", "Object-Oriented Programming": "Practices",
+    "Clean Code": "Practices", "System Design": "Practices", "Code Review": "Practices",
+    
+    # Languages
+    "Python": "Languages", "Java": "Languages", "C++": "Languages", 
+    "C#": "Languages", "Ruby": "Languages", "Go": "Languages", 
+    "Rust": "Languages", "PHP": "Languages", "Swift": "Languages"
+}
+
+def categorize(skill):
+    """
+    Returns the broad category of a standard skill name.
+    If the skill isn't found in the dictionary, returns 'Other'.
+    """
+    if not skill:
+        return "Other"
+    return CATEGORY_MAP.get(skill, "Other")
+
+# ---------------------------------------------------------------------------
 # FUNCTION — Graphviz DOT Builder
 # ---------------------------------------------------------------------------
 
 def build_graph(job_role, compare_result):
     """
-    Builds a Graphviz DOT string visualizing matched and missing skills.
-    Matched skills are green, missing are red with dashed edges.
+    Builds a Graphviz DOT string drawn as a tree grouped by skill category.
     """
     safe_role = str(job_role).replace('"', '\\"') if job_role else "Job Role"
     
-    lines = ["digraph G {"]
-    lines.append('    rankdir=LR;')
-    lines.append(f'    "{safe_role}" [shape=ellipse, style=bold];')
+    categories = {}
+    def add_skills(skill_list, color, text_color, mark):
+        for skill in skill_list:
+            cat = categorize(skill)
+            if cat not in categories:
+                categories[cat] = []
+            categories[cat].append({
+                "name": str(skill).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"),
+                "color": color,
+                "text_color": text_color,
+                "mark": mark
+            })
+            
+    add_skills(compare_result.get("matched", []), "#2e7d32", "white", "✓ ")
+    add_skills(compare_result.get("partial", []), "#f9a825", "black", "~ ")
+    add_skills(compare_result.get("missing", []), "#c62828", "white", "✗ ")
     
-    for skill in compare_result.get("matched", []):
-        safe_skill = str(skill).replace('"', '\\"')
-        lines.append(f'    "{safe_skill}" [style=filled, fillcolor=green];')
-        lines.append(f'    "{safe_role}" -> "{safe_skill}";')
+    lines = ["digraph G {"]
+    lines.append('    rankdir=TB;')
+    lines.append('    graph [splines=ortho, nodesep=0.5, ranksep=0.8];')
+    lines.append('    node [fontname="Helvetica", shape=plain];')
+    lines.append('    edge [color="#94a3b8", style="solid", penwidth=1.5];')
+    
+    # Top node
+    lines.append(f'    "{safe_role}" [shape=box, style="filled,rounded", fillcolor="#1e3a8a", fontcolor="white", fontsize=18, width=2, height=0.6];')
+    
+    # Build category tables
+    for i, (cat, skills) in enumerate(categories.items()):
+        if not skills:
+            continue
+            
+        node_id = f"cat_{i}"
         
-    for skill in compare_result.get("missing", []):
-        safe_skill = str(skill).replace('"', '\\"')
-        lines.append(f'    "{safe_skill}" [style=filled, fillcolor=red];')
-        lines.append(f'    "{safe_role}" -> "{safe_skill}" [style=dashed];')
+        # HTML Table for category
+        html = '<TABLE BORDER="1" COLOR="#cbd5e1" STYLE="ROUNDED" CELLBORDER="0" CELLSPACING="2" CELLPADDING="6" BGCOLOR="white">'
+        html += f'<TR><TD BGCOLOR="#475569"><FONT COLOR="white" POINT-SIZE="14"><B>{cat}</B></FONT></TD></TR>'
+        
+        for s in skills:
+            html += f'<TR><TD BGCOLOR="{s["color"]}" STYLE="ROUNDED"><FONT COLOR="{s["text_color"]}" POINT-SIZE="13">{s["mark"]}{s["name"]}</FONT></TD></TR>'
+            
+        html += '</TABLE>'
+        
+        lines.append(f'    {node_id} [label=<{html}>];')
+        lines.append(f'    "{safe_role}" -> {node_id};')
         
     lines.append("}")
     return "\n".join(lines)
@@ -526,7 +696,7 @@ Rules you MUST follow:
 # ---------------------------------------------------------------------------
 
 @st.cache_data
-def verify_missing(resume_text, missing_skills):
+def verify_missing_skills(resume_text, missing_skills):
     """
     Double-checks if the "missing" skills are actually hidden somewhere in the resume.
     Returns a Python dictionary parsed from the model's JSON response.
@@ -547,19 +717,20 @@ Return this exact shape:
         {{
             "skill": "",
             "status": "matched" or "partial" or "missing",
-            "evidence": ""
+            "evidence": "",
+            "reason": "",
+            "confidence": "high" or "medium" or "low"
         }}
     ]
 }}
 
 Rules you MUST follow:
-1. Provide one result for each skill in the list.
-2. "status" must be exactly "matched", "partial", or "missing".
-   - "matched" only if the resume clearly shows the skill in a skills section, project, or experience.
-   - "partial" if the resume shows a closely related skill or only basic exposure.
-   - "missing" if there is no evidence.
-3. "evidence" must be a short phrase of at most 12 words exactly taken from the resume. If "missing", leave evidence empty.
-4. NEVER invent evidence. Only quote from the provided text.
+1. Look for evidence anywhere in the resume: skills section, projects, experience, certifications.
+2. If the resume shows a closely related technology (for example MySQL for PostgreSQL, or JavaScript for TypeScript), mark "partial" and name the related technology in "reason".
+3. Statements like "interested in", "learning", "planning to", "no experience with" never count as matched. Mark those "missing".
+4. For "missing", "reason" is one short sentence saying what is not demonstrated (use "not demonstrated", not "doesn't know").
+5. If a skill name contains " / ", it means any ONE of those options satisfies the requirement.
+6. Use "low" confidence when you are inferring rather than reading it directly.
 
 --- RESUME TEXT ---
 {resume_text}
@@ -584,46 +755,6 @@ Rules you MUST follow:
     except Exception:
         # Return fallback dictionary if JSON parsing crashes
         return default_dict
-
-# ---------------------------------------------------------------------------
-# FUNCTION — Apply Verification Logic
-# ---------------------------------------------------------------------------
-
-def apply_verification(compare_result, verification):
-    """
-    Updates the compare_result in place based on the AI verification step.
-    Moves falsely missing skills to matched or partial lists.
-    """
-    if "partial" not in compare_result:
-        compare_result["partial"] = []
-    if "evidence" not in compare_result:
-        compare_result["evidence"] = {}
-        
-    for item in verification.get("results", []):
-        skill = item.get("skill")
-        status = item.get("status")
-        evidence = item.get("evidence", "")
-        
-        if not skill:
-            continue
-            
-        # Store evidence
-        if evidence:
-            compare_result["evidence"][skill] = evidence
-            
-        if status == "matched":
-            if skill in compare_result["missing"]:
-                compare_result["missing"].remove(skill)
-            if skill not in compare_result["matched"]:
-                compare_result["matched"].append(skill)
-                
-        elif status == "partial":
-            if skill in compare_result["missing"]:
-                compare_result["missing"].remove(skill)
-            if skill not in compare_result["partial"]:
-                compare_result["partial"].append(skill)
-                
-    return compare_result
 
 # ---------------------------------------------------------------------------
 # FUNCTION — Score Breakdown
