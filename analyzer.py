@@ -17,7 +17,7 @@ import google.generativeai as genai
 from groq import Groq
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 # ---------------------------------------------------------------------------
 # SHARED HELPER — Load API keys & call LLMs with auto-rotation
@@ -40,11 +40,11 @@ def _get_api_keys(env_var_name):
 # Gemini Models
 _GEMINI_MODELS = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-3.8-flash"]
 
-# Groq Models (Fast open-source models)
+# Groq Models
 _GROQ_MODELS = [
-    "llama-3.1-70b-versatile", # extremely smart LLaMA 3.1
-    "mixtral-8x7b-32768",      # great fallback
-    "llama-3.1-8b-instant",    # ultra fast
+    "qwen/qwen3.8-27b",
+    "openai/gpt-oss-120b",
+    "allam-2-7b",
 ]
 
 def _call_groq(prompt):
@@ -68,16 +68,20 @@ def _call_groq(prompt):
             except Exception as e:
                 error_msg = str(e).lower()
                 
-                # If the key itself is invalid, stop and tell the user!
-                if "401" in error_msg or "400" in error_msg or "invalid" in error_msg:
-                    return f"❌ Groq API error: Invalid API Key. Please check GROQ_API_KEYS in your .env file."
-                    
                 # If rate limited -> try next model/key
                 if "429" in error_msg or "rate limit" in error_msg or "quota" in error_msg:
                     continue
                     
-                # For other errors, skip to next model
-                continue
+                # If it's a 401 Unauthorized, the key is actually bad
+                if "401" in error_msg:
+                    return f"❌ Groq API error: Unauthorized (401). Please check GROQ_API_KEYS."
+                    
+                # For 404 (Model not found) or other errors, skip to next model
+                if "404" in error_msg or "does not exist" in error_msg:
+                    continue
+                    
+                # Return other unexpected errors so we can actually see what went wrong
+                return f"❌ Groq API error: {e}"
                 
     return None
 
@@ -145,6 +149,8 @@ def _call_llm(prompt):
 # FUNCTION — Extract structured skills/data from resume text
 # ---------------------------------------------------------------------------
 
+import json
+
 def extract_resume_skills(text):
     """
     Sends resume text to the LLM and asks for a JSON object with:
@@ -153,7 +159,7 @@ def extract_resume_skills(text):
         - education:        list of degrees/certifications
         - projects:         list of project names/titles
 
-    Returns the raw text from the model (should be JSON).
+    Returns a Python dictionary parsed from the model's response.
     """
     prompt = f"""
 You are a resume parser. Read the resume below and return ONLY valid JSON.
@@ -182,7 +188,28 @@ Rules you MUST follow:
 {text}
 --- END RESUME TEXT ---
 """
-    return _call_llm(prompt)
+    raw_response = _call_llm(prompt)
+    
+    # Fallback default dictionary
+    default_dict = {"skills": [], "experience_years": 0, "education": [], "projects": []}
+    
+    if not raw_response or "⏱️" in raw_response:
+        return default_dict
+        
+    try:
+        # Strip markdown fences (e.g., ```json ... ```)
+        cleaned = raw_response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        
+        return json.loads(cleaned.strip())
+    except Exception:
+        # Return fallback dictionary if JSON parsing crashes
+        return default_dict
 
 
 # ---------------------------------------------------------------------------

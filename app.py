@@ -11,9 +11,10 @@ How to run:
 import streamlit as st
 from PyPDF2 import PdfReader
 import io
+# Force Streamlit to reload the updated analyzer.py
 
 # Import our AI logic from the new analyzer.py file
-from SkillGraph.analyzer import analyze_resume
+from analyzer import analyze_resume
 
 # ---------------------------------------------------------------------------
 # 1.  HELPER FUNCTION — Extract text from an uploaded PDF file
