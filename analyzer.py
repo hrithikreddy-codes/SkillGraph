@@ -212,6 +212,59 @@ Rules you MUST follow:
         return default_dict
 
 
+def extract_job_skills(text):
+    """
+    Sends job description text to the LLM and asks for a JSON object with:
+        - role:                 the job title/role
+        - required_skills:      list of mandatory skills
+        - nice_to_have_skills:  list of bonus/preferred skills
+
+    Returns a Python dictionary parsed from the model's response.
+    """
+    prompt = f"""
+You are a job description parser. Read the job description below and return ONLY valid JSON.
+No markdown formatting blocks like ```json, no explanation, no extra text — just the raw JSON object.
+
+Return this exact shape:
+{{
+    "role": "",
+    "required_skills": [],
+    "nice_to_have_skills": []
+}}
+
+Rules you MUST follow:
+1. "role" — the core job title (e.g., "Software Engineer", "Data Scientist").
+2. "required_skills" — short skill names only (e.g., "Python", "React", "AWS"). Never use sentences.
+3. "nice_to_have_skills" — short skill names only. These are bonus, preferred, or "nice to have" skills.
+
+--- JOB DESCRIPTION TEXT ---
+{text}
+--- END JOB DESCRIPTION TEXT ---
+"""
+    raw_response = _call_llm(prompt)
+    
+    # Fallback default dictionary
+    default_dict = {"role": "", "required_skills": [], "nice_to_have_skills": []}
+    
+    if not raw_response or "⏱️" in raw_response:
+        return default_dict
+        
+    try:
+        # Strip markdown fences (e.g., ```json ... ```)
+        cleaned = raw_response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        
+        return json.loads(cleaned.strip())
+    except Exception:
+        # Return fallback dictionary if JSON parsing crashes
+        return default_dict
+
+
 # ---------------------------------------------------------------------------
 # FUNCTION — Full resume analysis
 # ---------------------------------------------------------------------------
