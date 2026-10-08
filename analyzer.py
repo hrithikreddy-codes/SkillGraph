@@ -204,7 +204,9 @@ def normalize(skill):
 # ---------------------------------------------------------------------------
 
 import json
+import streamlit as st
 
+@st.cache_data
 def extract_resume_skills(text):
     """
     Sends resume text to the LLM and asks for a JSON object with:
@@ -266,6 +268,7 @@ Rules you MUST follow:
         return default_dict
 
 
+@st.cache_data
 def extract_job_skills(text):
     """
     Sends job description text to the LLM and asks for a JSON object with:
@@ -421,3 +424,88 @@ Compare the resume against the job description below.
 --- END RESUME TEXT ---
 """
     return _call_llm(prompt)
+
+# ---------------------------------------------------------------------------
+# FUNCTION — Graphviz DOT Builder
+# ---------------------------------------------------------------------------
+
+def build_graph(job_role, compare_result):
+    """
+    Builds a Graphviz DOT string visualizing matched and missing skills.
+    Matched skills are green, missing are red with dashed edges.
+    """
+    safe_role = str(job_role).replace('"', '\\"') if job_role else "Job Role"
+    
+    lines = ["digraph G {"]
+    lines.append(f'    "{safe_role}" [shape=ellipse, style=bold];')
+    
+    for skill in compare_result.get("matched", []):
+        safe_skill = str(skill).replace('"', '\\"')
+        lines.append(f'    "{safe_skill}" [style=filled, fillcolor=green];')
+        lines.append(f'    "{safe_role}" -> "{safe_skill}";')
+        
+    for skill in compare_result.get("missing", []):
+        safe_skill = str(skill).replace('"', '\\"')
+        lines.append(f'    "{safe_skill}" [style=filled, fillcolor=red];')
+        lines.append(f'    "{safe_role}" -> "{safe_skill}" [style=dashed];')
+        
+    lines.append("}")
+    return "\n".join(lines)
+
+# ---------------------------------------------------------------------------
+# FUNCTION — Generate Learning Roadmap
+# ---------------------------------------------------------------------------
+
+@st.cache_data
+def generate_roadmap(missing_skills, role):
+    """
+    Generates a personalized learning roadmap for missing skills.
+    Returns a Python dictionary parsed from the model's JSON response.
+    """
+    default_dict = {"steps": []}
+    
+    if not missing_skills:
+        return default_dict
+        
+    prompt = f"""
+You are an expert career mentor. The user wants to become a "{role}" but is missing these skills: {', '.join(missing_skills)}.
+Return ONLY valid JSON. No markdown formatting blocks like ```json, no explanation, no extra text — just the raw JSON object.
+
+Return this exact shape:
+{{
+    "steps": [
+        {{
+            "skill": "",
+            "why_it_matters": "",
+            "how_to_learn": "",
+            "time_estimate": ""
+        }}
+    ]
+}}
+
+Rules you MUST follow:
+1. One step per missing skill provided.
+2. Order the steps from most important to least important for this role.
+3. Every text field ("why_it_matters" and "how_to_learn") must be exactly ONE short sentence.
+4. "time_estimate" should be a short string like "1-2 weeks" or "3 days".
+5. NEVER use markdown.
+"""
+    raw_response = _call_llm(prompt)
+    
+    if not raw_response or "⏱️" in raw_response:
+        return default_dict
+        
+    try:
+        # Strip markdown fences (e.g., ```json ... ```)
+        cleaned = raw_response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        
+        return json.loads(cleaned.strip())
+    except Exception:
+        # Return fallback dictionary if JSON parsing crashes
+        return default_dict

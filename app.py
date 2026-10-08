@@ -73,19 +73,60 @@ def main():
     analyze_button = st.button("🚀 Analyze", use_container_width=True)
 
     if analyze_button:
-        if not resume_text_area.strip() or not job_description_area.strip():
-            st.warning("⚠️ Please provide both a resume and a job description.")
-            return
-            
-        with st.spinner("🤖 Analyzing skills..."):
-            from analyzer import extract_resume_skills, extract_job_skills, compare
-            resume_data = extract_resume_skills(resume_text_area)
-            job_data = extract_job_skills(job_description_area)
-            match_results = compare(resume_data, job_data)
-            
-            st.markdown("---")
-            st.subheader("📋 Match Results")
-            st.metric("Match Percentage", f"{match_results['match_percent']}%")
+        try:
+            if not resume_text_area.strip() or not job_description_area.strip():
+                st.warning("⚠️ Please provide both a resume and a job description.")
+                return
+                
+            with st.spinner("🤖 Analyzing skills..."):
+                from analyzer import extract_resume_skills, extract_job_skills, compare, build_graph
+                resume_data = extract_resume_skills(resume_text_area)
+                job_data = extract_job_skills(job_description_area)
+                match_results = compare(resume_data, job_data)
+                
+                st.markdown("---")
+                st.subheader("📋 Match Results")
+                st.metric("Match Percentage", f"{match_results['match_percent']}%")
+                
+                # Skill lists
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.success(f"**Matched Skills:** {', '.join(match_results['matched']) if match_results['matched'] else 'None'}")
+                    if match_results['bonus_matched']:
+                        st.info(f"**Bonus Matched:** {', '.join(match_results['bonus_matched'])}")
+                with col2:
+                    st.error(f"**Missing Skills:** {', '.join(match_results['missing']) if match_results['missing'] else 'None'}")
+                    if match_results['bonus_missing']:
+                        st.warning(f"**Bonus Missing:** {', '.join(match_results['bonus_missing'])}")
+                
+                # Graph
+                st.markdown("---")
+                st.subheader("Your Skill Graph")
+                job_role = job_data.get("role", "Job Role")
+                dot_string = build_graph(job_role, match_results)
+                st.graphviz_chart(dot_string)
+                st.caption("🟢 Green = skills you have | 🔴 Red dashed = skills to learn")
+                
+                # Next Steps / Roadmap
+                st.markdown("---")
+                st.subheader("🚀 Your Next Steps")
+                missing_skills = match_results.get("missing", [])
+                
+                if not missing_skills:
+                    st.balloons()
+                    st.success("🎉 Incredible! Your resume already covers every required skill for this role.")
+                else:
+                    from analyzer import generate_roadmap
+                    roadmap = generate_roadmap(missing_skills, job_role)
+                    for step in roadmap.get("steps", []):
+                        skill_name = step.get("skill", "")
+                        with st.expander(f"📘 {skill_name}"):
+                            st.markdown(f"**Why it matters:** {step.get('why_it_matters', '')}")
+                            st.markdown(f"**How to learn:** {step.get('how_to_learn', '')}")
+                            st.markdown(f"**Time estimate:** {step.get('time_estimate', '')}")
+        except Exception:
+            st.error("Something went wrong, please try again")
+
 
 
 def _legacy_ui_code_do_not_call():
