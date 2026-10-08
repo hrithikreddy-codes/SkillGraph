@@ -146,6 +146,60 @@ def _call_llm(prompt):
 
 
 # ---------------------------------------------------------------------------
+# FUNCTION — Normalize Skills
+# ---------------------------------------------------------------------------
+
+def normalize(skill):
+    """
+    Normalizes a skill name by trimming, lowercasing, and mapping common
+    aliases to a standard professional name. If no alias is found, it
+    returns the skill in Title Case.
+    """
+    if not skill:
+        return ""
+        
+    cleaned = skill.strip().lower()
+    
+    # Map of ~30 common aliases to their standard names
+    aliases = {
+        "js": "JavaScript",
+        "javascript": "JavaScript",
+        "reactjs": "React",
+        "react.js": "React",
+        "node": "Node.js",
+        "nodejs": "Node.js",
+        "node.js": "Node.js",
+        "py": "Python",
+        "python3": "Python",
+        "ml": "Machine Learning",
+        "machinelearning": "Machine Learning",
+        "ai": "Artificial Intelligence",
+        "html5": "HTML",
+        "css3": "CSS",
+        "postgres": "PostgreSQL",
+        "postgresql": "PostgreSQL",
+        "ts": "TypeScript",
+        "vuejs": "Vue.js",
+        "vue.js": "Vue.js",
+        "aws": "AWS",
+        "amazon web services": "AWS",
+        "gcp": "Google Cloud",
+        "google cloud platform": "Google Cloud",
+        "k8s": "Kubernetes",
+        "mongo": "MongoDB",
+        "c++": "C++",
+        "cpp": "C++",
+        "c#": "C#",
+        "csharp": "C#",
+        "dl": "Deep Learning",
+        "cv": "Computer Vision",
+        "nlp": "Natural Language Processing",
+    }
+    
+    # Return the mapped skill, or fallback to Title Casing the cleaned string
+    return aliases.get(cleaned, cleaned.title())
+
+# ---------------------------------------------------------------------------
 # FUNCTION — Extract structured skills/data from resume text
 # ---------------------------------------------------------------------------
 
@@ -263,6 +317,37 @@ Rules you MUST follow:
     except Exception:
         # Return fallback dictionary if JSON parsing crashes
         return default_dict
+
+
+def compare(resume, job):
+    """
+    Compares resume skills and job requirements.
+    Normalizes all skills and returns matched/missing lists and a match percentage.
+    """
+    # 1. Normalize all skill lists into sets for easy comparison
+    res_skills = set(normalize(s) for s in resume.get("skills", []) if s)
+    job_req = set(normalize(s) for s in job.get("required_skills", []) if s)
+    job_nice = set(normalize(s) for s in job.get("nice_to_have_skills", []) if s)
+    
+    # 2. Calculate intersections and differences
+    matched = list(job_req.intersection(res_skills))
+    missing = list(job_req.difference(res_skills))
+    
+    bonus_matched = list(job_nice.intersection(res_skills))
+    bonus_missing = list(job_nice.difference(res_skills))
+    
+    # 3. Calculate percentage (matched / total required)
+    match_percent = 0
+    if len(job_req) > 0:
+        match_percent = int((len(matched) / len(job_req)) * 100)
+        
+    return {
+        "matched": matched,
+        "missing": missing,
+        "bonus_matched": bonus_matched,
+        "bonus_missing": bonus_missing,
+        "match_percent": match_percent
+    }
 
 
 # ---------------------------------------------------------------------------

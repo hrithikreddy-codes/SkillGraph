@@ -52,10 +52,43 @@ def main():
 
     st.title("📄 AI Resume & Job-Readiness Analyzer")
     st.write(
-        "Upload your resume, get instant AI-powered feedback, "
-        "and see how well you match a job posting."
+        "Paste your resume and a job description to see how well you match."
     )
 
+    # --- Text areas ---
+    st.subheader("1️⃣  Paste your resume")
+    resume_text_area = st.text_area(
+        "Paste your resume",
+        height=200,
+    )
+
+    st.subheader("2️⃣  Paste the job description")
+    job_description_area = st.text_area(
+        "Paste the job description",
+        height=200,
+    )
+
+    # --- Analyze button ---
+    st.subheader("3️⃣  Run the analysis")
+    analyze_button = st.button("🚀 Analyze", use_container_width=True)
+
+    if analyze_button:
+        if not resume_text_area.strip() or not job_description_area.strip():
+            st.warning("⚠️ Please provide both a resume and a job description.")
+            return
+            
+        with st.spinner("🤖 Analyzing skills..."):
+            from analyzer import extract_resume_skills, extract_job_skills, compare
+            resume_data = extract_resume_skills(resume_text_area)
+            job_data = extract_job_skills(job_description_area)
+            match_results = compare(resume_data, job_data)
+            
+            st.markdown("---")
+            st.subheader("📋 Match Results")
+            st.metric("Match Percentage", f"{match_results['match_percent']}%")
+
+
+def _legacy_ui_code_do_not_call():
     # Note: We removed the API key sidebar! The app now safely loads 
     # your keys directly from the .env file in the background.
 
