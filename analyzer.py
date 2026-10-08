@@ -231,8 +231,10 @@ Return this exact shape:
 
 Rules you MUST follow:
 1. "skills" — short names only, like "Python", "SQL", "React", "AWS".
-   Never use sentences. Never duplicate. Only include skills that are
-   explicitly written in the resume text. NEVER invent or guess skills.
+   Never use sentences. Never duplicate.
+   - Include skills that are clearly demonstrated by projects or experience, even if the exact word isn't in a skills list. Example: a project that trains a prediction model means "Machine Learning" is a skill.
+   - If a skills section has a category heading (like "AI / Machine Learning: Pandas, NumPy"), include the category as a skill too.
+   - Still never invent skills with no evidence in the text.
 2. "experience_years" — total years of professional experience.
    If not stated, estimate from job date ranges. If unknown, use 0.
 3. "education" — each entry is a short string like
@@ -437,6 +439,7 @@ def build_graph(job_role, compare_result):
     safe_role = str(job_role).replace('"', '\\"') if job_role else "Job Role"
     
     lines = ["digraph G {"]
+    lines.append('    rankdir=LR;')
     lines.append(f'    "{safe_role}" [shape=ellipse, style=bold];')
     
     for skill in compare_result.get("matched", []):
@@ -457,18 +460,21 @@ def build_graph(job_role, compare_result):
 # ---------------------------------------------------------------------------
 
 @st.cache_data
-def generate_roadmap(missing_skills, role):
+def generate_roadmap(missing_skills, partial_skills, role):
     """
-    Generates a personalized learning roadmap for missing skills.
+    Generates a personalized learning roadmap for missing and partial skills.
     Returns a Python dictionary parsed from the model's JSON response.
     """
     default_dict = {"steps": []}
     
-    if not missing_skills:
+    if not missing_skills and not partial_skills:
         return default_dict
         
     prompt = f"""
-You are an expert career mentor. The user wants to become a "{role}" but is missing these skills: {', '.join(missing_skills)}.
+You are an expert career mentor. The user wants to become a "{role}".
+They are completely missing these skills: {', '.join(missing_skills) if missing_skills else 'None'}.
+They have partial exposure to these skills: {', '.join(partial_skills) if partial_skills else 'None'}.
+
 Return ONLY valid JSON. No markdown formatting blocks like ```json, no explanation, no extra text — just the raw JSON object.
 
 Return this exact shape:
@@ -476,6 +482,7 @@ Return this exact shape:
     "steps": [
         {{
             "skill": "",
+            "priority": "",
             "why_it_matters": "",
             "how_to_learn": "",
             "time_estimate": ""
@@ -484,11 +491,15 @@ Return this exact shape:
 }}
 
 Rules you MUST follow:
-1. One step per missing skill provided.
+1. Provide one step for every missing and partial skill provided.
 2. Order the steps from most important to least important for this role.
-3. Every text field ("why_it_matters" and "how_to_learn") must be exactly ONE short sentence.
-4. "time_estimate" should be a short string like "1-2 weeks" or "3 days".
-5. NEVER use markdown.
+3. "priority" must be exactly "High", "Medium", or "Low".
+   - High = skills the job description lists as required or mentions repeatedly.
+   - Medium = useful but secondary.
+   - Low = nice-to-have or already partly shown on the resume.
+4. Every text field ("why_it_matters" and "how_to_learn") must be exactly ONE short sentence.
+5. "time_estimate" should be a short string like "1-2 weeks" or "3 days".
+6. NEVER use markdown.
 """
     raw_response = _call_llm(prompt)
     
@@ -509,3 +520,135 @@ Rules you MUST follow:
     except Exception:
         # Return fallback dictionary if JSON parsing crashes
         return default_dict
+
+# ---------------------------------------------------------------------------
+# FUNCTION — Verify Missing Skills
+# ---------------------------------------------------------------------------
+
+@st.cache_data
+def verify_missing(resume_text, missing_skills):
+    """
+    Double-checks if the "missing" skills are actually hidden somewhere in the resume.
+    Returns a Python dictionary parsed from the model's JSON response.
+    """
+    default_dict = {"results": []}
+    
+    if not missing_skills:
+        return default_dict
+        
+    prompt = f"""
+You are an expert technical recruiter. Read the resume below and verify if it contains evidence for these skills: {', '.join(missing_skills)}.
+
+Return ONLY valid JSON. No markdown formatting blocks like ```json, no explanation, no extra text — just the raw JSON object.
+
+Return this exact shape:
+{{
+    "results": [
+        {{
+            "skill": "",
+            "status": "matched" or "partial" or "missing",
+            "evidence": ""
+        }}
+    ]
+}}
+
+Rules you MUST follow:
+1. Provide one result for each skill in the list.
+2. "status" must be exactly "matched", "partial", or "missing".
+   - "matched" only if the resume clearly shows the skill in a skills section, project, or experience.
+   - "partial" if the resume shows a closely related skill or only basic exposure.
+   - "missing" if there is no evidence.
+3. "evidence" must be a short phrase of at most 12 words exactly taken from the resume. If "missing", leave evidence empty.
+4. NEVER invent evidence. Only quote from the provided text.
+
+--- RESUME TEXT ---
+{resume_text}
+--- END RESUME TEXT ---
+"""
+    raw_response = _call_llm(prompt)
+    
+    if not raw_response or "⏱️" in raw_response:
+        return default_dict
+        
+    try:
+        # Strip markdown fences (e.g., ```json ... ```)
+        cleaned = raw_response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        
+        return json.loads(cleaned.strip())
+    except Exception:
+        # Return fallback dictionary if JSON parsing crashes
+        return default_dict
+
+# ---------------------------------------------------------------------------
+# FUNCTION — Apply Verification Logic
+# ---------------------------------------------------------------------------
+
+def apply_verification(compare_result, verification):
+    """
+    Updates the compare_result in place based on the AI verification step.
+    Moves falsely missing skills to matched or partial lists.
+    """
+    if "partial" not in compare_result:
+        compare_result["partial"] = []
+    if "evidence" not in compare_result:
+        compare_result["evidence"] = {}
+        
+    for item in verification.get("results", []):
+        skill = item.get("skill")
+        status = item.get("status")
+        evidence = item.get("evidence", "")
+        
+        if not skill:
+            continue
+            
+        # Store evidence
+        if evidence:
+            compare_result["evidence"][skill] = evidence
+            
+        if status == "matched":
+            if skill in compare_result["missing"]:
+                compare_result["missing"].remove(skill)
+            if skill not in compare_result["matched"]:
+                compare_result["matched"].append(skill)
+                
+        elif status == "partial":
+            if skill in compare_result["missing"]:
+                compare_result["missing"].remove(skill)
+            if skill not in compare_result["partial"]:
+                compare_result["partial"].append(skill)
+                
+    return compare_result
+
+# ---------------------------------------------------------------------------
+# FUNCTION — Score Breakdown
+# ---------------------------------------------------------------------------
+
+def score_breakdown(compare_result):
+    """
+    Calculates a detailed score breakdown including partial matches.
+    Partial matches count as 0.5 towards the final match percentage.
+    """
+    matched_count = len(compare_result.get("matched", []))
+    partial_count = len(compare_result.get("partial", []))
+    missing_count = len(compare_result.get("missing", []))
+    
+    total_required = matched_count + partial_count + missing_count
+    
+    if total_required > 0:
+        match_percent = round((matched_count + 0.5 * partial_count) / total_required * 100)
+    else:
+        match_percent = 0
+        
+    return {
+        "total_required": total_required,
+        "matched_count": matched_count,
+        "partial_count": partial_count,
+        "missing_count": missing_count,
+        "match_percent": match_percent
+    }

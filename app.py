@@ -79,25 +79,46 @@ def main():
                 return
                 
             with st.spinner("🤖 Analyzing skills..."):
-                from analyzer import extract_resume_skills, extract_job_skills, compare, build_graph
+                from analyzer import extract_resume_skills, extract_job_skills, compare, build_graph, verify_missing, apply_verification
                 resume_data = extract_resume_skills(resume_text_area)
                 job_data = extract_job_skills(job_description_area)
                 match_results = compare(resume_data, job_data)
                 
+                verification = verify_missing(resume_text_area, match_results["missing"])
+                match_results = apply_verification(match_results, verification)
+                
+                from analyzer import score_breakdown
+                scores = score_breakdown(match_results)
+                match_results["match_percent"] = scores["match_percent"]
+                
                 st.markdown("---")
                 st.subheader("📋 Match Results")
-                st.metric("Match Percentage", f"{match_results['match_percent']}%")
+                st.metric("Match Percentage", f"{scores['match_percent']}%")
+                st.caption("Score = (matched + half of partial) / required skills")
+                
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Required skills", scores["total_required"])
+                m2.metric("Matched", scores["matched_count"])
+                m3.metric("Partial", scores["partial_count"])
+                m4.metric("Missing", scores["missing_count"])
                 
                 # Skill lists
                 col1, col2 = st.columns(2)
                 with col1:
                     st.success(f"**Matched Skills:** {', '.join(match_results['matched']) if match_results['matched'] else 'None'}")
-                    if match_results['bonus_matched']:
+                    if match_results.get('partial'):
+                        st.warning(f"**Partial Match:** {', '.join(match_results['partial'])}")
+                    if match_results.get('bonus_matched'):
                         st.info(f"**Bonus Matched:** {', '.join(match_results['bonus_matched'])}")
                 with col2:
                     st.error(f"**Missing Skills:** {', '.join(match_results['missing']) if match_results['missing'] else 'None'}")
-                    if match_results['bonus_missing']:
+                    if match_results.get('bonus_missing'):
                         st.warning(f"**Bonus Missing:** {', '.join(match_results['bonus_missing'])}")
+                        
+                if match_results.get("evidence"):
+                    with st.expander("Why these skills count"):
+                        for skill, evidence in match_results["evidence"].items():
+                            st.write(f"- **{skill}**: \"{evidence}\"")
                 
                 # Graph
                 st.markdown("---")
@@ -111,19 +132,51 @@ def main():
                 st.markdown("---")
                 st.subheader("🚀 Your Next Steps")
                 missing_skills = match_results.get("missing", [])
+                partial_skills = match_results.get("partial", [])
                 
-                if not missing_skills:
+                if not missing_skills and not partial_skills:
                     st.balloons()
                     st.success("🎉 Incredible! Your resume already covers every required skill for this role.")
                 else:
                     from analyzer import generate_roadmap
-                    roadmap = generate_roadmap(missing_skills, job_role)
+                    roadmap = generate_roadmap(missing_skills, partial_skills, job_role)
+                    
+                    groups = {"High": [], "Medium": [], "Low": []}
                     for step in roadmap.get("steps", []):
-                        skill_name = step.get("skill", "")
-                        with st.expander(f"📘 {skill_name}"):
-                            st.markdown(f"**Why it matters:** {step.get('why_it_matters', '')}")
-                            st.markdown(f"**How to learn:** {step.get('how_to_learn', '')}")
-                            st.markdown(f"**Time estimate:** {step.get('time_estimate', '')}")
+                        pri = step.get("priority", "Medium")
+                        if pri not in groups:
+                            pri = "Medium"
+                        groups[pri].append(step)
+                        
+                    for pri_label, pri_key in [("High priority", "High"), ("Medium priority", "Medium"), ("Lower priority", "Low")]:
+                        if groups[pri_key]:
+                            st.markdown(f"**{pri_label}**")
+                            for step in groups[pri_key]:
+                                skill_name = step.get("skill", "")
+                                with st.expander(f"📘 {skill_name}"):
+                                    st.markdown(f"**Why it matters:** {step.get('why_it_matters', '')}")
+                                    st.markdown(f"**How to learn:** {step.get('how_to_learn', '')}")
+                                    st.markdown(f"**Time estimate:** {step.get('time_estimate', '')}")
+                            
+                # Export Report
+                st.markdown("---")
+                report = f"# Career Analysis: {job_role}\n\n"
+                report += f"**Match Score:** {match_results['match_percent']}%\n\n"
+                report += f"### ✅ Matched Skills\n{', '.join(match_results['matched']) if match_results['matched'] else 'None'}\n\n"
+                if match_results.get('partial'):
+                    report += f"### ⚠️ Partial Skills\n{', '.join(match_results['partial'])}\n\n"
+                report += f"### ❌ Missing Skills\n{', '.join(match_results['missing']) if match_results['missing'] else 'None'}\n\n"
+                report += "### 🚀 Your Roadmap\n"
+                if not missing_skills and not partial_skills:
+                    report += "You already have all required skills!\n"
+                else:
+                    for step in roadmap.get("steps", []):
+                        report += f"\n#### {step.get('skill', '')} ({step.get('priority', 'Medium')} Priority)\n"
+                        report += f"- **Why:** {step.get('why_it_matters', '')}\n"
+                        report += f"- **How:** {step.get('how_to_learn', '')}\n"
+                        report += f"- **Time:** {step.get('time_estimate', '')}\n"
+                        
+                st.download_button("📥 Download Full Report", report, file_name="skill_report.md", mime="text/markdown")
         except Exception:
             st.error("Something went wrong, please try again")
 
