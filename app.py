@@ -198,7 +198,7 @@ def main():
                     st.success("🎉 Incredible! Your resume already covers every required skill for this role.")
                 else:
                     from analyzer import generate_roadmap
-                    roadmap = generate_roadmap(missing_skills, partial_skills, job_role)
+                    roadmap = generate_roadmap(missing_skills, partial_skills, job_role, resume_data.get("projects", []))
                     
                     groups = {"High": [], "Medium": [], "Low": []}
                     for step in roadmap.get("steps", []):
@@ -209,13 +209,19 @@ def main():
                         
                     for pri_label, pri_key in [("High priority", "High"), ("Medium priority", "Medium"), ("Lower priority", "Low")]:
                         if groups[pri_key]:
+                            sorted_steps = sorted(groups[pri_key], key=lambda x: x.get("order", 999))
                             st.markdown(f"**{pri_label}**")
-                            for step in groups[pri_key]:
+                            for step in sorted_steps:
                                 skill_name = step.get("skill", "")
-                                with st.expander(f"📘 {skill_name}"):
-                                    st.markdown(f"**Why it matters:** {step.get('why_it_matters', '')}")
-                                    st.markdown(f"**How to learn:** {step.get('how_to_learn', '')}")
-                                    st.markdown(f"**Time estimate:** {step.get('time_estimate', '')}")
+                                order_val = step.get("order", "?")
+                                eff = step.get("suggested_effort", "")
+                                
+                                with st.expander(f"{order_val}. {skill_name} (about {eff})"):
+                                    st.markdown(f"**Why this is a gap:** {step.get('why_gap', '')}")
+                                    st.markdown(f"**How to close it:** {step.get('how_to_close', '')}")
+                                    st.markdown(f"**Resume proof you can add:** {step.get('resume_proof', '')}")
+                                    
+                    st.caption("After you finish a step, add the resume bullet and run the analysis again to watch the gap close.")
                             
                 # Export Report
                 st.markdown("---")
@@ -230,10 +236,11 @@ def main():
                     report += "You already have all required skills!\n"
                 else:
                     for step in roadmap.get("steps", []):
-                        report += f"\n#### {step.get('skill', '')} ({step.get('priority', 'Medium')} Priority)\n"
-                        report += f"- **Why:** {step.get('why_it_matters', '')}\n"
-                        report += f"- **How:** {step.get('how_to_learn', '')}\n"
-                        report += f"- **Time:** {step.get('time_estimate', '')}\n"
+                        report += f"\n#### {step.get('order', '?')}. {step.get('skill', '')} ({step.get('priority', 'Medium')} Priority)\n"
+                        report += f"- **Why:** {step.get('why_gap', '')}\n"
+                        report += f"- **How:** {step.get('how_to_close', '')}\n"
+                        report += f"- **Proof:** {step.get('resume_proof', '')}\n"
+                        report += f"- **Time:** {step.get('suggested_effort', '')}\n"
                         
                 st.download_button("📥 Download Full Report", report, file_name="skill_report.md", mime="text/markdown")
         except Exception:

@@ -384,6 +384,26 @@ def compare(resume_text, resume, job):
     bonus_matched = list(job_nice.intersection(res_skills))
     bonus_missing = list(job_nice.difference(res_skills))
     
+    # Process alternatives
+    for group in job.get("alternatives", []):
+        if not group:
+            continue
+        norm_group = []
+        for s in group:
+            if s:
+                ns = normalize(s)
+                if ns not in norm_group:
+                    norm_group.append(ns)
+                    
+        if not norm_group:
+            continue
+            
+        matching_skills = [s for s in norm_group if s in res_skills]
+        if matching_skills:
+            matched.append(matching_skills[0])
+        else:
+            missing.append(" / ".join(norm_group))
+            
     partial = []
     evidence = {}
     reasons = {}
@@ -511,7 +531,7 @@ Compare the resume against the job description below.
 # FUNCTION — Skill Categorization
 # ---------------------------------------------------------------------------
 
-CATEGORY_MAP = {
+SKILL_CATEGORIES = {
     # Frontend
     "React": "Frontend", "JavaScript": "Frontend", "TypeScript": "Frontend", 
     "HTML": "Frontend", "CSS": "Frontend", "State Management": "Frontend", 
@@ -538,19 +558,18 @@ CATEGORY_MAP = {
     "Jest": "Testing", "Unit Testing": "Testing", "Integration Testing": "Testing", 
     "Cypress": "Testing", "Selenium": "Testing", "Mocha": "Testing", "PyTest": "Testing",
     
-    # AI/ML
-    "Machine Learning": "AI/ML", "NumPy": "AI/ML", "Pandas": "AI/ML", 
-    "Scikit-learn": "AI/ML", "TensorFlow": "AI/ML", "Artificial Intelligence": "AI/ML", 
-    "Deep Learning": "AI/ML", "Computer Vision": "AI/ML", 
-    "Natural Language Processing": "AI/ML", "PyTorch": "AI/ML",
+    # AI / ML
+    "Machine Learning": "AI / ML", "NumPy": "AI / ML", "Pandas": "AI / ML", 
+    "scikit-learn": "AI / ML", "TensorFlow": "AI / ML", "Artificial Intelligence": "AI / ML", 
+    "Deep Learning": "AI / ML", "Computer Vision": "AI / ML", 
+    "Natural Language Processing": "AI / ML", "PyTorch": "AI / ML",
     
-    # Tools
-    "Git": "Tools", "GitHub": "Tools", "Jira": "Tools", "Webpack": "Tools", 
-    "Babel": "Tools", "Figma": "Tools", "VS Code": "Tools", "Postman": "Tools",
-    
-    # Practices
-    "Agile/Scrum": "Practices", "Object-Oriented Programming": "Practices",
-    "Clean Code": "Practices", "System Design": "Practices", "Code Review": "Practices",
+    # Tools & Process
+    "Git": "Tools & Process", "GitHub": "Tools & Process", "Agile/Scrum": "Tools & Process",
+    "Jira": "Tools & Process", "Webpack": "Tools & Process", "Babel": "Tools & Process", 
+    "Figma": "Tools & Process", "VS Code": "Tools & Process", "Postman": "Tools & Process",
+    "Object-Oriented Programming": "Tools & Process", "Clean Code": "Tools & Process", 
+    "System Design": "Tools & Process", "Code Review": "Tools & Process",
     
     # Languages
     "Python": "Languages", "Java": "Languages", "C++": "Languages", 
@@ -565,7 +584,12 @@ def categorize(skill):
     """
     if not skill:
         return "Other"
-    return CATEGORY_MAP.get(skill, "Other")
+        
+    if " / " in skill:
+        first_skill = skill.split(" / ")[0].strip()
+        return SKILL_CATEGORIES.get(first_skill, "Other")
+        
+    return SKILL_CATEGORIES.get(skill, "Other")
 
 # ---------------------------------------------------------------------------
 # FUNCTION — Graphviz DOT Builder
@@ -578,44 +602,46 @@ def build_graph(job_role, compare_result):
     safe_role = str(job_role).replace('"', '\\"') if job_role else "Job Role"
     
     categories = {}
-    def add_skills(skill_list, color, text_color, mark):
+    
+    def add_skills(skill_list, bg_color, text_color, mark):
         for skill in skill_list:
             cat = categorize(skill)
             if cat not in categories:
                 categories[cat] = []
+            
+            safe_skill = str(skill).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
             categories[cat].append({
-                "name": str(skill).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"),
-                "color": color,
+                "name": safe_skill,
+                "bg_color": bg_color,
                 "text_color": text_color,
                 "mark": mark
             })
             
+    # Only group required skills (skip nice-to-have)
     add_skills(compare_result.get("matched", []), "#2e7d32", "white", "✓ ")
     add_skills(compare_result.get("partial", []), "#f9a825", "black", "~ ")
     add_skills(compare_result.get("missing", []), "#c62828", "white", "✗ ")
     
-    lines = ["digraph G {"]
-    lines.append('    rankdir=TB;')
-    lines.append('    graph [splines=ortho, nodesep=0.5, ranksep=0.8];')
-    lines.append('    node [fontname="Helvetica", shape=plain];')
-    lines.append('    edge [color="#94a3b8", style="solid", penwidth=1.5];')
+    lines = [
+        "digraph G {",
+        "    rankdir=TB;",
+        '    node [fontname="Helvetica", shape=plain];',
+        '    edge [color="grey", style="solid"];',
+        f'    "{safe_role}" [shape=box, style="filled,rounded", fillcolor="darkblue", fontcolor="white", fontsize=18];'
+    ]
     
-    # Top node
-    lines.append(f'    "{safe_role}" [shape=box, style="filled,rounded", fillcolor="#1e3a8a", fontcolor="white", fontsize=18, width=2, height=0.6];')
-    
-    # Build category tables
     for i, (cat, skills) in enumerate(categories.items()):
         if not skills:
             continue
             
         node_id = f"cat_{i}"
         
-        # HTML Table for category
-        html = '<TABLE BORDER="1" COLOR="#cbd5e1" STYLE="ROUNDED" CELLBORDER="0" CELLSPACING="2" CELLPADDING="6" BGCOLOR="white">'
-        html += f'<TR><TD BGCOLOR="#475569"><FONT COLOR="white" POINT-SIZE="14"><B>{cat}</B></FONT></TD></TR>'
+        # Build HTML table
+        html = '<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">'
+        html += f'<TR><TD BGCOLOR="darkgrey"><B><FONT COLOR="white">{cat}</FONT></B></TD></TR>'
         
         for s in skills:
-            html += f'<TR><TD BGCOLOR="{s["color"]}" STYLE="ROUNDED"><FONT COLOR="{s["text_color"]}" POINT-SIZE="13">{s["mark"]}{s["name"]}</FONT></TD></TR>'
+            html += f'<TR><TD BGCOLOR="{s["bg_color"]}"><FONT COLOR="{s["text_color"]}" POINT-SIZE="13">{s["mark"]}{s["name"]}</FONT></TD></TR>'
             
         html += '</TABLE>'
         
@@ -630,7 +656,7 @@ def build_graph(job_role, compare_result):
 # ---------------------------------------------------------------------------
 
 @st.cache_data
-def generate_roadmap(missing_skills, partial_skills, role):
+def generate_roadmap(missing_skills, partial_skills, role, projects):
     """
     Generates a personalized learning roadmap for missing and partial skills.
     Returns a Python dictionary parsed from the model's JSON response.
@@ -644,6 +670,7 @@ def generate_roadmap(missing_skills, partial_skills, role):
 You are an expert career mentor. The user wants to become a "{role}".
 They are completely missing these skills: {', '.join(missing_skills) if missing_skills else 'None'}.
 They have partial exposure to these skills: {', '.join(partial_skills) if partial_skills else 'None'}.
+Their current projects are: {', '.join(projects) if projects else 'None'}.
 
 Return ONLY valid JSON. No markdown formatting blocks like ```json, no explanation, no extra text — just the raw JSON object.
 
@@ -651,25 +678,25 @@ Return this exact shape:
 {{
     "steps": [
         {{
+            "order": 1,
             "skill": "",
-            "priority": "",
-            "why_it_matters": "",
-            "how_to_learn": "",
-            "time_estimate": ""
+            "priority": "High" or "Medium" or "Low",
+            "why_gap": "",
+            "how_to_close": "",
+            "resume_proof": "",
+            "suggested_effort": ""
         }}
     ]
 }}
 
 Rules you MUST follow:
-1. Provide one step for every missing and partial skill provided.
-2. Order the steps from most important to least important for this role.
-3. "priority" must be exactly "High", "Medium", or "Low".
-   - High = skills the job description lists as required or mentions repeatedly.
-   - Medium = useful but secondary.
-   - Low = nice-to-have or already partly shown on the resume.
-4. Every text field ("why_it_matters" and "how_to_learn") must be exactly ONE short sentence.
-5. "time_estimate" should be a short string like "1-2 weeks" or "3 days".
-6. NEVER use markdown.
+1. Merge closely related skills into one step (for example Unit Testing + Jest becomes "Unit Testing with Jest", CI/CD + GitHub Actions becomes one step).
+2. Use 3 to 5 High, 3 to 5 Medium, and the rest Low. Never mark more than 5 steps High.
+3. "order" is the suggested learning order, starting at 1 (fundamentals first).
+4. "why_gap" is one sentence: what this job requires and what the resume does not show. Do not make claims about what the industry "standard" is.
+5. "how_to_close" is one concrete action that reuses one of the candidate's existing projects by name when possible (for example "Containerize your <project> with Docker").
+6. "resume_proof" is one resume bullet they could write after finishing it.
+7. "suggested_effort" is phrased like "about 1-2 weeks to basic proficiency".
 """
     raw_response = _call_llm(prompt)
     
