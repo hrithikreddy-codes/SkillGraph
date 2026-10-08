@@ -47,7 +47,7 @@ _GROQ_MODELS = [
     "allam-2-7b",
 ]
 
-def _call_groq(prompt):
+def _call_groq(prompt, temperature=0.2):
     """Tries Groq models. Returns text if successful, or None if rate limited/failed."""
     keys = _get_api_keys("GROQ_API_KEYS")
     if not keys:
@@ -60,7 +60,7 @@ def _call_groq(prompt):
                 completion = client.chat.completions.create(
                     model=model_name,
                     messages=[{"role": "user", "content": prompt}],
-                    temperature=0.2,
+                    temperature=temperature,
                     max_tokens=2048,
                     timeout=60
                 )
@@ -85,7 +85,7 @@ def _call_groq(prompt):
                 
     return None
 
-def _call_gemini(prompt):
+def _call_gemini(prompt, temperature=0.2):
     """Tries Gemini models. Returns text if successful, or None if rate limited/failed."""
     keys = _get_api_keys("GEMINI_API_KEYS")
     if not keys:
@@ -99,7 +99,7 @@ def _call_gemini(prompt):
                     model_name,
                     generation_config=genai.types.GenerationConfig(
                         max_output_tokens=2048,
-                        temperature=0.2,
+                        temperature=temperature,
                     ),
                 )
                 response = model.generate_content(
@@ -120,7 +120,7 @@ def _call_gemini(prompt):
                 
     return None
 
-def _call_llm(prompt):
+def _call_llm(prompt, temperature=0.2):
     """
     Master function: 
     1. Tries Groq (fastest)
@@ -128,12 +128,12 @@ def _call_llm(prompt):
     3. Returns an error message if all fail.
     """
     # 1. Try Groq
-    groq_result = _call_groq(prompt)
+    groq_result = _call_groq(prompt, temperature=temperature)
     if groq_result:
         return groq_result
         
     # 2. Try Gemini
-    gemini_result = _call_gemini(prompt)
+    gemini_result = _call_gemini(prompt, temperature=temperature)
     if gemini_result:
         return gemini_result
         
@@ -247,7 +247,7 @@ def normalize(skill):
 import json
 import streamlit as st
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def extract_resume_skills(text):
     """
     Sends resume text to the LLM and asks for a JSON object with:
@@ -311,7 +311,7 @@ Rules you MUST follow:
         return default_dict
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def extract_job_skills(text):
     """
     Sends job description text to the LLM and asks for a JSON object with:
@@ -671,8 +671,15 @@ def build_graph(job_role, compare_result):
 # FUNCTION — Generate Learning Roadmap
 # ---------------------------------------------------------------------------
 
-@st.cache_data
-def generate_roadmap(missing_skills, partial_skills, role, projects, job_text):
+def clean_bullet(bullet, skill):
+    bullet_lower = bullet.lower()
+    banned_words = ["ensuring", "ensure", "improving", "enhance", "reliability", "availability", "optimal", "production", "scalable", "robust"]
+    if any(char.isdigit() for char in bullet) or "%" in bullet or any(w in bullet_lower for w in banned_words):
+        return f"Added {skill} to one of my projects [describe what you actually did]"
+    return bullet
+
+@st.cache_data(show_spinner=False)
+def generate_roadmap(missing_skills, partial_skills, role, projects, job_text, evidence, gaps):
     """
     Generates a personalized learning roadmap for missing and partial skills.
     Returns a Python dictionary parsed from the model's JSON response.
@@ -690,6 +697,8 @@ The job description is:
 They are completely missing these skills: {', '.join(missing_skills) if missing_skills else 'None'}.
 They have partial exposure to these skills: {', '.join(partial_skills) if partial_skills else 'None'}.
 Their current projects are: {', '.join(projects) if projects else 'None'}.
+Evidence found: {json.dumps(evidence) if evidence else 'None'}
+Gaps identified: {json.dumps(gaps) if gaps else 'None'}.
 
 Return ONLY valid JSON. No markdown formatting blocks like ```json, no explanation, no extra text — just the raw JSON object.
 
@@ -705,7 +714,8 @@ Return this exact shape:
             "apply": "",
             "prove": "",
             "example_bullet": "",
-            "suggested_effort": ""
+            "suggested_effort": "",
+            "do_after": ""
         }}
     ],
     "optional": [
@@ -720,18 +730,20 @@ Rules you MUST follow:
 1. Merge closely related skills into one step (for example Unit Testing + Jest becomes "Unit Testing with Jest", CI/CD + GitHub Actions becomes one step).
 2. Use 3 to 5 High, 3 to 5 Medium, and the rest Low. Never mark more than 5 steps High.
 3. "order" is the suggested learning order, starting at 1 (fundamentals first).
-4. "why_gap" is one sentence: what this job requires and what the resume does not show. Do not make claims about what the industry "standard" is.
+4. "why_gap" must be built only from the job requirement plus the evidence and gaps provided. Do not say things like "only partial exposure". For partial skills, state what related skills were found and what direct experience was not shown. If no evidence is provided for a skill, say "not demonstrated in the resume". Do not make claims about what the industry "standard" is.
 5. "learn" is what to study, "apply" is a concrete change to one of the candidate's existing projects (by name), "prove" is what real evidence should exist afterwards (for example "a repo with tests that run on every push").
-6. "example_bullet" is one resume bullet they could write after finishing it.
-7. The example bullet must describe ONLY the work done. It must contain no numbers, percentages, time savings, user counts or results of any kind.
-8. If a metric would normally help, end the bullet with a bracket like "[add your real result here if you have one]".
-9. Never claim an outcome the candidate has not achieved.
-10. "suggested_effort" must be phrased like "Estimated effort for foundational experience: 1-2 weeks".
-11. If a skill is "partial", recommend fundamentals first. Never use "Advanced" in a step name unless the job description itself asks for advanced level.
-12. Steps are only for skills in the missing or partial lists. Anything else useful (for example performance monitoring) goes in "optional" with a one-line reason, maximum 2 items.
-13. Decide priority using (a) skills listed under requirements or mentioned several times in the job description rank higher, (b) skills the job only prefers rank lower, (c) a partial skill that the job clearly centers on can outrank a missing minor skill such as Agile/Scrum, (d) foundational skills that others depend on (for example unit testing before CI/CD) get an earlier "order".
+6. "apply" and "learn" must only reference projects from the provided projects list, exactly as named.
+7. Scope each step to what the job requires (for example "deploy one existing application to AWS EC2", not "learn AWS").
+8. "example_bullet" describes only the work to be done, in plain past tense, with NO numbers, percentages, performance claims, reliability or availability claims, or business impact (for example never write "ensuring high availability", "improving code quality", "reducing errors").
+9. For methodologies like Agile/Scrum the bullet must say it was applied to a personal or academic project, never a professional team.
+10. If a metric would normally help, end the bullet with a bracket like "[add your real result here if you have one]".
+11. Never claim an outcome the candidate has not achieved.
+12. "suggested_effort" must be phrased like "Estimated effort for foundational experience: 1-2 weeks".
+13. If a skill is "partial", recommend fundamentals first. Never use "Advanced" in a step name unless the job description itself asks for advanced level.
+14. Steps are only for skills in the missing or partial lists. Anything else useful (for example performance monitoring) goes in "optional" with a one-line reason, maximum 2 items.
+15. Decide priority using (a) skills listed under requirements or mentioned several times in the job description rank higher, (b) skills the job only prefers rank lower, (c) a partial skill that the job clearly centers on can outrank a missing minor skill such as Agile/Scrum, (d) foundational skills that others depend on (for example unit testing before CI/CD) get an earlier "order".
 """
-    raw_response = _call_llm(prompt)
+    raw_response = _call_llm(prompt, temperature=0.2)
     
     if not raw_response or "⏱️" in raw_response:
         return default_dict
@@ -746,7 +758,10 @@ Rules you MUST follow:
         if cleaned.endswith("```"):
             cleaned = cleaned[:-3]
         
-        return json.loads(cleaned.strip())
+        parsed = json.loads(cleaned.strip())
+        for step in parsed.get("steps", []):
+            step["example_bullet"] = clean_bullet(step.get("example_bullet", ""), step.get("skill", ""))
+        return parsed
     except Exception:
         # Return fallback dictionary if JSON parsing crashes
         return default_dict
@@ -755,7 +770,7 @@ Rules you MUST follow:
 # FUNCTION — Verify Missing Skills
 # ---------------------------------------------------------------------------
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def verify_missing_skills(resume_text, missing_skills):
     """
     Double-checks if the "missing" skills are actually hidden somewhere in the resume.
@@ -822,7 +837,7 @@ Rules you MUST follow:
 # FUNCTION — Find Evidence
 # ---------------------------------------------------------------------------
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def find_evidence(resume_text, matched_skills):
     """
     Finds exact phrase evidence in the resume for matched skills.
@@ -905,3 +920,140 @@ def score_breakdown(compare_result):
         "missing_count": missing_count,
         "match_percent": match_percent
     }
+
+def build_html_report(job_role, compare_result, score, roadmap):
+    """
+    Builds a standalone HTML report.
+    """
+    html = []
+    html.append("<!DOCTYPE html>")
+    html.append("<html>")
+    html.append("<head>")
+    html.append('<meta charset="UTF-8">')
+    html.append(f"<title>Career Analysis: {job_role}</title>")
+    html.append("""
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.6; }
+        h1, h2, h3, h4 { color: #2c3e50; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 0.9em; margin-bottom: 8px; }
+        .badge.matched { background-color: #2e7d32; }
+        .badge.partial { background-color: #f9a825; color: black; }
+        .badge.missing { background-color: #c62828; }
+        .skill-card { border: 1px solid #eee; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .roadmap-step { background: #f8f9fa; border-left: 4px solid #2196f3; padding: 15px; margin-bottom: 20px; }
+        .roadmap-optional { background: #f8f9fa; padding: 15px; border-radius: 8px; }
+        .detail-label { font-weight: bold; color: #555; }
+    </style>
+    """)
+    html.append("</head>")
+    html.append("<body>")
+    
+    html.append(f"<h1>Career Analysis: {job_role}</h1>")
+    
+    match_percent = score.get('match_percent', 0)
+    matched_count = score.get('matched_count', 0)
+    partial_count = score.get('partial_count', 0)
+    total_req = score.get('total_required', 0)
+    
+    html.append(f"<h2>Core skill match: {match_percent}%</h2>")
+    html.append(f"<p>{matched_count} fully matched + {partial_count} partial out of {total_req} required skills</p>")
+    html.append("<hr>")
+    
+    evidence = compare_result.get("evidence", {})
+    reasons = compare_result.get("reasons", {})
+    gaps = compare_result.get("gaps", {})
+    matched_skills = compare_result.get("matched", [])
+    partial_skills = compare_result.get("partial", [])
+    missing_skills = compare_result.get("missing", [])
+    
+    # Matched Skills
+    html.append("<h3>✅ Matched Skills</h3>")
+    if matched_skills:
+        for skill in matched_skills:
+            html.append('<div class="skill-card">')
+            html.append(f'<div class="badge matched">{skill}</div>')
+            ev = evidence.get(skill, "")
+            if ev:
+                html.append(f'<div><span class="detail-label">Evidence:</span> "{ev}"</div>')
+            html.append('</div>')
+    else:
+        html.append("<p>None</p>")
+        
+    # Partial Skills
+    html.append("<h3>⚠️ Partial Skills</h3>")
+    if partial_skills:
+        for skill in partial_skills:
+            html.append('<div class="skill-card">')
+            html.append(f'<div class="badge partial">{skill}</div>')
+            ev = evidence.get(skill, "")
+            if ev:
+                html.append(f'<div><span class="detail-label">Evidence:</span> "{ev}"</div>')
+            rs = reasons.get(skill, "")
+            if rs:
+                html.append(f'<div><span class="detail-label">Why partial:</span> {rs}</div>')
+            gp = gaps.get(skill, "")
+            if gp:
+                html.append(f'<div><span class="detail-label">What\'s missing:</span> {gp}</div>')
+            html.append('</div>')
+    else:
+        html.append("<p>None</p>")
+        
+    # Missing Skills
+    html.append("<h3>❌ Not Demonstrated Skills</h3>")
+    if missing_skills:
+        for skill in missing_skills:
+            html.append('<div class="skill-card">')
+            html.append(f'<div class="badge missing">{skill}</div>')
+            rs = reasons.get(skill, "")
+            if rs:
+                html.append(f'<div><span class="detail-label">Reason:</span> {rs}</div>')
+            html.append('</div>')
+    else:
+        html.append("<p>None</p>")
+        
+    # Roadmap
+    html.append("<hr>")
+    html.append("<h2>🚀 Your Roadmap</h2>")
+    
+    if not missing_skills and not partial_skills:
+        html.append("<p>You already have all required skills!</p>")
+    else:
+        groups = {"High": [], "Medium": [], "Low": []}
+        for step in roadmap.get("steps", []):
+            pri = step.get("priority", "Medium")
+            if pri not in groups:
+                pri = "Medium"
+            groups[pri].append(step)
+            
+        for pri_label, pri_key in [("High priority", "High"), ("Medium priority", "Medium"), ("Lower priority", "Low")]:
+            if groups[pri_key]:
+                sorted_steps = sorted(groups[pri_key], key=lambda x: x.get("order", 999))
+                html.append(f"<h3>{pri_label}</h3>")
+                for step in sorted_steps:
+                    html.append('<div class="roadmap-step">')
+                    eff = step.get("suggested_effort", "")
+                    title_eff = f" ({eff})" if eff else ""
+                    html.append(f"<h4>{step.get('order', '?')}. {step.get('skill', '')}{title_eff}</h4>")
+                    
+                    do_after = step.get("do_after", "")
+                    if do_after:
+                        html.append(f'<div><span class="detail-label">Do this after:</span> {do_after}</div>')
+                    
+                    html.append(f'<div><span class="detail-label">Why this is a gap:</span> {step.get("why_gap", "")}</div>')
+                    html.append(f'<div><span class="detail-label">Learn:</span> {step.get("learn", "")}</div>')
+                    html.append(f'<div><span class="detail-label">Apply:</span> {step.get("apply", "")}</div>')
+                    html.append(f'<div><span class="detail-label">What proves it:</span> {step.get("prove", "")}</div>')
+                    html.append(f'<div><span class="detail-label">Example resume bullet:</span> {step.get("example_bullet", "")}</div>')
+                    html.append('</div>')
+                    
+        optional_items = roadmap.get("optional", [])
+        if optional_items:
+            html.append("<h3>✨ Optional improvements</h3>")
+            html.append('<div class="roadmap-optional"><ul>')
+            for item in optional_items:
+                html.append(f"<li><strong>{item.get('skill', '')}</strong>: {item.get('reason', '')}</li>")
+            html.append('</ul></div>')
+            
+    html.append("</body>")
+    html.append("</html>")
+    return "\n".join(html)

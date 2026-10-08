@@ -51,6 +51,7 @@ def main():
     )
 
     st.title("📄 AI Resume & Job-Readiness Analyzer")
+    st.markdown("<style>[data-testid='stHeaderActionElements'] {display: none;}</style>", unsafe_allow_html=True)
     st.write(
         "Paste your resume and a job description to see how well you match."
     )
@@ -58,7 +59,7 @@ def main():
     # --- Text areas ---
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("1️⃣  Your Resume")
+        st.subheader("1️⃣  Your Resume", anchor=False)
         tab1, tab2 = st.tabs(["Paste text", "Upload file"])
         with tab1:
             resume_text_area = st.text_area(
@@ -84,7 +85,7 @@ def main():
                         st.text(extracted_text[:500] + ("..." if len(extracted_text) > 500 else ""))
 
     with col2:
-        st.subheader("2️⃣  Job Description")
+        st.subheader("2️⃣  Job Description", anchor=False)
         job_tab, = st.tabs(["Paste text"])
         with job_tab:
             job_description_area = st.text_area(
@@ -95,7 +96,7 @@ def main():
             )
 
     # --- Analyze button ---
-    st.subheader("3️⃣  Run the analysis")
+    st.subheader("3️⃣  Run the analysis", anchor=False)
     analyze_button = st.button("🚀 Analyze", use_container_width=True)
 
     if analyze_button:
@@ -108,7 +109,7 @@ def main():
                 st.warning("⚠️ Please provide both a resume and a job description.")
                 return
                 
-            with st.spinner("🤖 Analyzing skills..."):
+            with st.spinner("Analyzing your resume against the job..."):
                 from analyzer import extract_resume_skills, extract_job_skills, compare, build_graph
                 resume_data = extract_resume_skills(final_resume_text)
                 job_data = extract_job_skills(job_description_area)
@@ -119,7 +120,7 @@ def main():
                 match_results["match_percent"] = scores["match_percent"]
                 
                 st.markdown("---")
-                st.subheader("📋 Match Results")
+                st.subheader("📋 Match Results", anchor=False)
                 st.metric("Match Percentage", f"{scores['match_percent']}%")
                 st.caption("Score = (matched + half of partial) / required skills")
                 
@@ -150,7 +151,7 @@ def main():
                         missing_list = [s for s in sorted(verified_skills) if s not in match_results.get("matched", []) and s not in match_results.get("partial", [])]
                         
                         if matched_list:
-                            st.markdown("#### Matched")
+                            st.subheader("Matched", anchor=False)
                             for skill in matched_list:
                                 conf = match_results.get("confidence", {}).get(skill, "")
                                 conf_text = " (inferred)" if conf.lower() == "low" else ""
@@ -159,7 +160,7 @@ def main():
                                 st.write(f"**{skill}**{conf_text}: {desc}")
                                 
                         if partial_list:
-                            st.markdown("#### Partial")
+                            st.subheader("Partial", anchor=False)
                             for skill in partial_list:
                                 conf = match_results.get("confidence", {}).get(skill, "")
                                 conf_text = " (inferred)" if conf.lower() == "low" else ""
@@ -179,7 +180,7 @@ def main():
                                 st.write(f"**{skill}**{conf_text}: {desc}")
                                 
                         if missing_list:
-                            st.markdown("#### Not demonstrated yet")
+                            st.subheader("Not demonstrated yet", anchor=False)
                             for skill in missing_list:
                                 conf = match_results.get("confidence", {}).get(skill, "")
                                 conf_text = " (inferred)" if conf.lower() == "low" else ""
@@ -190,7 +191,7 @@ def main():
                 
                 # Graph
                 st.markdown("---")
-                st.subheader("Your Skill Graph")
+                st.subheader("Your Skill Graph", anchor=False)
                 job_role = job_data.get("role", "Job Role")
                 dot_string = build_graph(job_role, match_results)
                 
@@ -206,17 +207,17 @@ def main():
                 
                 # Next Steps / Roadmap
                 st.markdown("---")
-                st.subheader("🚀 Your Next Steps")
+                st.subheader("🚀 Your Next Steps", anchor=False)
                 missing_skills = match_results.get("missing", [])
                 partial_skills = match_results.get("partial", [])
+                
+                from analyzer import generate_roadmap, build_html_report
+                roadmap = generate_roadmap(missing_skills, partial_skills, job_role, resume_data.get("projects", []), job_description_area, match_results.get("evidence", {}), match_results.get("gaps", {}))
                 
                 if not missing_skills and not partial_skills:
                     st.balloons()
                     st.success("🎉 Incredible! Your resume already covers every required skill for this role.")
                 else:
-                    from analyzer import generate_roadmap
-                    roadmap = generate_roadmap(missing_skills, partial_skills, job_role, resume_data.get("projects", []), job_description_area)
-                    
                     groups = {"High": [], "Medium": [], "Low": []}
                     for step in roadmap.get("steps", []):
                         pri = step.get("priority", "Medium")
@@ -235,11 +236,13 @@ def main():
                                 
                                 exp_title = f"{order_val}. {skill_name} ({eff})" if eff else f"{order_val}. {skill_name}"
                                 with st.expander(exp_title):
+                                    if step.get("do_after"):
+                                        st.markdown(f"**Do this after:** {step.get('do_after')}")
                                     st.markdown(f"**Why this is a gap:** {step.get('why_gap', '')}")
                                     st.markdown(f"**Learn:** {step.get('learn', '')}")
                                     st.markdown(f"**Apply:** {step.get('apply', '')}")
                                     st.markdown(f"**Prove it:** {step.get('prove', '')}")
-                                    st.markdown(f"**Example resume bullet (add real results only if they are true):** {step.get('example_bullet', '')}")
+                                    st.markdown(f"**Example resume bullet (write this only after you complete the step):** {step.get('example_bullet', '')}")
                                     
                     optional_items = roadmap.get("optional", [])
                     if optional_items:
@@ -264,11 +267,21 @@ def main():
                 else:
                     for step in roadmap.get("steps", []):
                         report += f"\n#### {step.get('order', '?')}. {step.get('skill', '')} ({step.get('priority', 'Medium')} Priority)\n"
-                        report += f"- **Why:** {step.get('why_gap', '')}\n"
-                        report += f"- **How:** {step.get('how_to_close', '')}\n"
-                        report += f"- **Proof:** {step.get('example_bullet', '')}\n"
-                        report += f"- **Time:** {step.get('suggested_effort', '')}\n"
+                        report += f"- **Why this is a gap:** {step.get('why_gap', '')}\n"
+                        report += f"- **Learn:** {step.get('learn', '')}\n"
+                        report += f"- **Apply:** {step.get('apply', '')}\n"
+                        report += f"- **What proves it:** {step.get('prove', '')}\n"
+                        report += f"- **Example resume bullet (write this only after you complete the step):** {step.get('example_bullet', '')}\n"
+                        report += f"- **Estimated effort:** {step.get('suggested_effort', '')}\n"
                         
+                    optional_items = roadmap.get("optional", [])
+                    if optional_items:
+                        report += "\n### ✨ Optional improvements\n"
+                        for item in optional_items:
+                            report += f"- **{item.get('skill', '')}**: {item.get('reason', '')}\n"
+                            
+                html_report = build_html_report(job_role, match_results, scores, roadmap)
+                st.download_button("Download report (HTML)", data=html_report, file_name="skillgraph_report.html", mime="text/html")
                 st.download_button("📥 Download Full Report", report, file_name="skill_report.md", mime="text/markdown")
         except Exception:
             st.error("Something went wrong, please try again")
@@ -280,7 +293,7 @@ def _legacy_ui_code_do_not_call():
     # your keys directly from the .env file in the background.
 
     # --- File upload ---
-    st.subheader("1️⃣  Upload your resume")
+    st.subheader("1️⃣  Upload your resume", anchor=False)
     uploaded_file = st.file_uploader(
         "Choose a PDF or TXT file",
         type=["pdf", "txt"],
@@ -288,7 +301,7 @@ def _legacy_ui_code_do_not_call():
     )
 
     # --- Optional job description ---
-    st.subheader("2️⃣  Paste a job description (optional)")
+    st.subheader("2️⃣  Paste a job description (optional)", anchor=False)
     job_description = st.text_area(
         "Paste the full job posting here for a match analysis",
         height=150,
@@ -296,7 +309,7 @@ def _legacy_ui_code_do_not_call():
     )
 
     # --- Analyze button ---
-    st.subheader("3️⃣  Run the analysis")
+    st.subheader("3️⃣  Run the analysis", anchor=False)
     analyze_button = st.button("🚀 Analyze My Resume", use_container_width=True)
 
     # --- When the button is clicked ---
@@ -331,7 +344,7 @@ def _legacy_ui_code_do_not_call():
 
         # --- Display results ---
         st.markdown("---")
-        st.subheader("📋 Analysis Results")
+        st.subheader("📋 Analysis Results", anchor=False)
         st.markdown(result)
 
         # --- Download button for the report ---
