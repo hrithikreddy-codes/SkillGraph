@@ -122,7 +122,7 @@ def main():
                 st.markdown("---")
                 st.subheader("📋 Match Results", anchor=False)
                 st.metric("Match Percentage", f"{scores['match_percent']}%")
-                st.caption("Score = (matched + half of partial) / required skills")
+                st.caption("Core skill match: matched + half of partial, out of required skills")
                 
                 m1, m2, m3, m4 = st.columns(4)
                 m1.metric("Required skills", scores["total_required"])
@@ -131,17 +131,22 @@ def main():
                 m4.metric("Missing", scores["missing_count"])
                 
                 # Skill lists
+                st.success(f"**Matched Skills:** {', '.join(match_results['matched']) if match_results['matched'] else 'None'}")
+                
+                st.markdown("**Required gaps (affect your score)**")
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.success(f"**Matched Skills:** {', '.join(match_results['matched']) if match_results['matched'] else 'None'}")
                     if match_results.get('partial'):
                         st.warning(f"**Partial Match:** {', '.join(match_results['partial'])}")
-                    if match_results.get('bonus_matched'):
-                        st.info(f"**Bonus Matched:** {', '.join(match_results['bonus_matched'])}")
                 with col2:
-                    st.error(f"**Not demonstrated yet:** {', '.join(match_results['missing']) if match_results['missing'] else 'None'}")
-                    if match_results.get('bonus_missing'):
-                        st.warning(f"**Bonus Missing:** {', '.join(match_results['bonus_missing'])}")
+                    st.error(f"**Missing:** {', '.join(match_results['missing']) if match_results['missing'] else 'None'}")
+                    
+                if match_results.get('bonus_matched') or match_results.get('bonus_missing'):
+                    with st.expander("Preferred by the job (does not affect your score)"):
+                        if match_results.get('bonus_matched'):
+                            st.info(f"**Bonus Matched:** {', '.join(match_results['bonus_matched'])}")
+                        if match_results.get('bonus_missing'):
+                            st.warning(f"**Bonus Missing:** {', '.join(match_results['bonus_missing'])}")
                         
                 verified_skills = set(match_results.get("evidence", {}).keys()) | set(match_results.get("reasons", {}).keys())
                 if verified_skills:
@@ -247,7 +252,7 @@ def main():
                     optional_items = roadmap.get("optional", [])
                     if optional_items:
                         st.markdown("---")
-                        st.markdown("**Optional improvements**")
+                        st.markdown("**Extra suggestions (not in the job description)**")
                         for item in optional_items:
                             st.markdown(f"- **{item.get('skill', '')}**: {item.get('reason', '')}")
                                     
@@ -276,7 +281,7 @@ def main():
                         
                     optional_items = roadmap.get("optional", [])
                     if optional_items:
-                        report += "\n### ✨ Optional improvements\n"
+                        report += "\n### ✨ Extra suggestions (not in the job description)\n"
                         for item in optional_items:
                             report += f"- **{item.get('skill', '')}**: {item.get('reason', '')}\n"
                             

@@ -340,6 +340,7 @@ Rules you MUST follow:
 3. "nice_to_have_skills" — short skill names only. These are bonus, preferred, or "nice to have" skills.
 4. "alternatives" — a list of lists, where each inner list holds skills of which any ONE satisfies the job (for example "AWS, Azure or GCP" gives [["AWS", "Azure", "GCP"]]).
 5. Skills in an alternatives group must NOT also appear in required_skills.
+6. If the job description describes a practice and a tool as one requirement (for example "unit and integration tests using Jest" or "CI/CD pipelines using GitHub Actions"), list it as ONE required skill with a combined name like "Unit & Integration Testing with Jest" or "CI/CD with GitHub Actions", not as separate skills. Only list them separately if the job description lists them in separate places.
 
 --- JOB DESCRIPTION TEXT ---
 {text}
@@ -601,6 +602,14 @@ def categorize(skill):
     if not skill:
         return "Other"
         
+    skill_lower = skill.lower()
+    if "testing" in skill_lower or "jest" in skill_lower:
+        return "Testing"
+    if "ci/cd" in skill_lower or "docker" in skill_lower or "aws" in skill_lower:
+        return "DevOps & Cloud"
+    if "agile" in skill_lower or "scrum" in skill_lower:
+        return "Tools & Process"
+        
     if " / " in skill:
         first_skill = skill.split(" / ")[0].strip()
         return SKILL_CATEGORIES.get(first_skill, "Other")
@@ -671,12 +680,29 @@ def build_graph(job_role, compare_result):
 # FUNCTION — Generate Learning Roadmap
 # ---------------------------------------------------------------------------
 
-def clean_bullet(bullet, skill):
-    bullet_lower = bullet.lower()
-    banned_words = ["ensuring", "ensure", "improving", "enhance", "reliability", "availability", "optimal", "production", "scalable", "robust"]
-    if any(char.isdigit() for char in bullet) or "%" in bullet or any(w in bullet_lower for w in banned_words):
-        return f"Added {skill} to one of my projects [describe what you actually did]"
-    return bullet
+@st.cache_data(show_spinner=False)
+def _rewrite_bullet(bullet, apply_text):
+    prompt = f"Rewrite this resume bullet so it only describes the work done on <project>, using the planned steps below. Do not include any numbers, percentages, outcomes, performance, reliability, scalability or business-impact claims. Planned steps: {apply_text}. Bullet: {bullet}"
+    response = _call_llm(prompt)
+    if response and "⏱️" not in response:
+        return response.strip()
+    return ""
+
+def clean_bullet(bullet, skill, apply_text):
+    def fails_check(b):
+        if not b: return False
+        b_lower = b.lower()
+        banned_words = ["ensuring", "ensure", "improving", "enhance", "reliability", "availability", "optimal", "production", "scalable", "robust"]
+        return any(char.isdigit() for char in b) or "%" in b or any(w in b_lower for w in banned_words)
+
+    if not fails_check(bullet):
+        return bullet
+        
+    rewritten = _rewrite_bullet(bullet, apply_text)
+    if rewritten and not fails_check(rewritten):
+        return rewritten
+        
+    return f"Added {skill} to <project> [describe what you actually did]"
 
 @st.cache_data(show_spinner=False)
 def generate_roadmap(missing_skills, partial_skills, role, projects, job_text, evidence, gaps):
@@ -735,13 +761,17 @@ Rules you MUST follow:
 6. "apply" and "learn" must only reference projects from the provided projects list, exactly as named.
 7. Scope each step to what the job requires (for example "deploy one existing application to AWS EC2", not "learn AWS").
 8. "example_bullet" describes only the work to be done, in plain past tense, with NO numbers, percentages, performance claims, reliability or availability claims, or business impact (for example never write "ensuring high availability", "improving code quality", "reducing errors").
-9. For methodologies like Agile/Scrum the bullet must say it was applied to a personal or academic project, never a professional team.
+9. For methodologies like Agile/Scrum, "prove" is "a board and sprint notes for a personal project" and the example bullet must say "applied Agile practices to a personal project", never professional Scrum experience.
 10. If a metric would normally help, end the bullet with a bracket like "[add your real result here if you have one]".
 11. Never claim an outcome the candidate has not achieved.
 12. "suggested_effort" must be phrased like "Estimated effort for foundational experience: 1-2 weeks".
 13. If a skill is "partial", recommend fundamentals first. Never use "Advanced" in a step name unless the job description itself asks for advanced level.
 14. Steps are only for skills in the missing or partial lists. Anything else useful (for example performance monitoring) goes in "optional" with a one-line reason, maximum 2 items.
 15. Decide priority using (a) skills listed under requirements or mentioned several times in the job description rank higher, (b) skills the job only prefers rank lower, (c) a partial skill that the job clearly centers on can outrank a missing minor skill such as Agile/Scrum, (d) foundational skills that others depend on (for example unit testing before CI/CD) get an earlier "order".
+16. Choose ONE simple route per skill and do not list several tools or architectures. For AWS, recommend deploying one existing application to a single EC2 instance, and mention only EC2, security groups, SSH and basic IAM unless the job description names other services.
+17. If a skill name contains " / " (the job accepts any one option), recommend exactly one option and say why it is a good choice.
+18. "prove" must describe the outcome, not the folder structure. For example "a working Jest test suite covering the main parts of the application", not "a tests directory". Do not require specific file paths.
+19. For partial skills, do not start from scratch: build on the related evidence the candidate already has.
 """
     raw_response = _call_llm(prompt, temperature=0.2)
     
@@ -760,7 +790,7 @@ Rules you MUST follow:
         
         parsed = json.loads(cleaned.strip())
         for step in parsed.get("steps", []):
-            step["example_bullet"] = clean_bullet(step.get("example_bullet", ""), step.get("skill", ""))
+            step["example_bullet"] = clean_bullet(step.get("example_bullet", ""), step.get("skill", ""), step.get("apply", ""))
         return parsed
     except Exception:
         # Return fallback dictionary if JSON parsing crashes
@@ -802,12 +832,15 @@ Return this exact shape:
 
 Rules you MUST follow:
 1. Look for evidence anywhere in the resume: skills section, projects, experience, certifications.
-2. If the resume shows a closely related technology (for example MySQL for PostgreSQL, or JavaScript for TypeScript), mark "partial" and name the related technology in "reason". For "partial", "evidence" should list the related skills found.
+2. If the resume shows a closely related technology (for example MySQL for PostgreSQL, or JavaScript for TypeScript), mark "partial". For partial skills, the reason must name exactly which related evidence was found and which direct evidence was not found, using the pattern: "Found: <related items>. Not found: <direct evidence>." For "partial", "evidence" should list the related skills found.
 3. Statements like "interested in", "learning", "planning to", "no experience with" never count as matched. Mark those "missing".
 4. For "missing", "reason" is one short sentence saying what is not demonstrated (use "not demonstrated", not "doesn't know").
 5. If a skill name contains " / ", it means any ONE of those options satisfies the requirement.
 6. Use "low" confidence when you are inferring rather than reading it directly.
 7. "what_is_missing": for "partial" it is one short sentence naming what the resume lacks (for example "No direct TypeScript typing, interfaces or generics shown"). For "matched" and "missing" it is an empty string.
+8. For methodologies (Agile/Scrum): mark "matched" only if the resume shows real ceremonies or roles (sprint planning, standups, retrospectives, Scrum master, sprints). Code reviews, task boards or iterative work alone are "partial", and the reason must say "related engineering practice found, but Scrum practices were not shown".
+9. Generic frontend skills (HTML, CSS, React) alone do not prove Responsive Web Design or State Management; they give "partial" only, with the pattern above.
+10. If a skill name combines a practice and a tool (for example "Unit & Integration Testing with Jest"), mark it "matched" only if both parts are shown and "partial" if only one is shown.
 
 --- RESUME TEXT ---
 {resume_text}
