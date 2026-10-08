@@ -165,6 +165,7 @@ def normalize(skill):
     aliases = {
         "rest api": "REST APIs",
         "rest apis": "REST APIs",
+        "restful api": "REST APIs",
         "css": "CSS",
         "css3": "CSS",
         "html": "HTML",
@@ -194,6 +195,7 @@ def normalize(skill):
         "ci/cd": "CI/CD",
         "cicd": "CI/CD",
         "aws": "AWS",
+        "aws ec2": "AWS",
         "amazon web services": "AWS",
         "javascript": "JavaScript",
         "js": "JavaScript",
@@ -408,6 +410,7 @@ def compare(resume_text, resume, job):
     evidence = {}
     reasons = {}
     confidence = {}
+    gaps = {}
     
     # 3. Verify missing skills via LLM
     if missing:
@@ -418,6 +421,7 @@ def compare(resume_text, resume, job):
             ev = result.get("evidence", "")
             reason = result.get("reason", "")
             conf = result.get("confidence", "")
+            what = result.get("what_is_missing", "")
             
             if not skill or skill not in missing:
                 continue
@@ -428,6 +432,8 @@ def compare(resume_text, resume, job):
                 reasons[skill] = reason
             if conf:
                 confidence[skill] = conf
+            if what:
+                gaps[skill] = what
                 
             if status == "matched":
                 missing.remove(skill)
@@ -442,6 +448,15 @@ def compare(resume_text, resume, job):
     if total_req > 0:
         match_percent = int((len(matched) + 0.5 * len(partial)) / total_req * 100)
         
+    # 5. Find evidence for matched skills
+    if matched:
+        found = find_evidence(resume_text, matched)
+        for res in found.get("results", []):
+            sk = res.get("skill")
+            ev = res.get("evidence", "")
+            if sk and ev and sk not in evidence:
+                evidence[sk] = ev
+                
     return {
         "matched": matched,
         "partial": partial,
@@ -451,6 +466,7 @@ def compare(resume_text, resume, job):
         "evidence": evidence,
         "reasons": reasons,
         "confidence": confidence,
+        "gaps": gaps,
         "match_percent": match_percent
     }
 
@@ -656,18 +672,21 @@ def build_graph(job_role, compare_result):
 # ---------------------------------------------------------------------------
 
 @st.cache_data
-def generate_roadmap(missing_skills, partial_skills, role, projects):
+def generate_roadmap(missing_skills, partial_skills, role, projects, job_text):
     """
     Generates a personalized learning roadmap for missing and partial skills.
     Returns a Python dictionary parsed from the model's JSON response.
     """
-    default_dict = {"steps": []}
+    default_dict = {"steps": [], "optional": []}
     
     if not missing_skills and not partial_skills:
         return default_dict
         
     prompt = f"""
 You are an expert career mentor. The user wants to become a "{role}".
+The job description is:
+{job_text}
+
 They are completely missing these skills: {', '.join(missing_skills) if missing_skills else 'None'}.
 They have partial exposure to these skills: {', '.join(partial_skills) if partial_skills else 'None'}.
 Their current projects are: {', '.join(projects) if projects else 'None'}.
@@ -682,9 +701,17 @@ Return this exact shape:
             "skill": "",
             "priority": "High" or "Medium" or "Low",
             "why_gap": "",
-            "how_to_close": "",
-            "resume_proof": "",
+            "learn": "",
+            "apply": "",
+            "prove": "",
+            "example_bullet": "",
             "suggested_effort": ""
+        }}
+    ],
+    "optional": [
+        {{
+            "skill": "",
+            "reason": ""
         }}
     ]
 }}
@@ -694,9 +721,15 @@ Rules you MUST follow:
 2. Use 3 to 5 High, 3 to 5 Medium, and the rest Low. Never mark more than 5 steps High.
 3. "order" is the suggested learning order, starting at 1 (fundamentals first).
 4. "why_gap" is one sentence: what this job requires and what the resume does not show. Do not make claims about what the industry "standard" is.
-5. "how_to_close" is one concrete action that reuses one of the candidate's existing projects by name when possible (for example "Containerize your <project> with Docker").
-6. "resume_proof" is one resume bullet they could write after finishing it.
-7. "suggested_effort" is phrased like "about 1-2 weeks to basic proficiency".
+5. "learn" is what to study, "apply" is a concrete change to one of the candidate's existing projects (by name), "prove" is what real evidence should exist afterwards (for example "a repo with tests that run on every push").
+6. "example_bullet" is one resume bullet they could write after finishing it.
+7. The example bullet must describe ONLY the work done. It must contain no numbers, percentages, time savings, user counts or results of any kind.
+8. If a metric would normally help, end the bullet with a bracket like "[add your real result here if you have one]".
+9. Never claim an outcome the candidate has not achieved.
+10. "suggested_effort" must be phrased like "Estimated effort for foundational experience: 1-2 weeks".
+11. If a skill is "partial", recommend fundamentals first. Never use "Advanced" in a step name unless the job description itself asks for advanced level.
+12. Steps are only for skills in the missing or partial lists. Anything else useful (for example performance monitoring) goes in "optional" with a one-line reason, maximum 2 items.
+13. Decide priority using (a) skills listed under requirements or mentioned several times in the job description rank higher, (b) skills the job only prefers rank lower, (c) a partial skill that the job clearly centers on can outrank a missing minor skill such as Agile/Scrum, (d) foundational skills that others depend on (for example unit testing before CI/CD) get an earlier "order".
 """
     raw_response = _call_llm(prompt)
     
@@ -746,18 +779,80 @@ Return this exact shape:
             "status": "matched" or "partial" or "missing",
             "evidence": "",
             "reason": "",
-            "confidence": "high" or "medium" or "low"
+            "confidence": "high" or "medium" or "low",
+            "what_is_missing": ""
         }}
     ]
 }}
 
 Rules you MUST follow:
 1. Look for evidence anywhere in the resume: skills section, projects, experience, certifications.
-2. If the resume shows a closely related technology (for example MySQL for PostgreSQL, or JavaScript for TypeScript), mark "partial" and name the related technology in "reason".
+2. If the resume shows a closely related technology (for example MySQL for PostgreSQL, or JavaScript for TypeScript), mark "partial" and name the related technology in "reason". For "partial", "evidence" should list the related skills found.
 3. Statements like "interested in", "learning", "planning to", "no experience with" never count as matched. Mark those "missing".
 4. For "missing", "reason" is one short sentence saying what is not demonstrated (use "not demonstrated", not "doesn't know").
 5. If a skill name contains " / ", it means any ONE of those options satisfies the requirement.
 6. Use "low" confidence when you are inferring rather than reading it directly.
+7. "what_is_missing": for "partial" it is one short sentence naming what the resume lacks (for example "No direct TypeScript typing, interfaces or generics shown"). For "matched" and "missing" it is an empty string.
+
+--- RESUME TEXT ---
+{resume_text}
+--- END RESUME TEXT ---
+"""
+    raw_response = _call_llm(prompt)
+    
+    if not raw_response or "⏱️" in raw_response:
+        return default_dict
+        
+    try:
+        # Strip markdown fences (e.g., ```json ... ```)
+        cleaned = raw_response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        
+        return json.loads(cleaned.strip())
+    except Exception:
+        # Return fallback dictionary if JSON parsing crashes
+        return default_dict
+
+# ---------------------------------------------------------------------------
+# FUNCTION — Find Evidence
+# ---------------------------------------------------------------------------
+
+@st.cache_data
+def find_evidence(resume_text, matched_skills):
+    """
+    Finds exact phrase evidence in the resume for matched skills.
+    Returns a Python dictionary parsed from the model's JSON response.
+    """
+    default_dict = {"results": []}
+    
+    if not matched_skills:
+        return default_dict
+        
+    prompt = f"""
+You are an expert technical recruiter. Read the resume below and find evidence for these matched skills: {', '.join(matched_skills)}.
+
+Return ONLY valid JSON. No markdown formatting blocks like ```json, no explanation, no extra text — just the raw JSON object.
+
+Return this exact shape:
+{{
+    "results": [
+        {{
+            "skill": "",
+            "evidence": "",
+            "where": "Skills section" or "Project" or "Experience" or "Other"
+        }}
+    ]
+}}
+
+Rules you MUST follow:
+1. "evidence" is a short phrase of at most 12 words copied from the resume that shows the skill.
+2. If there is no evidence, use an empty string.
+3. NEVER invent evidence.
 
 --- RESUME TEXT ---
 {resume_text}

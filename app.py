@@ -145,31 +145,48 @@ def main():
                 verified_skills = set(match_results.get("evidence", {}).keys()) | set(match_results.get("reasons", {}).keys())
                 if verified_skills:
                     with st.expander("Why we classified skills this way"):
-                        for skill in sorted(verified_skills):
-                            if skill in match_results.get("matched", []):
-                                icon = "🟢"
-                            elif skill in match_results.get("partial", []):
-                                icon = "🟡"
-                            else:
-                                icon = "🔴"
+                        matched_list = [s for s in sorted(verified_skills) if s in match_results.get("matched", [])]
+                        partial_list = [s for s in sorted(verified_skills) if s in match_results.get("partial", [])]
+                        missing_list = [s for s in sorted(verified_skills) if s not in match_results.get("matched", []) and s not in match_results.get("partial", [])]
+                        
+                        if matched_list:
+                            st.markdown("#### Matched")
+                            for skill in matched_list:
+                                conf = match_results.get("confidence", {}).get(skill, "")
+                                conf_text = " (inferred)" if conf.lower() == "low" else ""
+                                evidence = match_results.get("evidence", {}).get(skill, "")
+                                desc = f'Evidence: "{evidence}"' if evidence else "No additional details."
+                                st.write(f"**{skill}**{conf_text}: {desc}")
                                 
-                            conf = match_results.get("confidence", {}).get(skill, "")
-                            conf_text = " (inferred)" if conf.lower() == "low" else ""
-                            
-                            evidence = match_results.get("evidence", {}).get(skill, "")
-                            reason = match_results.get("reasons", {}).get(skill, "")
-                            
-                            parts = []
-                            if evidence:
-                                parts.append(f'"{evidence}"')
-                            if reason:
-                                parts.append(reason)
+                        if partial_list:
+                            st.markdown("#### Partial")
+                            for skill in partial_list:
+                                conf = match_results.get("confidence", {}).get(skill, "")
+                                conf_text = " (inferred)" if conf.lower() == "low" else ""
+                                evidence = match_results.get("evidence", {}).get(skill, "")
+                                reason = match_results.get("reasons", {}).get(skill, "")
+                                gap = match_results.get("gaps", {}).get(skill, "")
                                 
-                            desc = " — ".join(parts)
-                            if not desc:
-                                desc = "No additional details."
+                                parts = []
+                                if evidence:
+                                    parts.append(f'Evidence: "{evidence}"')
+                                if reason:
+                                    parts.append(f"Why partial: {reason}")
+                                if gap:
+                                    parts.append(f"What's missing: {gap}")
+                                    
+                                desc = " | ".join(parts) if parts else "No additional details."
+                                st.write(f"**{skill}**{conf_text}: {desc}")
                                 
-                            st.write(f"{icon} **{skill}**{conf_text}: {desc}")
+                        if missing_list:
+                            st.markdown("#### Not demonstrated yet")
+                            for skill in missing_list:
+                                conf = match_results.get("confidence", {}).get(skill, "")
+                                conf_text = " (inferred)" if conf.lower() == "low" else ""
+                                reason = match_results.get("reasons", {}).get(skill, "")
+                                
+                                desc = f"Reason: {reason}" if reason else "No additional details."
+                                st.write(f"**{skill}**{conf_text}: {desc}")
                 
                 # Graph
                 st.markdown("---")
@@ -198,7 +215,7 @@ def main():
                     st.success("🎉 Incredible! Your resume already covers every required skill for this role.")
                 else:
                     from analyzer import generate_roadmap
-                    roadmap = generate_roadmap(missing_skills, partial_skills, job_role, resume_data.get("projects", []))
+                    roadmap = generate_roadmap(missing_skills, partial_skills, job_role, resume_data.get("projects", []), job_description_area)
                     
                     groups = {"High": [], "Medium": [], "Low": []}
                     for step in roadmap.get("steps", []):
@@ -216,10 +233,20 @@ def main():
                                 order_val = step.get("order", "?")
                                 eff = step.get("suggested_effort", "")
                                 
-                                with st.expander(f"{order_val}. {skill_name} (about {eff})"):
+                                exp_title = f"{order_val}. {skill_name} ({eff})" if eff else f"{order_val}. {skill_name}"
+                                with st.expander(exp_title):
                                     st.markdown(f"**Why this is a gap:** {step.get('why_gap', '')}")
-                                    st.markdown(f"**How to close it:** {step.get('how_to_close', '')}")
-                                    st.markdown(f"**Resume proof you can add:** {step.get('resume_proof', '')}")
+                                    st.markdown(f"**Learn:** {step.get('learn', '')}")
+                                    st.markdown(f"**Apply:** {step.get('apply', '')}")
+                                    st.markdown(f"**Prove it:** {step.get('prove', '')}")
+                                    st.markdown(f"**Example resume bullet (add real results only if they are true):** {step.get('example_bullet', '')}")
+                                    
+                    optional_items = roadmap.get("optional", [])
+                    if optional_items:
+                        st.markdown("---")
+                        st.markdown("**Optional improvements**")
+                        for item in optional_items:
+                            st.markdown(f"- **{item.get('skill', '')}**: {item.get('reason', '')}")
                                     
                     st.caption("After you finish a step, add the resume bullet and run the analysis again to watch the gap close.")
                             
@@ -239,7 +266,7 @@ def main():
                         report += f"\n#### {step.get('order', '?')}. {step.get('skill', '')} ({step.get('priority', 'Medium')} Priority)\n"
                         report += f"- **Why:** {step.get('why_gap', '')}\n"
                         report += f"- **How:** {step.get('how_to_close', '')}\n"
-                        report += f"- **Proof:** {step.get('resume_proof', '')}\n"
+                        report += f"- **Proof:** {step.get('example_bullet', '')}\n"
                         report += f"- **Time:** {step.get('suggested_effort', '')}\n"
                         
                 st.download_button("📥 Download Full Report", report, file_name="skill_report.md", mime="text/markdown")
