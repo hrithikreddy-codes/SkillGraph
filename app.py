@@ -53,6 +53,8 @@ def main():
     
     if st.sidebar.button("Clear saved results"):
         st.cache_data.clear()
+        
+    debug_mode = st.sidebar.checkbox("Debug mode")
 
     st.title("📄 AI Resume & Job-Readiness Analyzer")
     st.markdown("<style>[data-testid='stHeaderActionElements'] {display: none;}</style>", unsafe_allow_html=True)
@@ -325,6 +327,29 @@ def main():
                 html_report = build_html_report(job_role, match_results, scores, roadmap)
                 st.download_button("Download report (HTML)", data=html_report, file_name="skillgraph_report.html", mime="text/html")
                 st.download_button("📥 Download Full Report", report, file_name="skill_report.md", mime="text/markdown")
+                
+                if debug_mode:
+                    try:
+                        import json
+                        debug_data = {
+                            "resume_skills": resume_data,
+                            "job_requirements": {
+                                "required_skills": job_data.get("required_skills", []),
+                                "nice_to_have_skills": job_data.get("nice_to_have_skills", []),
+                                "alternatives": job_data.get("alternatives", []),
+                                "soft_skills": job_data.get("soft_skills", []),
+                                "experience_requirements": job_data.get("experience_requirements", [])
+                            },
+                            "compare_before_verification": match_results.get("_debug_pre_verification", {}),
+                            "verification_raw": match_results.get("_debug_raw_verification", {}),
+                            "compare_after_verification": {k: v for k, v in match_results.items() if not str(k).startswith("_debug")},
+                            "score": scores,
+                            "roadmap_steps": roadmap.get("steps", [])
+                        }
+                        with open("debug_last_run.json", "w", encoding="utf-8") as f:
+                            json.dump(debug_data, f, indent=2, default=str)
+                    except Exception as debug_e:
+                        print(f"Debug file error: {debug_e}")
         except Exception as e:
             traceback.print_exc()
             st.error("Something went wrong, please try again")

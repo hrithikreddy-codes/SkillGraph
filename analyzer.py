@@ -512,8 +512,12 @@ def compare(resume_text, resume, job):
     }
     
     # 3. Verify missing skills via LLM
+    import copy
+    _debug_pre_verification = copy.deepcopy(compare_result)
+    _debug_raw_verification = None
     if missing:
         verification = verify_missing_skills(resume_text, missing)
+        _debug_raw_verification = verification
         apply_verification(compare_result, verification)
         
     matched = compare_result.get("matched", [])
@@ -551,7 +555,9 @@ def compare(resume_text, resume, job):
         "confidence": confidence,
         "gaps": gaps,
         "evidence_type": evidence_type,
-        "match_percent": match_percent
+        "match_percent": match_percent,
+        "_debug_pre_verification": _debug_pre_verification,
+        "_debug_raw_verification": _debug_raw_verification
     }
 
 
