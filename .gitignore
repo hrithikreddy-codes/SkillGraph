@@ -2,4 +2,4 @@
 .env
 __pycache__/
 .vscode
-.gemini
+.geminidebug_last_run.json
