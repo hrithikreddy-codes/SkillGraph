@@ -47,7 +47,7 @@ _GROQ_MODELS = [
     "allam-2-7b",
 ]
 
-def _call_groq(prompt, temperature=0.2):
+def _call_groq(prompt, temperature=0.2, seed=None):
     """Tries Groq models. Returns text if successful, or None if rate limited/failed."""
     keys = _get_api_keys("GROQ_API_KEYS")
     if not keys:
@@ -57,13 +57,17 @@ def _call_groq(prompt, temperature=0.2):
         client = Groq(api_key=api_key)
         for model_name in _GROQ_MODELS:
             try:
-                completion = client.chat.completions.create(
-                    model=model_name,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=temperature,
-                    max_tokens=2048,
-                    timeout=60
-                )
+                kwargs = {
+                    "model": model_name,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": temperature,
+                    "max_tokens": 2048,
+                    "timeout": 60
+                }
+                if seed is not None:
+                    kwargs["seed"] = seed
+                
+                completion = client.chat.completions.create(**kwargs)
                 return completion.choices[0].message.content
             except Exception as e:
                 error_msg = str(e).lower()
@@ -85,7 +89,7 @@ def _call_groq(prompt, temperature=0.2):
                 
     return None
 
-def _call_gemini(prompt, temperature=0.2):
+def _call_gemini(prompt, temperature=0.2, seed=None):
     """Tries Gemini models. Returns text if successful, or None if rate limited/failed."""
     keys = _get_api_keys("GEMINI_API_KEYS")
     if not keys:
@@ -95,12 +99,17 @@ def _call_gemini(prompt, temperature=0.2):
         genai.configure(api_key=api_key)
         for model_name in _GEMINI_MODELS:
             try:
+                config_kwargs = {
+                    "max_output_tokens": 2048,
+                    "temperature": temperature,
+                }
+                import inspect
+                if seed is not None and "seed" in inspect.signature(genai.types.GenerationConfig).parameters:
+                    config_kwargs["seed"] = seed
+                    
                 model = genai.GenerativeModel(
                     model_name,
-                    generation_config=genai.types.GenerationConfig(
-                        max_output_tokens=2048,
-                        temperature=temperature,
-                    ),
+                    generation_config=genai.types.GenerationConfig(**config_kwargs),
                 )
                 response = model.generate_content(
                     prompt,
@@ -120,7 +129,7 @@ def _call_gemini(prompt, temperature=0.2):
                 
     return None
 
-def _call_llm(prompt, temperature=0.2):
+def _call_llm(prompt, temperature=0.2, seed=None):
     """
     Master function: 
     1. Tries Groq (fastest)
@@ -128,12 +137,12 @@ def _call_llm(prompt, temperature=0.2):
     3. Returns an error message if all fail.
     """
     # 1. Try Groq
-    groq_result = _call_groq(prompt, temperature=temperature)
+    groq_result = _call_groq(prompt, temperature=temperature, seed=seed)
     if groq_result:
         return groq_result
         
     # 2. Try Gemini
-    gemini_result = _call_gemini(prompt, temperature=temperature)
+    gemini_result = _call_gemini(prompt, temperature=temperature, seed=seed)
     if gemini_result:
         return gemini_result
         
@@ -247,7 +256,7 @@ def normalize(skill):
 import json
 import streamlit as st
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, persist="disk")
 def extract_resume_skills(text):
     """
     Sends resume text to the LLM and asks for a JSON object with:
@@ -287,7 +296,7 @@ Rules you MUST follow:
 {text}
 --- END RESUME TEXT ---
 """
-    raw_response = _call_llm(prompt)
+    raw_response = _call_llm(prompt, temperature=0.0, seed=42)
     
     # Fallback default dictionary
     default_dict = {"skills": [], "experience_years": 0, "education": [], "projects": []}
@@ -305,13 +314,16 @@ Rules you MUST follow:
         if cleaned.endswith("```"):
             cleaned = cleaned[:-3]
         
-        return json.loads(cleaned.strip())
+        parsed = json.loads(cleaned.strip())
+        if "skills" in parsed and isinstance(parsed["skills"], list):
+            parsed["skills"] = sorted(list(set(normalize(s) for s in parsed["skills"] if s)))
+        return parsed
     except Exception:
         # Return fallback dictionary if JSON parsing crashes
         return default_dict
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, persist="disk")
 def extract_job_skills(text):
     """
     Sends job description text to the LLM and asks for a JSON object with:
@@ -331,25 +343,29 @@ Return this exact shape:
     "role": "",
     "required_skills": [],
     "nice_to_have_skills": [],
-    "alternatives": []
+    "alternatives": [],
+    "soft_skills": [],
+    "experience_requirements": []
 }}
 
 Rules you MUST follow:
 1. "role" — the core job title (e.g., "Software Engineer", "Data Scientist").
-2. "required_skills" — short skill names only (e.g., "Python", "React", "AWS"). Never use sentences.
-3. "nice_to_have_skills" — short skill names only. These are bonus, preferred, or "nice to have" skills.
-4. "alternatives" — a list of lists, where each inner list holds skills of which any ONE satisfies the job (for example "AWS, Azure or GCP" gives [["AWS", "Azure", "GCP"]]).
-5. Skills in an alternatives group must NOT also appear in required_skills.
-6. If the job description describes a practice and a tool as one requirement (for example "unit and integration tests using Jest" or "CI/CD pipelines using GitHub Actions"), list it as ONE required skill with a combined name like "Unit & Integration Testing with Jest" or "CI/CD with GitHub Actions", not as separate skills. Only list them separately if the job description lists them in separate places.
+2. "required_skills" and "nice_to_have_skills" may contain ONLY named technologies, tools, languages, engineering practices (like Unit Testing, CI/CD) and methodologies (like Agile/Scrum), each a short name of at most 4 words.
+3. Interpersonal qualities (communication, teamwork, problem-solving) go in "soft_skills".
+4. Sentences or statements like "experience integrating AI/ML models into applications" or "basic understanding of machine learning" go in "experience_requirements", never in required_skills. For "basic understanding of machine learning", ALSO add the plain skill "Machine Learning" to required_skills.
+5. Do not list the same requirement twice under different names.
+6. "alternatives" — a list of lists, where each inner list holds skills of which any ONE satisfies the job (for example "AWS, Azure or GCP" gives [["AWS", "Azure", "GCP"]]).
+7. Skills in an alternatives group must NOT also appear in required_skills.
+8. If the job description describes a practice and a tool as one requirement (for example "unit and integration tests using Jest" or "CI/CD pipelines using GitHub Actions"), list it as ONE required skill with a combined name like "Unit & Integration Testing with Jest" or "CI/CD with GitHub Actions", not as separate skills. Only list them separately if the job description lists them in separate places.
 
 --- JOB DESCRIPTION TEXT ---
 {text}
 --- END JOB DESCRIPTION TEXT ---
 """
-    raw_response = _call_llm(prompt)
+    raw_response = _call_llm(prompt, temperature=0.0, seed=42)
     
     # Fallback default dictionary
-    default_dict = {"role": "", "required_skills": [], "nice_to_have_skills": [], "alternatives": []}
+    default_dict = {"role": "", "required_skills": [], "nice_to_have_skills": [], "alternatives": [], "soft_skills": [], "experience_requirements": []}
     
     if not raw_response or "⏱️" in raw_response:
         return default_dict
@@ -364,7 +380,35 @@ Rules you MUST follow:
         if cleaned.endswith("```"):
             cleaned = cleaned[:-3]
         
-        return json.loads(cleaned.strip())
+        parsed = json.loads(cleaned.strip())
+        
+        import re
+        trigger_pattern = re.compile(r"\b(experience|understanding|ability|skills|knowledge|familiarity)\b", re.IGNORECASE)
+        
+        if "experience_requirements" not in parsed or not isinstance(parsed["experience_requirements"], list):
+            parsed["experience_requirements"] = []
+            
+        for key in ["required_skills", "nice_to_have_skills"]:
+            if key in parsed and isinstance(parsed[key], list):
+                valid_skills = []
+                for s in parsed[key]:
+                    if not s:
+                        continue
+                    if len(s.split()) > 5 or trigger_pattern.search(s):
+                        parsed["experience_requirements"].append(s)
+                    else:
+                        valid_skills.append(s)
+                parsed[key] = sorted(list(set(normalize(s) for s in valid_skills if s)))
+        
+        if "alternatives" in parsed and isinstance(parsed["alternatives"], list):
+            new_alts = []
+            for alt_group in parsed["alternatives"]:
+                if isinstance(alt_group, list):
+                    clean_group = sorted(list(set(normalize(s) for s in alt_group if s)))
+                    if clean_group:
+                        new_alts.append(clean_group)
+            parsed["alternatives"] = new_alts
+        return parsed
     except Exception:
         # Return fallback dictionary if JSON parsing crashes
         return default_dict
@@ -412,6 +456,7 @@ def compare(resume_text, resume, job):
     reasons = {}
     confidence = {}
     gaps = {}
+    evidence_type = {}
     
     # 3. Verify missing skills via LLM
     if missing:
@@ -423,6 +468,7 @@ def compare(resume_text, resume, job):
             reason = result.get("reason", "")
             conf = result.get("confidence", "")
             what = result.get("what_is_missing", "")
+            ev_type = result.get("evidence_type", "")
             
             if not skill or skill not in missing:
                 continue
@@ -435,6 +481,8 @@ def compare(resume_text, resume, job):
                 confidence[skill] = conf
             if what:
                 gaps[skill] = what
+            if ev_type:
+                evidence_type[skill] = ev_type
                 
             if status == "matched":
                 missing.remove(skill)
@@ -468,6 +516,7 @@ def compare(resume_text, resume, job):
         "reasons": reasons,
         "confidence": confidence,
         "gaps": gaps,
+        "evidence_type": evidence_type,
         "match_percent": match_percent
     }
 
@@ -823,6 +872,7 @@ Return this exact shape:
             "skill": "",
             "status": "matched" or "partial" or "missing",
             "evidence": "",
+            "evidence_type": "explicit" or "project" or "inferred",
             "reason": "",
             "confidence": "high" or "medium" or "low",
             "what_is_missing": ""
@@ -841,6 +891,7 @@ Rules you MUST follow:
 8. For methodologies (Agile/Scrum): mark "matched" only if the resume shows real ceremonies or roles (sprint planning, standups, retrospectives, Scrum master, sprints). Code reviews, task boards or iterative work alone are "partial", and the reason must say "related engineering practice found, but Scrum practices were not shown".
 9. Generic frontend skills (HTML, CSS, React) alone do not prove Responsive Web Design or State Management; they give "partial" only, with the pattern above.
 10. If a skill name combines a practice and a tool (for example "Unit & Integration Testing with Jest"), mark it "matched" only if both parts are shown and "partial" if only one is shown.
+11. "evidence_type": "explicit" (the skill is named in the resume), "project" (clearly used in a described project) or "inferred" (only suggested). If the evidence_type is "inferred", the status can be at most "partial", never "matched".
 
 --- RESUME TEXT ---
 {resume_text}
@@ -864,6 +915,62 @@ Rules you MUST follow:
         return json.loads(cleaned.strip())
     except Exception:
         # Return fallback dictionary if JSON parsing crashes
+        return default_dict
+
+# ---------------------------------------------------------------------------
+# FUNCTION — Assess Other Requirements
+# ---------------------------------------------------------------------------
+
+@st.cache_data(show_spinner=False)
+def assess_other_requirements(resume_text, soft_skills, experience_requirements):
+    default_dict = {"results": []}
+    
+    items = soft_skills + experience_requirements
+    if not items:
+        return default_dict
+        
+    prompt = f"""
+You are an expert technical recruiter. Check if the resume below shows evidence for these requirements: {', '.join(items)}.
+
+Return ONLY valid JSON. No markdown formatting blocks like ```json, no explanation, no extra text — just the raw JSON object.
+
+Return this exact shape:
+{{
+    "results": [
+        {{
+            "item": "",
+            "status": "supported" or "not shown",
+            "evidence": ""
+        }}
+    ]
+}}
+
+Rules you MUST follow:
+1. "supported" only if the resume contains explicit evidence (for example a team project for teamwork, a presentation or documentation for communication, a built project for "integrating AI/ML models").
+2. "evidence" is a short phrase copied from the resume of at most 12 words. Leave it empty if there is no evidence.
+3. NEVER invent evidence.
+4. Generic statements about being a good communicator without any example do not count as evidence for communication.
+
+--- RESUME TEXT ---
+{resume_text}
+--- END RESUME TEXT ---
+"""
+    raw_response = _call_llm(prompt)
+    
+    if not raw_response or "⏱️" in raw_response:
+        return default_dict
+        
+    try:
+        cleaned = raw_response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        
+        return json.loads(cleaned.strip())
+    except Exception:
         return default_dict
 
 # ---------------------------------------------------------------------------

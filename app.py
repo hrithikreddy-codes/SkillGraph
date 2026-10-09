@@ -49,6 +49,9 @@ def main():
         page_icon="📄",
         layout="centered",
     )
+    
+    if st.sidebar.button("Clear saved results"):
+        st.cache_data.clear()
 
     st.title("📄 AI Resume & Job-Readiness Analyzer")
     st.markdown("<style>[data-testid='stHeaderActionElements'] {display: none;}</style>", unsafe_allow_html=True)
@@ -110,7 +113,7 @@ def main():
                 return
                 
             with st.spinner("Analyzing your resume against the job..."):
-                from analyzer import extract_resume_skills, extract_job_skills, compare, build_graph
+                from analyzer import extract_resume_skills, extract_job_skills, compare, build_graph, assess_other_requirements
                 resume_data = extract_resume_skills(final_resume_text)
                 job_data = extract_job_skills(job_description_area)
                 match_results = compare(final_resume_text, resume_data, job_data)
@@ -158,8 +161,8 @@ def main():
                         if matched_list:
                             st.subheader("Matched", anchor=False)
                             for skill in matched_list:
-                                conf = match_results.get("confidence", {}).get(skill, "")
-                                conf_text = " (inferred)" if conf.lower() == "low" else ""
+                                ev_type = match_results.get("evidence_type", {}).get(skill, "")
+                                conf_text = " (inferred)" if ev_type == "inferred" else ""
                                 evidence = match_results.get("evidence", {}).get(skill, "")
                                 desc = f'Evidence: "{evidence}"' if evidence else "No additional details."
                                 st.write(f"**{skill}**{conf_text}: {desc}")
@@ -167,8 +170,8 @@ def main():
                         if partial_list:
                             st.subheader("Partial", anchor=False)
                             for skill in partial_list:
-                                conf = match_results.get("confidence", {}).get(skill, "")
-                                conf_text = " (inferred)" if conf.lower() == "low" else ""
+                                ev_type = match_results.get("evidence_type", {}).get(skill, "")
+                                conf_text = " (inferred)" if ev_type == "inferred" else ""
                                 evidence = match_results.get("evidence", {}).get(skill, "")
                                 reason = match_results.get("reasons", {}).get(skill, "")
                                 gap = match_results.get("gaps", {}).get(skill, "")
@@ -187,12 +190,27 @@ def main():
                         if missing_list:
                             st.subheader("Not demonstrated yet", anchor=False)
                             for skill in missing_list:
-                                conf = match_results.get("confidence", {}).get(skill, "")
-                                conf_text = " (inferred)" if conf.lower() == "low" else ""
+                                ev_type = match_results.get("evidence_type", {}).get(skill, "")
+                                conf_text = " (inferred)" if ev_type == "inferred" else ""
                                 reason = match_results.get("reasons", {}).get(skill, "")
                                 
                                 desc = f"Reason: {reason}" if reason else "No additional details."
                                 st.write(f"**{skill}**{conf_text}: {desc}")
+                soft = job_data.get("soft_skills", [])
+                exp_req = job_data.get("experience_requirements", [])
+                if soft or exp_req:
+                    st.markdown("---")
+                    st.subheader("Other requirements (not part of your score)", anchor=False)
+                    other_res = assess_other_requirements(final_resume_text, soft, exp_req)
+                    for item_res in other_res.get("results", []):
+                        it = item_res.get("item", "")
+                        st_stat = item_res.get("status", "")
+                        ev = item_res.get("evidence", "")
+                        
+                        if st_stat == "supported":
+                            st.markdown(f"- **{it}**: :green[supported] — *{ev}*")
+                        else:
+                            st.markdown(f"- **{it}**: :gray[not shown]")
                 
                 # Graph
                 st.markdown("---")
