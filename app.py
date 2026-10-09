@@ -11,6 +11,7 @@ How to run:
 import streamlit as st
 from PyPDF2 import PdfReader
 import io
+import traceback
 # Force Streamlit to reload the updated analyzer.py
 
 # Import our AI logic from the new analyzer.py file
@@ -67,7 +68,7 @@ def main():
         with tab1:
             resume_text_area = st.text_area(
                 "Resume text",
-                height=150,
+                height=120,
                 label_visibility="collapsed",
                 placeholder="Paste your resume here..."
             )
@@ -93,7 +94,7 @@ def main():
         with job_tab:
             job_description_area = st.text_area(
                 "Job description text",
-                height=150,
+                height=120,
                 label_visibility="collapsed",
                 placeholder="Paste the job description here..."
             )
@@ -133,6 +134,9 @@ def main():
                 m3.metric("Partial", scores["partial_count"])
                 m4.metric("Missing", scores["missing_count"])
                 
+                if not scores.get("consistent", True):
+                    st.warning("⚠️ Warning: Score calculations were inconsistent. Some skills may be overlapping or percentages differ.")
+                
                 # Skill lists
                 st.success(f"**Matched Skills:** {', '.join(match_results['matched']) if match_results['matched'] else 'None'}")
                 
@@ -164,8 +168,16 @@ def main():
                                 ev_type = match_results.get("evidence_type", {}).get(skill, "")
                                 conf_text = " (inferred)" if ev_type == "inferred" else ""
                                 evidence = match_results.get("evidence", {}).get(skill, "")
-                                desc = f'Evidence: "{evidence}"' if evidence else "No additional details."
-                                st.write(f"**{skill}**{conf_text}: {desc}")
+                                reason = match_results.get("reasons", {}).get(skill, "")
+                                
+                                parts = []
+                                if evidence:
+                                    parts.append(f'Evidence: "{evidence}"')
+                                if reason:
+                                    parts.append(f"Reason: {reason}")
+                                
+                                desc = " | ".join(parts) if parts else "No additional details."
+                                st.write(f"🟢 **{skill}**{conf_text}: {desc}")
                                 
                         if partial_list:
                             st.subheader("Partial", anchor=False)
@@ -185,17 +197,24 @@ def main():
                                     parts.append(f"What's missing: {gap}")
                                     
                                 desc = " | ".join(parts) if parts else "No additional details."
-                                st.write(f"**{skill}**{conf_text}: {desc}")
+                                st.write(f"🟡 **{skill}**{conf_text}: {desc}")
                                 
                         if missing_list:
                             st.subheader("Not demonstrated yet", anchor=False)
                             for skill in missing_list:
                                 ev_type = match_results.get("evidence_type", {}).get(skill, "")
                                 conf_text = " (inferred)" if ev_type == "inferred" else ""
+                                evidence = match_results.get("evidence", {}).get(skill, "")
                                 reason = match_results.get("reasons", {}).get(skill, "")
                                 
-                                desc = f"Reason: {reason}" if reason else "No additional details."
-                                st.write(f"**{skill}**{conf_text}: {desc}")
+                                parts = []
+                                if evidence:
+                                    parts.append(f'Evidence: "{evidence}"')
+                                if reason:
+                                    parts.append(f"Reason: {reason}")
+                                    
+                                desc = " | ".join(parts) if parts else "No additional details."
+                                st.write(f"🔴 **{skill}**{conf_text}: {desc}")
                 soft = job_data.get("soft_skills", [])
                 exp_req = job_data.get("experience_requirements", [])
                 if soft or exp_req:
@@ -306,8 +325,11 @@ def main():
                 html_report = build_html_report(job_role, match_results, scores, roadmap)
                 st.download_button("Download report (HTML)", data=html_report, file_name="skillgraph_report.html", mime="text/html")
                 st.download_button("📥 Download Full Report", report, file_name="skill_report.md", mime="text/markdown")
-        except Exception:
+        except Exception as e:
+            traceback.print_exc()
             st.error("Something went wrong, please try again")
+            with st.expander("Technical details"):
+                st.exception(e)
 
 
 

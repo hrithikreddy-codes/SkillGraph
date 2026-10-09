@@ -414,6 +414,53 @@ Rules you MUST follow:
         return default_dict
 
 
+def apply_verification(compare_result, verification):
+    matched = compare_result.setdefault("matched", [])
+    partial = compare_result.setdefault("partial", [])
+    missing = compare_result.setdefault("missing", [])
+    
+    evidence = compare_result.setdefault("evidence", {})
+    reasons = compare_result.setdefault("reasons", {})
+    gaps = compare_result.setdefault("gaps", {})
+    confidence = compare_result.setdefault("confidence", {})
+    evidence_type = compare_result.setdefault("evidence_type", {})
+
+    for result in verification.get("results", []):
+        skill = result.get("skill")
+        status = result.get("status")
+        ev = result.get("evidence", "")
+        reason = result.get("reason", "")
+        conf = result.get("confidence", "")
+        what = result.get("what_is_missing", "")
+        ev_type = result.get("evidence_type", "")
+        
+        if not skill:
+            continue
+            
+        if ev and not (skill in evidence and evidence[skill]):
+            evidence[skill] = ev
+        if reason:
+            reasons[skill] = reason
+        if conf:
+            confidence[skill] = conf
+        if what:
+            gaps[skill] = what
+        if ev_type:
+            evidence_type[skill] = ev_type
+            
+        if status == "matched":
+            if skill in missing: missing.remove(skill)
+            if skill in partial: partial.remove(skill)
+            if skill not in matched: matched.append(skill)
+        elif status == "partial":
+            if skill in missing: missing.remove(skill)
+            if skill in matched: matched.remove(skill)
+            if skill not in partial: partial.append(skill)
+        elif status == "missing":
+            if skill in matched: matched.remove(skill)
+            if skill in partial: partial.remove(skill)
+            if skill not in missing: missing.append(skill)
+
 def compare(resume_text, resume, job):
     """
     Compares resume skills and job requirements.
@@ -451,46 +498,33 @@ def compare(resume_text, resume, job):
         else:
             missing.append(" / ".join(norm_group))
             
-    partial = []
-    evidence = {}
-    reasons = {}
-    confidence = {}
-    gaps = {}
-    evidence_type = {}
+    compare_result = {
+        "matched": matched,
+        "partial": [],
+        "missing": missing,
+        "bonus_matched": bonus_matched,
+        "bonus_missing": bonus_missing,
+        "evidence": {},
+        "reasons": {},
+        "confidence": {},
+        "gaps": {},
+        "evidence_type": {}
+    }
     
     # 3. Verify missing skills via LLM
     if missing:
         verification = verify_missing_skills(resume_text, missing)
-        for result in verification.get("results", []):
-            skill = result.get("skill")
-            status = result.get("status")
-            ev = result.get("evidence", "")
-            reason = result.get("reason", "")
-            conf = result.get("confidence", "")
-            what = result.get("what_is_missing", "")
-            ev_type = result.get("evidence_type", "")
-            
-            if not skill or skill not in missing:
-                continue
-                
-            if ev:
-                evidence[skill] = ev
-            if reason:
-                reasons[skill] = reason
-            if conf:
-                confidence[skill] = conf
-            if what:
-                gaps[skill] = what
-            if ev_type:
-                evidence_type[skill] = ev_type
-                
-            if status == "matched":
-                missing.remove(skill)
-                matched.append(skill)
-            elif status == "partial":
-                missing.remove(skill)
-                partial.append(skill)
-                
+        apply_verification(compare_result, verification)
+        
+    matched = compare_result.get("matched", [])
+    partial = compare_result.get("partial", [])
+    missing = compare_result.get("missing", [])
+    evidence = compare_result.get("evidence", {})
+    reasons = compare_result.get("reasons", {})
+    confidence = compare_result.get("confidence", {})
+    gaps = compare_result.get("gaps", {})
+    evidence_type = compare_result.get("evidence_type", {})
+    
     # 4. Calculate percentage
     match_percent = 0
     total_req = len(matched) + len(partial) + len(missing)
@@ -737,21 +771,87 @@ def _rewrite_bullet(bullet, apply_text):
         return response.strip()
     return ""
 
-def clean_bullet(bullet, skill, apply_text):
-    def fails_check(b):
-        if not b: return False
-        b_lower = b.lower()
-        banned_words = ["ensuring", "ensure", "improving", "enhance", "reliability", "availability", "optimal", "production", "scalable", "robust"]
-        return any(char.isdigit() for char in b) or "%" in b or any(w in b_lower for w in banned_words)
+def is_unsafe_bullet(bullet_text):
+    if not bullet_text: return False
+    b_lower = bullet_text.lower()
+    banned_words = ["ensuring", "ensure", "improving", "enhance", "reliability", "availability", "optimal", "production", "scalable", "robust"]
+    return any(char.isdigit() for char in bullet_text) or "%" in bullet_text or any(w in b_lower for w in banned_words)
 
-    if not fails_check(bullet):
+def clean_bullet(bullet, skill, apply_text):
+    if not is_unsafe_bullet(bullet):
         return bullet
         
     rewritten = _rewrite_bullet(bullet, apply_text)
-    if rewritten and not fails_check(rewritten):
+    if rewritten and not is_unsafe_bullet(rewritten):
         return rewritten
         
     return f"Added {skill} to <project> [describe what you actually did]"
+
+DEPENDENCY_RULES = {
+    "Integration Testing": ["Unit Testing"],
+    "CI/CD": ["Testing", "Jest"]
+}
+
+def order_steps(steps):
+    for i, step in enumerate(steps):
+        step["_orig_idx"] = i
+        step["do_after"] = ""
+        
+    for step in steps:
+        sk = step.get("skill", "")
+        for target, deps in DEPENDENCY_RULES.items():
+            if target in sk:
+                for other in steps:
+                    if any(dep in other.get("skill", "") for dep in deps):
+                        step["do_after"] = other.get("skill", "")
+                        break
+                if step["do_after"]:
+                    break
+                    
+    pri_map = {"High": 0, "Medium": 1, "Low": 2}
+    adj = {step.get("skill", ""): [] for step in steps}
+    in_degree = {step.get("skill", ""): 0 for step in steps}
+    
+    for step in steps:
+        dep = step.get("do_after", "")
+        sk = step.get("skill", "")
+        if dep and dep in adj and dep != sk:
+            adj[dep].append(sk)
+            in_degree[sk] += 1
+            
+    import heapq
+    queue = []
+    for step in steps:
+        sk = step.get("skill", "")
+        if in_degree[sk] == 0:
+            heapq.heappush(queue, (pri_map.get(step.get("priority", "Medium"), 1), step["_orig_idx"], id(step), step))
+            
+    ordered = []
+    order_val = 1
+    while queue:
+        _, _, _, step = heapq.heappop(queue)
+        step["order"] = order_val
+        order_val += 1
+        ordered.append(step)
+        
+        sk = step.get("skill", "")
+        for n_sk in adj[sk]:
+            in_degree[n_sk] -= 1
+            if in_degree[n_sk] == 0:
+                n_step = next(s for s in steps if s.get("skill", "") == n_sk)
+                heapq.heappush(queue, (pri_map.get(n_step.get("priority", "Medium"), 1), n_step["_orig_idx"], id(n_step), n_step))
+                
+    for step in steps:
+        if step not in ordered:
+            step["order"] = order_val
+            order_val += 1
+            ordered.append(step)
+            
+    for step in ordered:
+        if "_orig_idx" in step:
+            del step["_orig_idx"]
+            
+    return ordered
 
 @st.cache_data(show_spinner=False)
 def generate_roadmap(missing_skills, partial_skills, role, projects, job_text, evidence, gaps):
@@ -781,7 +881,6 @@ Return this exact shape:
 {{
     "steps": [
         {{
-            "order": 1,
             "skill": "",
             "priority": "High" or "Medium" or "Low",
             "why_gap": "",
@@ -789,8 +888,7 @@ Return this exact shape:
             "apply": "",
             "prove": "",
             "example_bullet": "",
-            "suggested_effort": "",
-            "do_after": ""
+            "suggested_effort": ""
         }}
     ],
     "optional": [
@@ -804,23 +902,22 @@ Return this exact shape:
 Rules you MUST follow:
 1. Merge closely related skills into one step (for example Unit Testing + Jest becomes "Unit Testing with Jest", CI/CD + GitHub Actions becomes one step).
 2. Use 3 to 5 High, 3 to 5 Medium, and the rest Low. Never mark more than 5 steps High.
-3. "order" is the suggested learning order, starting at 1 (fundamentals first).
-4. "why_gap" must be built only from the job requirement plus the evidence and gaps provided. Do not say things like "only partial exposure". For partial skills, state what related skills were found and what direct experience was not shown. If no evidence is provided for a skill, say "not demonstrated in the resume". Do not make claims about what the industry "standard" is.
-5. "learn" is what to study, "apply" is a concrete change to one of the candidate's existing projects (by name), "prove" is what real evidence should exist afterwards (for example "a repo with tests that run on every push").
-6. "apply" and "learn" must only reference projects from the provided projects list, exactly as named.
-7. Scope each step to what the job requires (for example "deploy one existing application to AWS EC2", not "learn AWS").
-8. "example_bullet" describes only the work to be done, in plain past tense, with NO numbers, percentages, performance claims, reliability or availability claims, or business impact (for example never write "ensuring high availability", "improving code quality", "reducing errors").
-9. For methodologies like Agile/Scrum, "prove" is "a board and sprint notes for a personal project" and the example bullet must say "applied Agile practices to a personal project", never professional Scrum experience.
-10. If a metric would normally help, end the bullet with a bracket like "[add your real result here if you have one]".
-11. Never claim an outcome the candidate has not achieved.
-12. "suggested_effort" must be phrased like "Estimated effort for foundational experience: 1-2 weeks".
-13. If a skill is "partial", recommend fundamentals first. Never use "Advanced" in a step name unless the job description itself asks for advanced level.
-14. Steps are only for skills in the missing or partial lists. Anything else useful (for example performance monitoring) goes in "optional" with a one-line reason, maximum 2 items.
-15. Decide priority using (a) skills listed under requirements or mentioned several times in the job description rank higher, (b) skills the job only prefers rank lower, (c) a partial skill that the job clearly centers on can outrank a missing minor skill such as Agile/Scrum, (d) foundational skills that others depend on (for example unit testing before CI/CD) get an earlier "order".
-16. Choose ONE simple route per skill and do not list several tools or architectures. For AWS, recommend deploying one existing application to a single EC2 instance, and mention only EC2, security groups, SSH and basic IAM unless the job description names other services.
-17. If a skill name contains " / " (the job accepts any one option), recommend exactly one option and say why it is a good choice.
-18. "prove" must describe the outcome, not the folder structure. For example "a working Jest test suite covering the main parts of the application", not "a tests directory". Do not require specific file paths.
-19. For partial skills, do not start from scratch: build on the related evidence the candidate already has.
+3. "why_gap" must be built only from the job requirement plus the evidence and gaps provided. Do not say things like "only partial exposure". For partial skills, state what related skills were found and what direct experience was not shown. If no evidence is provided for a skill, say "not demonstrated in the resume". Do not make claims about what the industry "standard" is.
+4. "learn" is what to study, "apply" is a concrete change to one of the candidate's existing projects (by name), "prove" is what real evidence should exist afterwards (for example "a repo with tests that run on every push").
+5. "apply" and "learn" must only reference projects from the provided projects list, exactly as named.
+6. Scope each step to what the job requires (for example "deploy one existing application to AWS EC2", not "learn AWS").
+7. "example_bullet" describes only the work to be done, in plain past tense, with NO numbers, percentages, performance claims, reliability or availability claims, or business impact (for example never write "ensuring high availability", "improving code quality", "reducing errors").
+8. For methodologies like Agile/Scrum, "prove" is "a board and sprint notes for a personal project" and the example bullet must say "applied Agile practices to a personal project", never professional Scrum experience.
+9. If a metric would normally help, end the bullet with a bracket like "[add your real result here if you have one]".
+10. Never claim an outcome the candidate has not achieved.
+11. "suggested_effort" must be phrased like "Estimated effort for foundational experience: 1-2 weeks".
+12. If a skill is "partial", recommend fundamentals first. Never use "Advanced" in a step name unless the job description itself asks for advanced level.
+13. Steps are only for skills in the missing or partial lists. Anything else useful (for example performance monitoring) goes in "optional" with a one-line reason, maximum 2 items.
+14. Decide priority using (a) skills listed under requirements or mentioned several times in the job description rank higher, (b) skills the job only prefers rank lower, (c) a partial skill that the job clearly centers on can outrank a missing minor skill such as Agile/Scrum.
+15. Choose ONE simple route per skill and do not list several tools or architectures. For AWS, recommend deploying one existing application to a single EC2 instance, and mention only EC2, security groups, SSH and basic IAM unless the job description names other services.
+16. If a skill name contains " / " (the job accepts any one option), recommend exactly one option and say why it is a good choice.
+17. "prove" must describe the outcome, not the folder structure. For example "a working Jest test suite covering the main parts of the application", not "a tests directory". Do not require specific file paths.
+18. For partial skills, do not start from scratch: build on the related evidence the candidate already has.
 """
     raw_response = _call_llm(prompt, temperature=0.2)
     
@@ -838,6 +935,8 @@ Rules you MUST follow:
             cleaned = cleaned[:-3]
         
         parsed = json.loads(cleaned.strip())
+        if "steps" in parsed:
+            parsed["steps"] = order_steps(parsed["steps"])
         for step in parsed.get("steps", []):
             step["example_bullet"] = clean_bullet(step.get("example_bullet", ""), step.get("skill", ""), step.get("apply", ""))
         return parsed
@@ -872,32 +971,34 @@ Return this exact shape:
             "skill": "",
             "status": "matched" or "partial" or "missing",
             "evidence": "",
-            "evidence_type": "explicit" or "project" or "inferred",
             "reason": "",
             "confidence": "high" or "medium" or "low",
-            "what_is_missing": ""
+            "what_is_missing": "",
+            "evidence_type": "explicit" or "project" or "inferred"
         }}
     ]
 }}
 
+JSON Field Instructions:
+- evidence: a phrase of at most 12 words copied from the resume, empty if none.
+- reason: one short sentence.
+- what_is_missing: for partial: "Found: <related items>. Not found: <direct evidence>."; empty otherwise.
+
 Rules you MUST follow:
-1. Look for evidence anywhere in the resume: skills section, projects, experience, certifications.
-2. If the resume shows a closely related technology (for example MySQL for PostgreSQL, or JavaScript for TypeScript), mark "partial". For partial skills, the reason must name exactly which related evidence was found and which direct evidence was not found, using the pattern: "Found: <related items>. Not found: <direct evidence>." For "partial", "evidence" should list the related skills found.
-3. Statements like "interested in", "learning", "planning to", "no experience with" never count as matched. Mark those "missing".
-4. For "missing", "reason" is one short sentence saying what is not demonstrated (use "not demonstrated", not "doesn't know").
-5. If a skill name contains " / ", it means any ONE of those options satisfies the requirement.
-6. Use "low" confidence when you are inferring rather than reading it directly.
-7. "what_is_missing": for "partial" it is one short sentence naming what the resume lacks (for example "No direct TypeScript typing, interfaces or generics shown"). For "matched" and "missing" it is an empty string.
-8. For methodologies (Agile/Scrum): mark "matched" only if the resume shows real ceremonies or roles (sprint planning, standups, retrospectives, Scrum master, sprints). Code reviews, task boards or iterative work alone are "partial", and the reason must say "related engineering practice found, but Scrum practices were not shown".
-9. Generic frontend skills (HTML, CSS, React) alone do not prove Responsive Web Design or State Management; they give "partial" only, with the pattern above.
-10. If a skill name combines a practice and a tool (for example "Unit & Integration Testing with Jest"), mark it "matched" only if both parts are shown and "partial" if only one is shown.
-11. "evidence_type": "explicit" (the skill is named in the resume), "project" (clearly used in a described project) or "inferred" (only suggested). If the evidence_type is "inferred", the status can be at most "partial", never "matched".
+1. Evidence can come from anywhere in the resume.
+2. If evidence_type is "inferred", the status can be at most "partial".
+3. Statements like "interested in", "learning", "planning to" or "no experience with" never count and are "missing".
+4. For Agile/Scrum, "matched" only if sprints, standups, retrospectives or Scrum roles are shown; code reviews or task boards alone are "partial".
+5. HTML, CSS or React alone only give "partial" for Responsive Web Design and State Management.
+6. A combined requirement like "Unit & Integration Testing with Jest" is "matched" only if both parts are shown, otherwise "partial".
+7. A skill containing " / " is satisfied by any ONE of the options.
+8. Use the wording "not demonstrated", never "doesn't know".
 
 --- RESUME TEXT ---
 {resume_text}
 --- END RESUME TEXT ---
 """
-    raw_response = _call_llm(prompt)
+    raw_response = _call_llm(prompt, temperature=0.0, seed=42)
     
     if not raw_response or "⏱️" in raw_response:
         return default_dict
@@ -955,7 +1056,7 @@ Rules you MUST follow:
 {resume_text}
 --- END RESUME TEXT ---
 """
-    raw_response = _call_llm(prompt)
+    raw_response = _call_llm(prompt, temperature=0.0, seed=42)
     
     if not raw_response or "⏱️" in raw_response:
         return default_dict
@@ -1013,7 +1114,7 @@ Rules you MUST follow:
 {resume_text}
 --- END RESUME TEXT ---
 """
-    raw_response = _call_llm(prompt)
+    raw_response = _call_llm(prompt, temperature=0.0, seed=42)
     
     if not raw_response or "⏱️" in raw_response:
         return default_dict
@@ -1042,9 +1143,13 @@ def score_breakdown(compare_result):
     Calculates a detailed score breakdown including partial matches.
     Partial matches count as 0.5 towards the final match percentage.
     """
-    matched_count = len(compare_result.get("matched", []))
-    partial_count = len(compare_result.get("partial", []))
-    missing_count = len(compare_result.get("missing", []))
+    matched = compare_result.get("matched", [])
+    partial = compare_result.get("partial", [])
+    missing = compare_result.get("missing", [])
+    
+    matched_count = len(matched)
+    partial_count = len(partial)
+    missing_count = len(missing)
     
     total_required = matched_count + partial_count + missing_count
     
@@ -1053,12 +1158,17 @@ def score_breakdown(compare_result):
     else:
         match_percent = 0
         
+    overlap = bool(set(matched) & set(partial) or set(matched) & set(missing) or set(partial) & set(missing))
+    original_percent = compare_result.get("match_percent")
+    consistent = not overlap and (original_percent is None or original_percent == match_percent)
+        
     return {
         "total_required": total_required,
         "matched_count": matched_count,
         "partial_count": partial_count,
         "missing_count": missing_count,
-        "match_percent": match_percent
+        "match_percent": match_percent,
+        "consistent": consistent
     }
 
 def build_html_report(job_role, compare_result, score, roadmap):
