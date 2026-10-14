@@ -256,7 +256,7 @@ def normalize(skill):
 import json
 import streamlit as st
 
-@st.cache_data(show_spinner=False, persist="disk")
+@st.cache_data(show_spinner=False)
 def extract_resume_skills(text):
     """
     Sends resume text to the LLM and asks for a JSON object with:
@@ -323,7 +323,7 @@ Rules you MUST follow:
         return default_dict
 
 
-@st.cache_data(show_spinner=False, persist="disk")
+@st.cache_data(show_spinner=False)
 def extract_job_skills(text):
     """
     Sends job description text to the LLM and asks for a JSON object with:

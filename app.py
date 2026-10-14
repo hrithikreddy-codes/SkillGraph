@@ -51,9 +51,6 @@ def main():
         layout="centered",
     )
     
-    if st.sidebar.button("Clear saved results"):
-        st.cache_data.clear()
-        
     debug_mode = st.sidebar.checkbox("Debug mode")
 
     st.title("📄 AI Resume & Job-Readiness Analyzer")
