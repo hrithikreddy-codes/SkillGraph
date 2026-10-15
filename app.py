@@ -1,5 +1,5 @@
 """
-PathFinder - Career Roadmap Generator (Streamlit)
+SkillGraph - Career Roadmap Generator (Streamlit)
 Run with:  streamlit run app.py
 Needs:     pip install streamlit   (version 1.32 or newer)
 
@@ -12,9 +12,22 @@ File layout (top to bottom):
 
 import html
 
+import altair as alt
+import pandas as pd
 import streamlit as st
+from analyzer import (
+    assess_other_requirements,
+    build_graph,
+    build_html_report,
+    compare,
+    extract_job_skills,
+    extract_resume_skills,
+    generate_roadmap,
+    score_breakdown,
+)
+from file_reader import extract_text
 
-st.set_page_config(page_title="PathFinder - Your Career Roadmap", page_icon="🧭", layout="centered")
+st.set_page_config(page_title="SkillGraph - Your Career Roadmap", page_icon="🧭", layout="centered")
 
 
 # ============================================================
@@ -303,7 +316,7 @@ def render_hero():
     words = "".join(f'<span style="animation-delay:{i * 2}s">{w}</span>' for i, w in enumerate(HERO_WORDS))
     st.markdown(clean(f"""
         <div class="hero">
-            <div class="brand">🧭 Path<b>Finder</b></div>
+            <div class="brand">🧭 Skill<b>Graph</b></div>
             <h1>Don't guess your career.</h1>
             <div class="rotator-line"><span>Become a</span><div class="rotator">{words}</div></div>
             <p class="sub">Answer four quick questions and get a step-by-step plan for what to learn, build and do next.</p>
@@ -397,15 +410,435 @@ def render_results(profile: dict):
         st.rerun()
 
 
+def restyle_dot_graph(dot_string: str) -> str:
+    """Restyles the Graphviz DOT graph to the SkillGraph design palette."""
+    if not dot_string:
+        return dot_string
+    styled = dot_string
+    styled = styled.replace(
+        'edge [color="grey", style="solid"];',
+        'edge [color="#60a5fa", penwidth=1.2, style="solid"];',
+    )
+    styled = styled.replace(
+        'node [fontname="Helvetica", shape=plain];',
+        'bgcolor="transparent";\n    node [fontname="DM Sans, sans-serif", shape=plain];',
+    )
+    styled = styled.replace(
+        'fillcolor="darkblue"',
+        'fillcolor="#1e3a8a", color="#1e3a8a"',
+    )
+    styled = styled.replace('BGCOLOR="darkgrey"', 'BGCOLOR="#1e3a8a"')
+    styled = styled.replace('BGCOLOR="#2e7d32"', 'BGCOLOR="#2563eb"')
+    styled = styled.replace('BGCOLOR="#f9a825"', 'BGCOLOR="#fbbf24"')
+    styled = styled.replace('<FONT COLOR="black"', '<FONT COLOR="#0f172a"')
+    styled = styled.replace(
+        'BGCOLOR="#c62828"><FONT COLOR="white"',
+        'BGCOLOR="#ffffff"><FONT COLOR="#0f172a"',
+    )
+    styled = styled.replace(
+        'CELLBORDER="1"',
+        'CELLBORDER="1" COLOR="#e3e8f2"',
+    )
+    return styled
+
+
+def render_resume_analyzer():
+    st.session_state.setdefault("ra_results", None)
+    st.session_state.setdefault("ra_extracted_text", "")
+
+    if st.session_state.ra_results is None:
+        with st.container(border=True):
+            st.markdown(clean("""
+                <p class="form-title">📄 Analyze Your Resume Against a Job</p>
+                <p class="form-hint">Upload or paste your resume and target role to get an in-depth gap analysis, skill graph, and roadmap.</p>"""),
+                unsafe_allow_html=True)
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**1️⃣ Your Resume**")
+                tab_upload, tab_paste = st.tabs(["Upload file", "Paste text"])
+                with tab_upload:
+                    uploaded_resume = st.file_uploader(
+                        "Upload resume file (.pdf, .docx, .txt)",
+                        type=["pdf", "docx", "txt"],
+                        key="ra_file_uploader",
+                        label_visibility="collapsed",
+                    )
+                    if uploaded_resume:
+                        extracted = extract_text(uploaded_resume)
+                        if extracted:
+                            st.session_state.ra_extracted_text = extracted
+                            with st.expander("👀 Preview extracted text", expanded=False):
+                                st.text(extracted[:500] + ("..." if len(extracted) > 500 else ""))
+                        else:
+                            st.warning("Couldn't read text from this file (scanned PDF?). Please paste your resume text instead.")
+                with tab_paste:
+                    resume_pasted = st.text_area(
+                        "Resume text",
+                        height=160,
+                        placeholder="Paste your resume content here...",
+                        key="ra_resume_pasted",
+                        label_visibility="collapsed",
+                    )
+
+            with col2:
+                st.markdown("**2️⃣ Job Description or Target Role**")
+                job_tab, = st.tabs(["Job Requirements"])
+                with job_tab:
+                    job_desc = st.text_area(
+                        "Job description text",
+                        height=160,
+                        placeholder="Paste the job posting, role description, or target requirements here...",
+                        key="ra_job_desc",
+                        label_visibility="collapsed",
+                    )
+
+            st.write("")
+            analyze_button = st.button("🚀 Analyze Resume & Match Skills", type="primary", use_container_width=True, key="ra_analyze_btn")
+
+            if analyze_button:
+                final_resume_text = resume_pasted.strip()
+                if not final_resume_text and st.session_state.ra_extracted_text:
+                    final_resume_text = st.session_state.ra_extracted_text.strip()
+
+                final_job_text = job_desc.strip()
+
+                if not final_resume_text or not final_job_text:
+                    st.warning("⚠️ Please provide both a resume (uploaded or pasted) and a job description/role.")
+                    return
+
+                with st.spinner("Analyzing your resume against the target role..."):
+                    try:
+                        resume_data = extract_resume_skills(final_resume_text)
+                        job_data = extract_job_skills(final_job_text)
+                        match_results = compare(final_resume_text, resume_data, job_data)
+                        scores = score_breakdown(match_results)
+                        match_results["match_percent"] = scores["match_percent"]
+
+                        job_role = job_data.get("role", "Target Role") or "Target Role"
+
+                        soft = job_data.get("soft_skills", [])
+                        exp_req = job_data.get("experience_requirements", [])
+                        other_res = assess_other_requirements(final_resume_text, soft, exp_req) if (soft or exp_req) else None
+
+                        dot_string = build_graph(job_role, match_results)
+
+                        missing_skills = match_results.get("missing", [])
+                        partial_skills = match_results.get("partial", [])
+                        roadmap = generate_roadmap(
+                            missing_skills,
+                            partial_skills,
+                            job_role,
+                            resume_data.get("projects", []),
+                            final_job_text,
+                            match_results.get("evidence", {}),
+                            match_results.get("gaps", {}),
+                        )
+
+                        html_report = build_html_report(job_role, match_results, scores, roadmap)
+
+                        # Generate Markdown Report
+                        report_md = f"# Career Analysis: {job_role}\n\n"
+                        report_md += f"**Match Score:** {scores['match_percent']}%\n\n"
+                        report_md += f"### ✅ Matched Skills\n{', '.join(match_results['matched']) if match_results['matched'] else 'None'}\n\n"
+                        if match_results.get("partial"):
+                            report_md += f"### ⚠️ Partial Skills\n{', '.join(match_results['partial'])}\n\n"
+                        report_md += f"### ❌ Missing Skills\n{', '.join(match_results['missing']) if match_results['missing'] else 'None'}\n\n"
+                        report_md += "### 🚀 Your Roadmap\n"
+                        if not missing_skills and not partial_skills:
+                            report_md += "You already have all required skills!\n"
+                        else:
+                            for step in roadmap.get("steps", []):
+                                report_md += f"\n#### {step.get('order', '?')}. {step.get('skill', '')} ({step.get('priority', 'Medium')} Priority)\n"
+                                report_md += f"- **Why this is a gap:** {step.get('why_gap', '')}\n"
+                                report_md += f"- **Learn:** {step.get('learn', '')}\n"
+                                report_md += f"- **Apply:** {step.get('apply', '')}\n"
+                                report_md += f"- **What proves it:** {step.get('prove', '')}\n"
+                                report_md += f"- **Example resume bullet:** {step.get('example_bullet', '')}\n"
+                                report_md += f"- **Estimated effort:** {step.get('suggested_effort', '')}\n"
+
+                            for item in roadmap.get("optional", []):
+                                report_md += f"- **{item.get('skill', '')}**: {item.get('reason', '')}\n"
+
+                        st.session_state.ra_results = {
+                            "job_role": job_role,
+                            "match_results": match_results,
+                            "scores": scores,
+                            "other_res": other_res,
+                            "dot_string": dot_string,
+                            "roadmap": roadmap,
+                            "html_report": html_report,
+                            "report_md": report_md,
+                        }
+                        st.rerun()
+                    except Exception as e:
+                        st.error("Something went wrong during analysis. Please check your inputs and try again.")
+                        with st.expander("Technical details"):
+                            st.exception(e)
+    else:
+        res = st.session_state.ra_results
+        job_role = res["job_role"]
+        scores = res["scores"]
+        match_results = res["match_results"]
+        pct = scores["match_percent"]
+
+        chips = f'<span class="tag">🎯 {html.escape(job_role)}</span>'
+        chips += f'<span class="tag">⚡ {scores["total_required"]} Required Skills</span>'
+        st.markdown(clean(f"""
+            <div class="result-head">
+                <h2 class="career">{html.escape(job_role)}</h2>
+                <p class="summary">Resume match analysis & personalized skill gap breakdown.</p>
+                <div>{chips}</div>
+            </div>
+            <div class="progress"><div class="bar" style="width:{pct}%"></div></div>
+            <div class="pcount">{pct}% Match Score ({scores["matched_count"]} matched, {scores["partial_count"]} partial, {scores["missing_count"]} missing)</div>"""),
+            unsafe_allow_html=True)
+
+        with st.container(border=True):
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Required skills", scores["total_required"])
+            m2.metric("Matched", scores["matched_count"])
+            m3.metric("Partial", scores["partial_count"])
+            m4.metric("Missing", scores["missing_count"])
+            if not scores.get("consistent", True):
+                st.warning("⚠️ Warning: Score calculations had slight inconsistencies due to alternative skills.")
+
+        with st.container(border=True):
+            st.markdown("#### 📋 Skills Breakdown")
+            if match_results.get("matched"):
+                tags_html = "".join(f'<span class="tag" style="background:#dcfce7; color:#15803d;">✓ {html.escape(s)}</span>' for s in match_results["matched"])
+                st.markdown(f"**Matched Skills:**<br>{tags_html}", unsafe_allow_html=True)
+            else:
+                st.info("No direct skill matches found.")
+
+            st.write("")
+            col_g1, col_g2 = st.columns(2)
+            with col_g1:
+                st.markdown("**Partial Matches (needs strengthening):**")
+                if match_results.get("partial"):
+                    p_html = "".join(f'<span class="tag" style="background:#fef3c7; color:#b45309;">~ {html.escape(s)}</span>' for s in match_results["partial"])
+                    st.markdown(p_html, unsafe_allow_html=True)
+                else:
+                    st.caption("None")
+            with col_g2:
+                st.markdown("**Missing Required Skills:**")
+                if match_results.get("missing"):
+                    m_html = "".join(f'<span class="tag" style="background:#fee2e2; color:#b91c1c;">✗ {html.escape(s)}</span>' for s in match_results["missing"])
+                    st.markdown(m_html, unsafe_allow_html=True)
+                else:
+                    st.caption("None")
+
+            if match_results.get("bonus_matched") or match_results.get("bonus_missing"):
+                with st.expander("Preferred / Nice-to-have Skills (not counted in score)"):
+                    if match_results.get("bonus_matched"):
+                        st.markdown(f"**Bonus Matched:** {', '.join(match_results['bonus_matched'])}")
+                    if match_results.get("bonus_missing"):
+                        st.markdown(f"**Bonus Missing:** {', '.join(match_results['bonus_missing'])}")
+
+        verified_skills = set(match_results.get("evidence", {}).keys()) | set(match_results.get("reasons", {}).keys())
+        if verified_skills:
+            with st.expander("🔍 Why we classified skills this way (AI Evidence & Gaps)"):
+                matched_list = [s for s in sorted(verified_skills) if s in match_results.get("matched", [])]
+                partial_list = [s for s in sorted(verified_skills) if s in match_results.get("partial", [])]
+                missing_list = [s for s in sorted(verified_skills) if s not in match_results.get("matched", []) and s not in match_results.get("partial", [])]
+
+                if matched_list:
+                    st.markdown("**🟢 Matched Skills Evidence**")
+                    for skill in matched_list:
+                        ev = match_results.get("evidence", {}).get(skill, "")
+                        reason = match_results.get("reasons", {}).get(skill, "")
+                        parts = [p for p in [f'Evidence: "{ev}"' if ev else "", f'Reason: {reason}' if reason else ""] if p]
+                        st.write(f"- **{skill}**: {' | '.join(parts) or 'Direct match found in resume.'}")
+
+                if partial_list:
+                    st.markdown("**🟡 Partial Skills Context**")
+                    for skill in partial_list:
+                        ev = match_results.get("evidence", {}).get(skill, "")
+                        reason = match_results.get("reasons", {}).get(skill, "")
+                        gap = match_results.get("gaps", {}).get(skill, "")
+                        parts = [p for p in [f'Evidence: "{ev}"' if ev else "", f'Why partial: {reason}' if reason else "", f"What's missing: {gap}" if gap else ""] if p]
+                        st.write(f"- **{skill}**: {' | '.join(parts) or 'Partially demonstrated.'}")
+
+                if missing_list:
+                    st.markdown("**🔴 Missing Skills Gaps**")
+                    for skill in missing_list:
+                        reason = match_results.get("reasons", {}).get(skill, "")
+                        gap = match_results.get("gaps", {}).get(skill, "")
+                        parts = [p for p in [f'Reason: {reason}' if reason else "", f"Gap: {gap}" if gap else ""] if p]
+                        st.write(f"- **{skill}**: {' | '.join(parts) or 'Not demonstrated in resume.'}")
+
+        other_res = res.get("other_res")
+        if other_res and other_res.get("results"):
+            with st.container(border=True):
+                st.markdown("#### 📌 Other Requirements (Soft Skills & Experience)")
+                for item_res in other_res["results"]:
+                    it = item_res.get("item", "")
+                    st_stat = item_res.get("status", "")
+                    ev = item_res.get("evidence", "")
+                    if st_stat == "supported":
+                        st.markdown(f"- **{it}**: :green[Supported] — *{ev}*")
+                    else:
+                        st.markdown(f"- **{it}**: :gray[Not shown]")
+
+        with st.container(border=True):
+            st.markdown("#### 📊 Skills Breakdown")
+            chart_df = pd.DataFrame([
+                {"Status": "Matched", "Count": scores["matched_count"]},
+                {"Status": "Partial", "Count": scores["partial_count"]},
+                {"Status": "Missing", "Count": scores["missing_count"]},
+            ])
+            dist_chart = (
+                alt.Chart(chart_df)
+                .mark_bar(cornerRadius=6, height=26)
+                .encode(
+                    y=alt.Y(
+                        "Status:N",
+                        sort=None,
+                        title=None,
+                        axis=alt.Axis(
+                            labelColor="#0f172a",
+                            labelFontSize=13,
+                            labelFont="DM Sans, sans-serif",
+                            domainColor="#e3e8f2",
+                            tickColor="#e3e8f2",
+                        ),
+                    ),
+                    x=alt.X(
+                        "Count:Q",
+                        title="Number of Skills",
+                        axis=alt.Axis(
+                            grid=True,
+                            gridColor="#e3e8f2",
+                            domainColor="#e3e8f2",
+                            tickColor="#e3e8f2",
+                            labelColor="#0f172a",
+                            titleColor="#0f172a",
+                            labelFont="DM Sans, sans-serif",
+                            titleFont="DM Sans, sans-serif",
+                            tickMinStep=1,
+                        ),
+                    ),
+                    color=alt.Color(
+                        "Status:N",
+                        scale=alt.Scale(
+                            domain=["Matched", "Partial", "Missing"],
+                            range=["#2563eb", "#fbbf24", "#60a5fa"],
+                        ),
+                        legend=None,
+                    ),
+                    tooltip=[
+                        alt.Tooltip("Status:N", title="Status"),
+                        alt.Tooltip("Count:Q", title="Skills Count"),
+                    ],
+                )
+                .properties(height=140)
+                .configure_view(strokeWidth=0)
+                .configure(background="transparent")
+            )
+            st.altair_chart(dist_chart, use_container_width=True)
+
+        with st.container(border=True):
+            st.markdown("#### 🕸️ Skill Graph")
+            dot_string = res["dot_string"]
+            styled_dot = restyle_dot_graph(dot_string)
+            if hasattr(st, "dialog"):
+                @st.dialog("Full Screen Skill Graph", width="large")
+                def show_full_graph():
+                    st.graphviz_chart(styled_dot, use_container_width=True)
+
+                if st.button("🔍 View Full Screen Graph", key="ra_full_graph_btn"):
+                    show_full_graph()
+            st.graphviz_chart(styled_dot, use_container_width=True)
+            st.caption("🔵 Blue ✓ = Matched | 🟡 Amber ~ = Partial | ⚪ White/Bordered ✗ = Missing")
+
+        with st.container(border=True):
+            st.markdown("#### 🚀 Your Actionable Roadmap")
+            missing_skills = match_results.get("missing", [])
+            partial_skills = match_results.get("partial", [])
+            roadmap = res["roadmap"]
+
+            if not missing_skills and not partial_skills:
+                st.balloons()
+                st.success("🎉 Incredible! Your resume already covers every required skill for this role.")
+            else:
+                groups = {"High": [], "Medium": [], "Low": []}
+                for step in roadmap.get("steps", []):
+                    pri = step.get("priority", "Medium")
+                    if pri not in groups:
+                        pri = "Medium"
+                    groups[pri].append(step)
+
+                for pri_label, pri_key in [("🔥 High Priority", "High"), ("⚡ Medium Priority", "Medium"), ("🌱 Lower Priority", "Low")]:
+                    if groups[pri_key]:
+                        sorted_steps = sorted(groups[pri_key], key=lambda x: x.get("order", 999))
+                        st.markdown(f"**{pri_label}**")
+                        for step in sorted_steps:
+                            skill_name = step.get("skill", "")
+                            order_val = step.get("order", "?")
+                            eff = step.get("suggested_effort", "")
+                            exp_title = f"{order_val}. {skill_name} ({eff})" if eff else f"{order_val}. {skill_name}"
+                            with st.expander(exp_title):
+                                if step.get("do_after"):
+                                    st.markdown(f"**Do this after:** {step.get('do_after')}")
+                                if step.get("why_gap"):
+                                    st.markdown(f"**Why this is a gap:** {step.get('why_gap')}")
+                                if step.get("learn"):
+                                    st.markdown(f"**Learn:** {step.get('learn')}")
+                                if step.get("apply"):
+                                    st.markdown(f"**Apply:** {step.get('apply')}")
+                                if step.get("prove"):
+                                    st.markdown(f"**Prove it:** {step.get('prove')}")
+                                if step.get("example_bullet"):
+                                    st.markdown(f"**Example resume bullet (write after completing):** `{step.get('example_bullet')}`")
+
+                optional_items = roadmap.get("optional", [])
+                if optional_items:
+                    st.markdown("---")
+                    st.markdown("**Extra suggestions (beyond direct job requirements):**")
+                    for item in optional_items:
+                        st.markdown(f"- **{item.get('skill', '')}**: {item.get('reason', '')}")
+
+                st.caption("After you finish a step, add the project / bullet to your resume and rerun the analysis to close the gap.")
+
+        st.write("")
+        col_d1, col_d2 = st.columns(2)
+        safe_name = job_role.lower().replace(" ", "_")
+        col_d1.download_button(
+            "Download report (HTML)",
+            data=res["html_report"],
+            file_name=f"{safe_name}_skillgraph_report.html",
+            mime="text/html",
+            use_container_width=True,
+            key="ra_dl_html",
+        )
+        col_d2.download_button(
+            "Download report (Markdown)",
+            data=res["report_md"],
+            file_name=f"{safe_name}_analysis.md",
+            mime="text/markdown",
+            use_container_width=True,
+            key="ra_dl_md",
+        )
+
+        if st.button("🔄 Analyze another resume or job", use_container_width=True, key="ra_start_over"):
+            st.session_state.ra_results = None
+            st.session_state.ra_extracted_text = ""
+            st.rerun()
+
+
 def main():
     st.markdown(CSS, unsafe_allow_html=True)
     st.session_state.setdefault("profile", None)
     render_hero()
-    if st.session_state.profile is None:
-        render_form()
-    else:
-        render_results(st.session_state.profile)
-    st.markdown('<div class="foot">PathFinder © 2026 - Helping students find their direction.</div>',
+    tab1, tab2 = st.tabs(["Career Roadmap", "Resume Analyzer"])
+    with tab1:
+        if st.session_state.profile is None:
+            render_form()
+        else:
+            render_results(st.session_state.profile)
+    with tab2:
+        render_resume_analyzer()
+    st.markdown('<div class="foot">SkillGraph © 2026 - Helping students find their direction.</div>',
                 unsafe_allow_html=True)
 
 
