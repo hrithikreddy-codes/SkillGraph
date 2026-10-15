@@ -11,6 +11,7 @@ File layout (top to bottom):
 """
 
 import html
+import inspect
 
 import altair as alt
 import pandas as pd
@@ -277,9 +278,77 @@ def clean(markup: str) -> str:
 # ============================================================
 # 3. LOGIC - turn the user's answers into a list of phases
 # ============================================================
+def render_skills_input(label: str, key: str, placeholder: str = "Type a skill and press Enter...") -> list[str]:
+    supports_new = "accept_new_options" in inspect.signature(st.multiselect).parameters
+    if supports_new:
+        return st.multiselect(
+            label,
+            options=[],
+            default=[],
+            accept_new_options=True,
+            key=key,
+            placeholder=placeholder,
+        )
+    else:
+        raw = st.text_input(
+            f"{label} (comma-separated)",
+            key=key,
+            placeholder="e.g. Python, SQL, React",
+        )
+        if raw:
+            seen = set()
+            skills = []
+            for item in raw.split(","):
+                s = item.strip()
+                if s and s.lower() not in seen:
+                    seen.add(s.lower())
+                    skills.append(s)
+            return skills
+        return []
+
+
 def build_roadmap(profile: dict) -> list[dict]:
-    topic = INTERESTS[profile["interest"]]
     level = LEVELS[profile["education"]]
+    if profile.get("interest") == "other":
+        field = profile.get("other_interest", "").strip() or profile.get("career", "").strip() or "your chosen field"
+        user_skills = profile.get("skills", [])
+        tags = user_skills if user_skills else ["Fundamentals", "Core Tools", "Best Practices"]
+        return [
+            {"title": "Build your foundation", "when": "Weeks 1-6",
+             "blurb": f"Get comfortable with core principles and fundamental tools for {field}.",
+             "tasks": [
+                 f"Master the core terminology, principles, and foundational concepts of {field}",
+                 f"Set up your development and practical working environment for {field}",
+                 f"Complete a structured introductory curriculum or authoritative tutorials in {field}",
+             ],
+             "tags": tags},
+            {"title": "Learn the core skills", "when": "Months 2-4",
+             "blurb": f"These are the essential competencies professionals in {field} use daily.",
+             "tasks": [
+                 f"Study industry-standard workflows and intermediate methodologies in {field}",
+                 f"Deep-dive into the primary frameworks, platforms, and toolkits used in {field}",
+                 f"Analyze real-world case studies and production examples in {field}",
+             ],
+             "tags": []},
+            {"title": "Build real projects", "when": "Months 4-6",
+             "blurb": "Projects prove what you can do. Put every project in your portfolio or repository.",
+             "tasks": [
+                 f"Beginner: Build a starter project solving a specific problem in {field}",
+                 f"Intermediate: Build a functional, full-featured project applying standards in {field}",
+                 f"Advanced: Ship an end-to-end, polished project demonstrating competence in {field}",
+             ],
+             "tags": []},
+            {"title": "Gain experience", "when": "Months 6-9",
+             "blurb": "Work with other people and real deadlines.",
+             "tasks": level["experience"] + [f"Enter a competition, hackathon, or collaborative project in {field}"],
+             "tags": []},
+            {"title": "Prepare for your career", "when": "Months 9-12",
+             "blurb": f"Turn your skills into something a recruiter or team in {field} can see.",
+             "tasks": level["prep"] + [f"Practice technical and scenario-based interview questions for {field} every week"],
+             "tags": []},
+        ]
+
+    topic = INTERESTS[profile["interest"]]
     return [
         {"title": "Build your foundation", "when": "Weeks 1-6",
          "blurb": "Get comfortable with the basics before anything advanced.",
@@ -301,8 +370,15 @@ def build_roadmap(profile: dict) -> list[dict]:
 
 def roadmap_as_markdown(profile: dict, phases: list[dict]) -> str:
     """Plain-text version of the roadmap for the download button."""
+    interest_label = (
+        profile.get("other_interest") or "Other"
+        if profile.get("interest") == "other"
+        else INTERESTS[profile["interest"]]["label"]
+    )
     lines = [f"# Roadmap: {profile['career']}", "", f"Level: {profile['education']}",
-             f"Interest: {INTERESTS[profile['interest']]['label']}", ""]
+             f"Interest: {interest_label}", ""]
+    if profile.get("skills"):
+        lines += [f"Existing Skills: {', '.join(profile['skills'])}", ""]
     for i, p in enumerate(phases, 1):
         lines += [f"## {i}. {p['title']} ({p['when']})", p["blurb"], ""]
         lines += [f"- [ ] {t}" for t in p["tasks"]] + [""]
@@ -324,37 +400,90 @@ def render_hero():
 
 
 def render_form():
-    with st.form("profile_form"):
+    with st.container(border=True):
         st.markdown(clean("""
             <p class="form-title">🎯 Create your career roadmap</p>
             <p class="form-hint">It takes under a minute. You can start over any time.</p>"""),
             unsafe_allow_html=True)
 
-        education = st.selectbox("What are you currently studying?", list(LEVELS), index=None,
-                                 placeholder="Select your level")
-        interest = st.selectbox("What area interests you?", list(INTERESTS), index=None,
-                                placeholder="Select an interest",
-                                format_func=lambda k: f"{INTERESTS[k]['emoji']}  {INTERESTS[k]['label']}")
-        strengths = st.multiselect("What are your main strengths? (optional)", list(STRENGTH_TIPS),
-                                   placeholder="Pick as many as you like")
-        career = st.text_input("Which career do you want to explore? (optional)",
-                               placeholder="Example: AI Engineer")
-        submitted = st.form_submit_button("Generate my roadmap")
+        education = st.selectbox(
+            "What are you currently studying?",
+            list(LEVELS),
+            index=None,
+            placeholder="Select your level",
+            key="rf_education",
+        )
+
+        interest_options = list(INTERESTS) + ["other"]
+        interest = st.selectbox(
+            "What area interests you?",
+            interest_options,
+            index=None,
+            placeholder="Select an interest",
+            format_func=lambda k: "✨  Other" if k == "other" else f"{INTERESTS[k]['emoji']}  {INTERESTS[k]['label']}",
+            key="rf_interest",
+        )
+
+        other_field = ""
+        if interest == "other":
+            other_field = st.text_input(
+                "Specify your field of interest",
+                placeholder="Example: Game Development, Robotics, Cloud Architecture...",
+                key="rf_other_field",
+            )
+
+        skills = render_skills_input(
+            "Skills you already have (optional)",
+            key="rf_skills",
+            placeholder="Type a skill you know and press Enter...",
+        )
+
+        strengths = st.multiselect(
+            "What are your main strengths? (optional)",
+            list(STRENGTH_TIPS),
+            placeholder="Pick as many as you like",
+            key="rf_strengths",
+        )
+        career = st.text_input(
+            "Which career do you want to explore? (optional)",
+            placeholder="Example: AI Engineer",
+            key="rf_career",
+        )
+        submitted = st.button("Generate my roadmap", type="primary", use_container_width=True, key="rf_submit")
 
     if submitted:
         if education is None or interest is None:
             st.error("Please choose your education level and an area of interest.")
             return
+        if interest == "other" and not other_field.strip():
+            st.error("Please specify your field of interest.")
+            return
+
+        chosen_label = other_field.strip() if interest == "other" else INTERESTS[interest]["label"]
         st.session_state.profile = {
-            "education": education, "interest": interest, "strengths": strengths,
-            "career": career.strip() or INTERESTS[interest]["label"],
+            "education": education,
+            "interest": interest,
+            "other_interest": other_field.strip() if interest == "other" else "",
+            "skills": skills,
+            "strengths": strengths,
+            "career": career.strip() or chosen_label,
         }
         st.session_state.roadmap_id = st.session_state.get("roadmap_id", 0) + 1
         st.rerun()
 
 
 def render_results(profile: dict):
-    topic, level = INTERESTS[profile["interest"]], LEVELS[profile["education"]]
+    level = LEVELS[profile["education"]]
+    if profile.get("interest") == "other":
+        topic_label = profile.get("other_interest", "").strip() or profile.get("career", "").strip() or "Other"
+        topic_emoji = "✨"
+        topic_resources = []
+    else:
+        topic_data = INTERESTS[profile["interest"]]
+        topic_label = topic_data["label"]
+        topic_emoji = topic_data["emoji"]
+        topic_resources = topic_data.get("resources", [])
+
     phases = build_roadmap(profile)
     rid = st.session_state.roadmap_id
 
@@ -362,17 +491,20 @@ def render_results(profile: dict):
     keys = [[f"task_{rid}_{p}_{t}" for t in range(len(ph["tasks"]))] for p, ph in enumerate(phases)]
     total = sum(len(k) for k in keys)
     done = sum(bool(st.session_state.get(k)) for group in keys for k in group)
-    pct = round(done / total * 100)
+    pct = round(done / total * 100) if total > 0 else 0
 
-    chips = f'<span class="tag">{html.escape(profile["education"])}</span><span class="tag">{topic["emoji"]} {topic["label"]}</span>'
-    chips += "".join(f'<span class="tag">{html.escape(s)}</span>' for s in profile["strengths"])
-    tips = "".join(f"<li>{html.escape(STRENGTH_TIPS[s])}</li>" for s in profile["strengths"])
+    chips = f'<span class="tag">{html.escape(profile["education"])}</span><span class="tag">{topic_emoji} {html.escape(topic_label)}</span>'
+    chips += "".join(f'<span class="tag">{html.escape(s)}</span>' for s in profile.get("strengths", []))
+    user_skills = profile.get("skills", [])
+    if user_skills:
+        chips += "".join(f'<span class="tag" style="background:#dbeafe; color:#1e40af;">⚡ {html.escape(s)}</span>' for s in user_skills)
+    tips = "".join(f"<li>{html.escape(STRENGTH_TIPS[s])}</li>" for s in profile.get("strengths", []) if s in STRENGTH_TIPS)
     tips_html = f'<ul class="tips">{tips}</ul>' if tips else ""
 
     st.markdown(clean(f"""
         <div class="result-head">
             <h2 class="career">{html.escape(profile["career"])}</h2>
-            <p class="summary">A 12-month starting plan built for your level and your interest in {topic["label"]}.</p>
+            <p class="summary">A 12-month starting plan built for your level and your interest in {html.escape(topic_label)}.</p>
             <div>{chips}</div>
             <div class="note">{level["note"]}{tips_html}</div>
         </div>
@@ -392,8 +524,8 @@ def render_results(profile: dict):
                 st.markdown("".join(f'<span class="tag">{t}</span>' for t in ph["tags"]), unsafe_allow_html=True)
             for t, task in enumerate(ph["tasks"]):
                 st.checkbox(task, key=keys[p][t])
-            if p == 1:  # free resources fit best next to the core skills
-                links = " &nbsp;|&nbsp; ".join(f"[{name}]({url})" for name, url in topic["resources"])
+            if p == 1 and topic_resources:
+                links = " &nbsp;|&nbsp; ".join(f"[{name}]({url})" for name, url in topic_resources)
                 st.markdown(f"**Free places to learn:** {links}")
 
     st.markdown(clean("""
@@ -494,6 +626,13 @@ def render_resume_analyzer():
                     )
 
             st.write("")
+            extra_skills = render_skills_input(
+                "Extra skills you have (optional)",
+                key="ra_extra_skills",
+                placeholder="Type additional skills not on your resume and press Enter...",
+            )
+
+            st.write("")
             analyze_button = st.button("🚀 Analyze Resume & Match Skills", type="primary", use_container_width=True, key="ra_analyze_btn")
 
             if analyze_button:
@@ -507,9 +646,21 @@ def render_resume_analyzer():
                     st.warning("⚠️ Please provide both a resume (uploaded or pasted) and a job description/role.")
                     return
 
+                if extra_skills:
+                    final_resume_text += "\n\nAdditional Skills: " + ", ".join(extra_skills)
+
                 with st.spinner("Analyzing your resume against the target role..."):
                     try:
                         resume_data = extract_resume_skills(final_resume_text)
+                        if extra_skills:
+                            curr_skills = resume_data.get("skills", [])
+                            seen_skills = {s.lower() for s in curr_skills}
+                            for es in extra_skills:
+                                if es and es.lower() not in seen_skills:
+                                    curr_skills.append(es)
+                                    seen_skills.add(es.lower())
+                            resume_data["skills"] = curr_skills
+
                         job_data = extract_job_skills(final_job_text)
                         match_results = compare(final_resume_text, resume_data, job_data)
                         scores = score_breakdown(match_results)
