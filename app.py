@@ -17,6 +17,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 from analyzer import (
+    _call_llm,
     assess_other_requirements,
     build_graph,
     build_html_report,
@@ -578,7 +579,13 @@ def render_resume_analyzer():
     st.session_state.setdefault("ra_results", None)
     st.session_state.setdefault("ra_extracted_text", "")
 
-    if st.session_state.ra_results is None:
+    has_valid_results = (
+        st.session_state.ra_results is not None
+        and isinstance(st.session_state.ra_results, dict)
+        and st.session_state.ra_results.get("scores", {}).get("total_required", 0) > 0
+    )
+
+    if not has_valid_results:
         with st.container(border=True):
             st.markdown(clean("""
                 <p class="form-title">📄 Analyze Your Resume Against a Job</p>
@@ -637,8 +644,11 @@ def render_resume_analyzer():
 
             if analyze_button:
                 final_resume_text = resume_pasted.strip()
-                if not final_resume_text and st.session_state.ra_extracted_text:
-                    final_resume_text = st.session_state.ra_extracted_text.strip()
+                if not final_resume_text:
+                    if uploaded_resume:
+                        final_resume_text = extract_text(uploaded_resume).strip()
+                    elif st.session_state.ra_extracted_text:
+                        final_resume_text = st.session_state.ra_extracted_text.strip()
 
                 final_job_text = job_desc.strip()
 
@@ -651,6 +661,10 @@ def render_resume_analyzer():
 
                 with st.spinner("Analyzing your resume against the target role..."):
                     try:
+                        test_llm = _call_llm("test", temperature=0.0)
+                        if test_llm and ("⏱️" in test_llm or "❌" in test_llm):
+                            raise RuntimeError(test_llm)
+
                         resume_data = extract_resume_skills(final_resume_text)
                         if extra_skills:
                             curr_skills = resume_data.get("skills", [])
@@ -662,8 +676,20 @@ def render_resume_analyzer():
                             resume_data["skills"] = curr_skills
 
                         job_data = extract_job_skills(final_job_text)
+                        if not job_data.get("required_skills"):
+                            raise ValueError(
+                                "Could not extract any required skills from the job description or role. "
+                                "Please provide a more detailed job posting or role description."
+                            )
+
                         match_results = compare(final_resume_text, resume_data, job_data)
                         scores = score_breakdown(match_results)
+                        if scores.get("total_required", 0) <= 0:
+                            raise ValueError(
+                                "Analysis found 0 required skills for this role. "
+                                "Please provide a more detailed job description."
+                            )
+
                         match_results["match_percent"] = scores["match_percent"]
 
                         job_role = job_data.get("role", "Target Role") or "Target Role"
@@ -723,9 +749,8 @@ def render_resume_analyzer():
                         }
                         st.rerun()
                     except Exception as e:
-                        st.error("Something went wrong during analysis. Please check your inputs and try again.")
-                        with st.expander("Technical details"):
-                            st.exception(e)
+                        st.session_state.ra_results = None
+                        st.error(str(e))
     else:
         res = st.session_state.ra_results
         job_role = res["job_role"]
@@ -992,5 +1017,5 @@ def main():
     st.markdown('<div class="foot">SkillGraph © 2026 - Helping students find their direction.</div>',
                 unsafe_allow_html=True)
 
-
-main()
+if __name__ == "__main__":
+    main()
