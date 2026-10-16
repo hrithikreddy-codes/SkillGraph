@@ -281,7 +281,7 @@ DARK_CSS = """
 .goal h4 { color: #ffffff !important; }
 .goal p { color: #dbeafe !important; }
 
-/* Placeholder color --muted in all inputs */
+/* Placeholder color in all inputs */
 ::placeholder,
 .stTextInput input::placeholder,
 .stTextArea textarea::placeholder,
@@ -291,8 +291,11 @@ div[data-baseweb="base-input"] input::placeholder,
 div[data-baseweb="base-input"] textarea::placeholder,
 [data-baseweb="select"] input::placeholder,
 [data-baseweb="select"] div[data-placeholder="true"],
-[data-baseweb="select"] div[aria-hidden="true"] {
-  color: var(--muted) !important;
+[data-baseweb="select"] div[aria-hidden="true"],
+textarea::placeholder,
+input::placeholder {
+  color: #5b6475 !important;
+  -webkit-text-fill-color: #5b6475 !important;
   opacity: 1 !important;
 }
 
@@ -320,9 +323,15 @@ div[data-baseweb="base-input"]:focus-within {
 div[data-baseweb="input"] input,
 div[data-baseweb="textarea"] textarea,
 div[data-baseweb="base-input"] input,
-div[data-baseweb="base-input"] textarea {
+div[data-baseweb="base-input"] textarea,
+.stApp textarea,
+.stApp input[type="text"],
+textarea,
+input[type="text"] {
   background-color: transparent !important;
-  color: var(--text) !important;
+  color: #0f172a !important;
+  caret-color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
@@ -363,7 +372,9 @@ div[data-baseweb="base-input"] textarea:focus {
 
 [data-baseweb="select"] input {
   background-color: transparent !important;
-  color: var(--text) !important;
+  color: #0f172a !important;
+  caret-color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
   border: none !important;
   outline: none !important;
 }
@@ -374,12 +385,13 @@ div[data-baseweb="base-input"] textarea:focus {
 
 [data-baseweb="select"] span,
 [data-baseweb="select"] div {
-  color: var(--text) !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
 }
 
 [data-baseweb="select"] svg {
-  fill: var(--text) !important;
-  color: var(--text) !important;
+  fill: #475569 !important;
+  color: #475569 !important;
 }
 
 /* Open Dropdown Menus */
@@ -652,148 +664,12 @@ div[data-testid="stFormSubmitButton"] button p {
 }
 
 /* ============================================================
-   FINAL DARK-MODE OVERRIDE — kills every white outline / glow
-   Scoped with .stApp so it only fires in dark mode.
+   FINAL DARK-MODE OVERRIDE
+   Text inputs, textareas, selects & file uploader stay WHITE.
+   Only dropdown menus, sliders, expanders & alerts go dark.
    ============================================================ */
 
-/* 1. Dark color scheme on the root app element */
-.stApp {
-  color-scheme: dark !important;
-}
-
-/* -- Global outline / box-shadow nuke for BaseWeb wrappers --
-   These are the elements that create the bright ring you see.   */
-.stApp div[data-baseweb="input"],
-.stApp div[data-baseweb="textarea"],
-.stApp div[data-baseweb="base-input"],
-.stApp div[data-baseweb="select"] > div {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* 2. Text areas */
-.stApp textarea,
-.stApp div[data-baseweb="textarea"],
-.stApp div[data-baseweb="textarea"] > div,
-.stApp div[data-baseweb="base-input"] {
-  background-color: var(--surface-2) !important;
-  color: var(--text) !important;
-  border: 1px solid var(--line) !important;
-  caret-color: var(--text) !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.stApp div[data-baseweb="textarea"] textarea,
-.stApp div[data-baseweb="base-input"] textarea {
-  background: transparent !important;
-  color: var(--text) !important;
-  caret-color: var(--text) !important;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.stApp div[data-baseweb="textarea"]:focus-within,
-.stApp div[data-baseweb="base-input"]:focus-within {
-  border-color: #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
-  outline: none !important;
-}
-
-/* 3. Text inputs */
-.stApp div[data-baseweb="input"] {
-  background-color: var(--surface-2) !important;
-  color: var(--text) !important;
-  border: 1px solid var(--line) !important;
-  caret-color: var(--text) !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.stApp div[data-baseweb="input"] input,
-.stApp input[type="text"],
-.stApp input[type="number"],
-.stApp input[type="email"],
-.stApp input[type="password"],
-.stApp input[type="search"],
-.stApp input[type="url"],
-.stApp input[type="tel"] {
-  background: transparent !important;
-  color: var(--text) !important;
-  caret-color: var(--text) !important;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.stApp div[data-baseweb="input"]:focus-within {
-  border-color: #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
-  outline: none !important;
-}
-
-/* 4. Selectboxes & Multiselects */
-.stApp div[data-baseweb="select"] > div {
-  background-color: var(--surface-2) !important;
-  color: var(--text) !important;
-  border: 1px solid var(--line) !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.stApp div[data-baseweb="select"] > div:focus-within {
-  border-color: #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
-  outline: none !important;
-}
-
-.stApp div[data-baseweb="select"] input {
-  background: transparent !important;
-  color: var(--text) !important;
-  caret-color: var(--text) !important;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.stApp div[data-baseweb="select"] [role="combobox"] {
-  background: transparent !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.stApp div[data-baseweb="select"] span,
-.stApp div[data-baseweb="select"] div[aria-selected],
-.stApp div[data-baseweb="select"] [role="combobox"] span,
-.stApp div[data-baseweb="select"] [role="combobox"] div {
-  color: var(--text) !important;
-}
-
-.stApp div[data-baseweb="select"] svg {
-  fill: var(--muted) !important;
-  color: var(--muted) !important;
-}
-
-.stApp [data-baseweb="tag"],
-[data-baseweb="tag"] {
-  background-color: var(--surface-2) !important;
-  color: var(--text) !important;
-  border: 1px solid var(--line) !important;
-}
-
-.stApp [data-baseweb="tag"] span,
-[data-baseweb="tag"] span {
-  color: var(--text) !important;
-}
-
-.stApp [data-baseweb="tag"] svg,
-[data-baseweb="tag"] svg {
-  fill: var(--muted) !important;
-  color: var(--muted) !important;
-}
-
-/* 5. Open dropdown menus */
+/* 5. Open dropdown menus (render in a portal, look fine dark) */
 [data-baseweb="popover"],
 [data-baseweb="popover"] > div,
 [data-baseweb="menu"],
@@ -828,54 +704,7 @@ li[role="option"][aria-selected="true"]:hover,
 li[role="option"] *,
 .stApp li[role="option"] * {
   color: var(--text) !important;
-}
-
-/* 6. Placeholders */
-.stApp ::placeholder,
-.stApp input::placeholder,
-.stApp textarea::placeholder,
-.stApp div[data-baseweb="input"] input::placeholder,
-.stApp div[data-baseweb="textarea"] textarea::placeholder,
-.stApp div[data-baseweb="base-input"] input::placeholder,
-.stApp div[data-baseweb="base-input"] textarea::placeholder,
-.stApp div[data-baseweb="select"] input::placeholder,
-.stApp div[data-baseweb="select"] div[data-placeholder="true"],
-.stApp div[data-baseweb="select"] div[aria-hidden="true"],
-::placeholder,
-input::placeholder,
-textarea::placeholder,
-[data-baseweb="select"] div[data-placeholder="true"] {
-  color: var(--muted) !important;
-  opacity: 1 !important;
-}
-
-/* 7a. Number inputs */
-.stApp [data-testid="stNumberInput"] div[data-baseweb="input"] {
-  background-color: var(--surface-2) !important;
-  border: 1px solid var(--line) !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.stApp [data-testid="stNumberInput"] input {
-  color: var(--text) !important;
-  background: transparent !important;
-  outline: none !important;
-}
-
-.stApp [data-testid="stNumberInput"] button {
-  background-color: var(--surface-2) !important;
-  color: var(--text) !important;
-  border: 1px solid var(--line) !important;
-}
-
-.stApp [data-testid="stNumberInput"] button:hover {
-  background-color: var(--surface) !important;
-}
-
-.stApp [data-testid="stNumberInput"] button svg {
-  fill: var(--text) !important;
-  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text) !important;
 }
 
 /* 7b. Sliders */
@@ -906,29 +735,6 @@ textarea::placeholder,
 .stApp [data-testid="stSliderTickBar"] div,
 .stApp [data-testid="stSlider"] [data-testid="stMarkdownContainer"] p {
   color: var(--muted) !important;
-}
-
-/* 7c. File uploader dropzone */
-.stApp [data-testid="stFileUploaderDropzone"] {
-  background-color: var(--surface-2) !important;
-  border: 1px dashed var(--line) !important;
-  color: var(--text) !important;
-}
-
-.stApp [data-testid="stFileUploaderDropzone"]:hover {
-  border-color: var(--blue) !important;
-}
-
-.stApp [data-testid="stFileUploaderDropzone"] span,
-.stApp [data-testid="stFileUploaderDropzone"] small,
-.stApp [data-testid="stFileUploaderDropzone"] div {
-  color: var(--muted) !important;
-}
-
-.stApp [data-testid="stFileUploaderDropzone"] button {
-  background-color: var(--surface) !important;
-  color: var(--text) !important;
-  border: 1px solid var(--line) !important;
 }
 
 /* 7d. Expanders */
@@ -980,10 +786,38 @@ textarea::placeholder,
   border: 1px solid var(--line) !important;
 }
 
-/* -- Catch-all: nuke any remaining white outlines on focus -- */
-.stApp div[data-baseweb] *:focus,
-.stApp div[data-baseweb] *:focus-visible {
-  outline: none !important;
+/* Final text box text color override: crisp dark text on white inputs */
+.stApp textarea,
+.stApp input[type="text"],
+.stApp input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="range"]),
+.stApp div[data-baseweb="textarea"] textarea,
+.stApp div[data-baseweb="input"] input,
+.stApp div[data-baseweb="base-input"] textarea,
+.stApp div[data-baseweb="base-input"] input,
+.stApp div[data-baseweb="select"] input,
+.stApp div[data-baseweb="select"] span,
+.stApp div[data-baseweb="select"] div[aria-selected],
+textarea,
+input[type="text"] {
+  color: #0f172a !important;
+  caret-color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+.stApp textarea::placeholder,
+.stApp input::placeholder,
+.stApp div[data-baseweb="textarea"] textarea::placeholder,
+.stApp div[data-baseweb="input"] input::placeholder,
+.stApp div[data-baseweb="base-input"] textarea::placeholder,
+.stApp div[data-baseweb="base-input"] input::placeholder,
+.stApp div[data-baseweb="select"] input::placeholder,
+.stApp div[data-baseweb="select"] div[data-placeholder="true"],
+.stApp div[data-baseweb="select"] div[aria-hidden="true"],
+textarea::placeholder,
+input::placeholder {
+  color: #5b6475 !important;
+  -webkit-text-fill-color: #5b6475 !important;
+  opacity: 1 !important;
 }
 </style>
 """
