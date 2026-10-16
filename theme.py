@@ -652,12 +652,23 @@ div[data-testid="stFormSubmitButton"] button p {
 }
 
 /* ============================================================
-   FINAL DARK-MODE OVERRIDE BLOCK (Scoped with .stApp)
+   FINAL DARK-MODE OVERRIDE — kills every white outline / glow
+   Scoped with .stApp so it only fires in dark mode.
    ============================================================ */
 
-/* 1. Dark color scheme */
+/* 1. Dark color scheme on the root app element */
 .stApp {
   color-scheme: dark !important;
+}
+
+/* -- Global outline / box-shadow nuke for BaseWeb wrappers --
+   These are the elements that create the bright ring you see.   */
+.stApp div[data-baseweb="input"],
+.stApp div[data-baseweb="textarea"],
+.stApp div[data-baseweb="base-input"],
+.stApp div[data-baseweb="select"] > div {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* 2. Text areas */
@@ -669,43 +680,57 @@ div[data-testid="stFormSubmitButton"] button p {
   color: var(--text) !important;
   border: 1px solid var(--line) !important;
   caret-color: var(--text) !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .stApp div[data-baseweb="textarea"] textarea,
 .stApp div[data-baseweb="base-input"] textarea {
-  background-color: transparent !important;
+  background: transparent !important;
   color: var(--text) !important;
   caret-color: var(--text) !important;
   border: none !important;
   outline: none !important;
+  box-shadow: none !important;
 }
 
 .stApp div[data-baseweb="textarea"]:focus-within,
 .stApp div[data-baseweb="base-input"]:focus-within {
   border-color: #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
+  outline: none !important;
 }
 
 /* 3. Text inputs */
-.stApp div[data-baseweb="input"],
-.stApp input {
+.stApp div[data-baseweb="input"] {
   background-color: var(--surface-2) !important;
   color: var(--text) !important;
   border: 1px solid var(--line) !important;
   caret-color: var(--text) !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
-.stApp div[data-baseweb="input"] input {
-  background-color: transparent !important;
+.stApp div[data-baseweb="input"] input,
+.stApp input[type="text"],
+.stApp input[type="number"],
+.stApp input[type="email"],
+.stApp input[type="password"],
+.stApp input[type="search"],
+.stApp input[type="url"],
+.stApp input[type="tel"] {
+  background: transparent !important;
   color: var(--text) !important;
   caret-color: var(--text) !important;
   border: none !important;
   outline: none !important;
+  box-shadow: none !important;
 }
 
 .stApp div[data-baseweb="input"]:focus-within {
   border-color: #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
+  outline: none !important;
 }
 
 /* 4. Selectboxes & Multiselects */
@@ -713,13 +738,29 @@ div[data-testid="stFormSubmitButton"] button p {
   background-color: var(--surface-2) !important;
   color: var(--text) !important;
   border: 1px solid var(--line) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.stApp div[data-baseweb="select"] > div:focus-within {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
+  outline: none !important;
 }
 
 .stApp div[data-baseweb="select"] input {
-  background-color: transparent !important;
+  background: transparent !important;
   color: var(--text) !important;
   caret-color: var(--text) !important;
   border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.stApp div[data-baseweb="select"] [role="combobox"] {
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .stApp div[data-baseweb="select"] span,
@@ -789,7 +830,7 @@ li[role="option"] *,
   color: var(--text) !important;
 }
 
-/* 6. Placeholders in every input and textarea */
+/* 6. Placeholders */
 .stApp ::placeholder,
 .stApp input::placeholder,
 .stApp textarea::placeholder,
@@ -808,15 +849,18 @@ textarea::placeholder,
   opacity: 1 !important;
 }
 
-/* 7. Number inputs, Sliders, Dropzone, Expanders, and Alert boxes */
+/* 7a. Number inputs */
 .stApp [data-testid="stNumberInput"] div[data-baseweb="input"] {
   background-color: var(--surface-2) !important;
   border: 1px solid var(--line) !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .stApp [data-testid="stNumberInput"] input {
   color: var(--text) !important;
-  background-color: transparent !important;
+  background: transparent !important;
+  outline: none !important;
 }
 
 .stApp [data-testid="stNumberInput"] button {
@@ -834,6 +878,7 @@ textarea::placeholder,
   color: var(--text) !important;
 }
 
+/* 7b. Sliders */
 .stApp [data-testid="stSlider"] label,
 .stApp [data-testid="stSlider"] label p {
   color: var(--text) !important;
@@ -850,6 +895,12 @@ textarea::placeholder,
 .stApp [data-baseweb="slider"] div[role="slider"] {
   background-color: var(--blue) !important;
   border: 2px solid var(--surface) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.stApp [data-baseweb="slider"] div[role="slider"]:focus {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
 }
 
 .stApp [data-testid="stSliderTickBar"] div,
@@ -857,6 +908,7 @@ textarea::placeholder,
   color: var(--muted) !important;
 }
 
+/* 7c. File uploader dropzone */
 .stApp [data-testid="stFileUploaderDropzone"] {
   background-color: var(--surface-2) !important;
   border: 1px dashed var(--line) !important;
@@ -879,6 +931,7 @@ textarea::placeholder,
   border: 1px solid var(--line) !important;
 }
 
+/* 7d. Expanders */
 .stApp [data-testid="stExpander"] {
   background-color: var(--surface-2) !important;
   border: 1px solid var(--line) !important;
@@ -907,6 +960,7 @@ textarea::placeholder,
   border-top: 1px solid var(--line) !important;
 }
 
+/* 7e. Alert boxes (st.info, st.success, st.warning, st.error) */
 .stApp [data-testid="stAlert"] {
   background-color: var(--surface-2) !important;
   color: var(--text) !important;
@@ -924,6 +978,12 @@ textarea::placeholder,
   background-color: var(--surface-2) !important;
   color: var(--text) !important;
   border: 1px solid var(--line) !important;
+}
+
+/* -- Catch-all: nuke any remaining white outlines on focus -- */
+.stApp div[data-baseweb] *:focus,
+.stApp div[data-baseweb] *:focus-visible {
+  outline: none !important;
 }
 </style>
 """
