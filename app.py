@@ -87,6 +87,21 @@ STRENGTH_TIPS = {
     "Mathematics": "Maths is a strength. Start the statistics and algorithm topics earlier than most beginners.",
 }
 
+PRESET_STRENGTHS = [
+    "Problem Solving",
+    "Creativity",
+    "Communication",
+    "Mathematics",
+    "Teamwork",
+    "Leadership",
+    "Curiosity",
+    "Writing",
+    "Attention to detail",
+    "Public speaking",
+    "Patience",
+    "Time management",
+]
+
 INTERESTS = {
     "software": {
         "label": "Software Development", "emoji": "💻",
@@ -433,16 +448,25 @@ def render_form():
                 key="rf_other_field",
             )
 
-        skills = render_skills_input(
+        raw_skills = st.text_input(
             "Skills you already have (optional)",
+            placeholder="Python, Excel, Figma (separate with commas)",
             key="rf_skills",
-            placeholder="Type a skill you know and press Enter...",
         )
+        skills = []
+        if raw_skills:
+            seen_skills = set()
+            for item in raw_skills.split(","):
+                s = item.strip()
+                if s and s.lower() not in seen_skills:
+                    seen_skills.add(s.lower())
+                    skills.append(s)
 
         strengths = st.multiselect(
             "What are your main strengths? (optional)",
-            list(STRENGTH_TIPS),
+            PRESET_STRENGTHS,
             placeholder="Pick as many as you like",
+            accept_new_options=True,
             key="rf_strengths",
         )
         career = st.text_input(
@@ -499,7 +523,15 @@ def render_results(profile: dict):
     user_skills = profile.get("skills", [])
     if user_skills:
         chips += "".join(f'<span class="tag" style="background:#dbeafe; color:#1e40af;">⚡ {html.escape(s)}</span>' for s in user_skills)
-    tips = "".join(f"<li>{html.escape(STRENGTH_TIPS[s])}</li>" for s in profile.get("strengths", []) if s in STRENGTH_TIPS)
+    tips_items = []
+    for s in profile.get("strengths", []):
+        if s in STRENGTH_TIPS:
+            tip_text = STRENGTH_TIPS[s]
+        else:
+            ci_match = next((v for k, v in STRENGTH_TIPS.items() if k.lower() == s.lower()), None)
+            tip_text = ci_match if ci_match else f"Use your {s} to stand out: show it in a project or a story on your resume."
+        tips_items.append(f"<li>{html.escape(tip_text)}</li>")
+    tips = "".join(tips_items)
     tips_html = f'<ul class="tips">{tips}</ul>' if tips else ""
 
     st.markdown(clean(f"""
