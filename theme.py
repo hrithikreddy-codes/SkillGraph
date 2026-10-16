@@ -650,5 +650,280 @@ div[data-testid="stFormSubmitButton"] button p {
 [role="dialog"] h2, [role="dialog"] span, [role="dialog"] p {
   color: var(--text) !important;
 }
+
+/* ============================================================
+   FINAL DARK-MODE OVERRIDE BLOCK (Scoped with .stApp)
+   ============================================================ */
+
+/* 1. Dark color scheme */
+.stApp {
+  color-scheme: dark !important;
+}
+
+/* 2. Text areas */
+.stApp textarea,
+.stApp div[data-baseweb="textarea"],
+.stApp div[data-baseweb="textarea"] > div,
+.stApp div[data-baseweb="base-input"] {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+  caret-color: var(--text) !important;
+}
+
+.stApp div[data-baseweb="textarea"] textarea,
+.stApp div[data-baseweb="base-input"] textarea {
+  background-color: transparent !important;
+  color: var(--text) !important;
+  caret-color: var(--text) !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.stApp div[data-baseweb="textarea"]:focus-within,
+.stApp div[data-baseweb="base-input"]:focus-within {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* 3. Text inputs */
+.stApp div[data-baseweb="input"],
+.stApp input {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+  caret-color: var(--text) !important;
+}
+
+.stApp div[data-baseweb="input"] input {
+  background-color: transparent !important;
+  color: var(--text) !important;
+  caret-color: var(--text) !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.stApp div[data-baseweb="input"]:focus-within {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* 4. Selectboxes & Multiselects */
+.stApp div[data-baseweb="select"] > div {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+}
+
+.stApp div[data-baseweb="select"] input {
+  background-color: transparent !important;
+  color: var(--text) !important;
+  caret-color: var(--text) !important;
+  border: none !important;
+}
+
+.stApp div[data-baseweb="select"] span,
+.stApp div[data-baseweb="select"] div[aria-selected],
+.stApp div[data-baseweb="select"] [role="combobox"] span,
+.stApp div[data-baseweb="select"] [role="combobox"] div {
+  color: var(--text) !important;
+}
+
+.stApp div[data-baseweb="select"] svg {
+  fill: var(--muted) !important;
+  color: var(--muted) !important;
+}
+
+.stApp [data-baseweb="tag"],
+[data-baseweb="tag"] {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+}
+
+.stApp [data-baseweb="tag"] span,
+[data-baseweb="tag"] span {
+  color: var(--text) !important;
+}
+
+.stApp [data-baseweb="tag"] svg,
+[data-baseweb="tag"] svg {
+  fill: var(--muted) !important;
+  color: var(--muted) !important;
+}
+
+/* 5. Open dropdown menus */
+[data-baseweb="popover"],
+[data-baseweb="popover"] > div,
+[data-baseweb="menu"],
+ul[role="listbox"],
+.stApp [data-baseweb="popover"],
+.stApp [data-baseweb="menu"],
+.stApp ul[role="listbox"] {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+li[role="option"],
+.stApp li[role="option"] {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+li[role="option"]:hover,
+li[role="option"]:focus,
+li[role="option"][aria-selected="true"],
+li[role="option"][aria-selected="true"]:hover,
+.stApp li[role="option"]:hover,
+.stApp li[role="option"]:focus,
+.stApp li[role="option"][aria-selected="true"],
+.stApp li[role="option"][aria-selected="true"]:hover {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+}
+
+li[role="option"] *,
+.stApp li[role="option"] * {
+  color: var(--text) !important;
+}
+
+/* 6. Placeholders in every input and textarea */
+.stApp ::placeholder,
+.stApp input::placeholder,
+.stApp textarea::placeholder,
+.stApp div[data-baseweb="input"] input::placeholder,
+.stApp div[data-baseweb="textarea"] textarea::placeholder,
+.stApp div[data-baseweb="base-input"] input::placeholder,
+.stApp div[data-baseweb="base-input"] textarea::placeholder,
+.stApp div[data-baseweb="select"] input::placeholder,
+.stApp div[data-baseweb="select"] div[data-placeholder="true"],
+.stApp div[data-baseweb="select"] div[aria-hidden="true"],
+::placeholder,
+input::placeholder,
+textarea::placeholder,
+[data-baseweb="select"] div[data-placeholder="true"] {
+  color: var(--muted) !important;
+  opacity: 1 !important;
+}
+
+/* 7. Number inputs, Sliders, Dropzone, Expanders, and Alert boxes */
+.stApp [data-testid="stNumberInput"] div[data-baseweb="input"] {
+  background-color: var(--surface-2) !important;
+  border: 1px solid var(--line) !important;
+}
+
+.stApp [data-testid="stNumberInput"] input {
+  color: var(--text) !important;
+  background-color: transparent !important;
+}
+
+.stApp [data-testid="stNumberInput"] button {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+}
+
+.stApp [data-testid="stNumberInput"] button:hover {
+  background-color: var(--surface) !important;
+}
+
+.stApp [data-testid="stNumberInput"] button svg {
+  fill: var(--text) !important;
+  color: var(--text) !important;
+}
+
+.stApp [data-testid="stSlider"] label,
+.stApp [data-testid="stSlider"] label p {
+  color: var(--text) !important;
+}
+
+.stApp [data-testid="stSlider"] [data-testid="stSliderTrack"] {
+  background-color: var(--surface-2) !important;
+}
+
+.stApp [data-testid="stSlider"] [data-testid="stSliderTrack"] > div {
+  background-color: var(--blue) !important;
+}
+
+.stApp [data-baseweb="slider"] div[role="slider"] {
+  background-color: var(--blue) !important;
+  border: 2px solid var(--surface) !important;
+}
+
+.stApp [data-testid="stSliderTickBar"] div,
+.stApp [data-testid="stSlider"] [data-testid="stMarkdownContainer"] p {
+  color: var(--muted) !important;
+}
+
+.stApp [data-testid="stFileUploaderDropzone"] {
+  background-color: var(--surface-2) !important;
+  border: 1px dashed var(--line) !important;
+  color: var(--text) !important;
+}
+
+.stApp [data-testid="stFileUploaderDropzone"]:hover {
+  border-color: var(--blue) !important;
+}
+
+.stApp [data-testid="stFileUploaderDropzone"] span,
+.stApp [data-testid="stFileUploaderDropzone"] small,
+.stApp [data-testid="stFileUploaderDropzone"] div {
+  color: var(--muted) !important;
+}
+
+.stApp [data-testid="stFileUploaderDropzone"] button {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+}
+
+.stApp [data-testid="stExpander"] {
+  background-color: var(--surface-2) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+}
+
+.stApp [data-testid="stExpander"] details,
+.stApp [data-testid="stExpander"] summary {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+}
+
+.stApp [data-testid="stExpander"] summary p,
+.stApp [data-testid="stExpander"] summary span {
+  color: var(--text) !important;
+}
+
+.stApp [data-testid="stExpander"] summary svg {
+  fill: var(--muted) !important;
+  color: var(--muted) !important;
+}
+
+.stApp [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border-top: 1px solid var(--line) !important;
+}
+
+.stApp [data-testid="stAlert"] {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+}
+
+.stApp [data-testid="stAlert"] p,
+.stApp [data-testid="stAlert"] span,
+.stApp [data-testid="stAlert"] div {
+  color: var(--text) !important;
+}
+
+.stApp div[data-baseweb="notification"] {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+}
 </style>
 """
