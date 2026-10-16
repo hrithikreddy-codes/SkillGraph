@@ -3,7 +3,202 @@ roadmap_ai.py — AI-generated personalized career roadmaps via Groq.
 """
 
 import json
-from analyzer import _get_api_keys, _call_groq
+import time
+from groq import Groq
+from analyzer import _get_api_keys, _GROQ_MODELS
+
+
+def _call_single_key(api_key, prompt, temperature=0.2):
+    """
+    Attempts to call Groq with a single API key across _GROQ_MODELS.
+    Returns (content, error_type) where error_type can be 'rate_limit', 'other', or None.
+    """
+    try:
+        client = Groq(api_key=api_key)
+    except Exception:
+        return None, "other"
+
+    hit_rate_limit = False
+    for model_name in _GROQ_MODELS:
+        try:
+            kwargs = {
+                "model": model_name,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": temperature,
+                "max_tokens": 2048,
+                "timeout": 60,
+            }
+            completion = client.chat.completions.create(**kwargs)
+            return completion.choices[0].message.content, None
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "429" in err_msg or "rate limit" in err_msg or "quota" in err_msg:
+                hit_rate_limit = True
+                continue
+            if "404" in err_msg or "does not exist" in err_msg:
+                continue
+            return None, "other"
+
+    if hit_rate_limit:
+        return None, "rate_limit"
+    return None, "other"
+
+
+def _execute_groq_call(prompt, keys, start_key_idx=0):
+    """
+    Executes Groq API call with single rate_limit retry:
+    - On rate limit, waits 2 seconds and retries once with the next key (or retries same key if only 1).
+    - Returns (raw_text, error_reason)
+    """
+    current_idx = start_key_idx % len(keys)
+    content, err = _call_single_key(keys[current_idx], prompt)
+    if err == "rate_limit":
+        time.sleep(2)
+        next_idx = (current_idx + 1) % len(keys)
+        content_retry, err_retry = _call_single_key(keys[next_idx], prompt)
+        if content_retry is not None:
+            return content_retry, None
+        return None, err_retry or "rate_limit"
+    elif err is not None:
+        return None, err
+    return content, None
+
+
+def _parse_and_validate(raw_response, hpw):
+    """
+    Parses and validates Groq raw response.
+    Returns (validated_phases, error_reason)
+    """
+    if not raw_response or not isinstance(raw_response, str):
+        return None, "bad_json"
+
+    cleaned = raw_response.strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    elif cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    cleaned = cleaned.strip()
+
+    try:
+        data = json.loads(cleaned)
+    except Exception:
+        return None, "bad_json"
+
+    total_months = None
+    raw_phases = None
+
+    if isinstance(data, dict):
+        total_months = data.get("total_months")
+        for key in ("phases", "roadmap", "steps", "data"):
+            if key in data and isinstance(data[key], list):
+                raw_phases = data[key]
+                break
+    elif isinstance(data, list):
+        raw_phases = data
+        for item in data:
+            if isinstance(item, dict) and "total_months" in item:
+                total_months = item["total_months"]
+                break
+
+    if total_months is None:
+        return None, "validation: missing total_months"
+    if not isinstance(total_months, int):
+        try:
+            total_months = int(total_months)
+        except (ValueError, TypeError):
+            return None, "validation: total_months must be an integer"
+    if total_months <= 0:
+        return None, "validation: total_months must be positive"
+
+    if not isinstance(raw_phases, list):
+        return None, "validation: phases must be a list"
+    if len(raw_phases) != 5:
+        return None, f"validation: expected 5 phases, got {len(raw_phases)}"
+
+    validated_phases = []
+    for i, phase in enumerate(raw_phases):
+        if not isinstance(phase, dict):
+            return None, f"validation: phase {i+1} must be an object"
+
+        title = phase.get("title")
+        when = phase.get("when")
+        blurb = phase.get("blurb")
+        goal = phase.get("goal")
+        tags = phase.get("tags")
+
+        if not (isinstance(title, str) and title.strip()):
+            return None, f"validation: phase {i+1} missing title"
+        if not (isinstance(when, str) and when.strip()):
+            return None, f"validation: phase {i+1} missing when"
+        if not (isinstance(blurb, str) and blurb.strip()):
+            return None, f"validation: phase {i+1} missing blurb"
+
+        clean_goal = goal.strip() if isinstance(goal, str) and goal.strip() else f"Achieve key milestone for {title.strip()}."
+
+        hours_val = phase.get("hours")
+        clean_hours = None
+        if isinstance(hours_val, (int, float)):
+            clean_hours = int(hours_val)
+        elif isinstance(hours_val, str) and hours_val.strip().isdigit():
+            clean_hours = int(hours_val.strip())
+        if clean_hours is None or clean_hours <= 0:
+            clean_hours = int(hpw * 8)
+
+        raw_groups = phase.get("groups")
+        clean_groups = []
+
+        if isinstance(raw_groups, list) and len(raw_groups) > 0:
+            for grp in raw_groups:
+                if not isinstance(grp, dict):
+                    continue
+                grp_name = str(grp.get("name", "")).strip()
+                grp_tasks = grp.get("tasks", [])
+                if isinstance(grp_tasks, list):
+                    valid_tasks = [str(t).strip() for t in grp_tasks if str(t).strip()]
+                    if valid_tasks:
+                        clean_groups.append({
+                            "name": grp_name,
+                            "tasks": valid_tasks
+                        })
+
+        if not clean_groups and "tasks" in phase and isinstance(phase["tasks"], list):
+            old_tasks = [str(t).strip() for t in phase["tasks"] if str(t).strip()]
+            if old_tasks:
+                clean_groups = [{
+                    "name": "",
+                    "tasks": old_tasks
+                }]
+
+        if not clean_groups:
+            return None, f"validation: phase {i+1} missing valid groups or tasks"
+
+        flattened_tasks = [t for g in clean_groups for t in g["tasks"]]
+        if not flattened_tasks:
+            return None, f"validation: phase {i+1} has no tasks"
+
+        if i == 0:
+            if not isinstance(tags, list):
+                clean_tags = []
+            else:
+                clean_tags = [str(t).strip() for t in tags if str(t).strip()]
+        else:
+            clean_tags = []
+
+        validated_phases.append({
+            "title": title.strip(),
+            "when": when.strip(),
+            "blurb": blurb.strip(),
+            "goal": clean_goal,
+            "hours": clean_hours,
+            "total_months": total_months,
+            "groups": clean_groups,
+            "tasks": flattened_tasks,
+            "tags": clean_tags
+        })
+
+    return validated_phases, None
 
 
 def generate_roadmap(education, interest_label, career, skills, strengths, hours_per_week=8):
@@ -32,6 +227,12 @@ def generate_roadmap(education, interest_label, career, skills, strengths, hours
         Returns None on any error or parsing failure.
     """
     try:
+        keys = _get_api_keys("GROQ_API_KEYS")
+        if not keys:
+            reason = "no_key"
+            print(reason)
+            return None, reason
+
         try:
             hpw = float(hours_per_week)
         except (ValueError, TypeError):
@@ -250,137 +451,34 @@ Output format:
 }}
 """
 
-        raw_response = _call_groq(prompt, temperature=0.2)
-        if not raw_response or raw_response.startswith("❌") or "⏱️" in raw_response:
-            return None
+        # Attempt 1
+        raw_text, err = _execute_groq_call(prompt, keys)
+        if err:
+            reason = err
+            print(reason)
+            return None, reason
 
-        # Strip markdown fences
-        cleaned = raw_response.strip()
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-        elif cleaned.startswith("```"):
-            cleaned = cleaned[3:]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-        cleaned = cleaned.strip()
+        phases, parse_err = _parse_and_validate(raw_text, hpw)
+        if phases:
+            return phases, None
 
-        data = json.loads(cleaned)
+        # Retry once: on bad_json or validation failure, retry once with the same keys and an added line "Return valid JSON matching the schema exactly"
+        retry_prompt = prompt + "\nReturn valid JSON matching the schema exactly"
+        retry_raw_text, retry_err = _execute_groq_call(retry_prompt, keys)
+        if retry_err:
+            reason = retry_err
+            print(reason)
+            return None, reason
 
-        total_months = None
-        raw_phases = None
+        retry_phases, retry_parse_err = _parse_and_validate(retry_raw_text, hpw)
+        if retry_phases:
+            return retry_phases, None
 
-        if isinstance(data, dict):
-            total_months = data.get("total_months")
-            for key in ("phases", "roadmap", "steps", "data"):
-                if key in data and isinstance(data[key], list):
-                    raw_phases = data[key]
-                    break
-        elif isinstance(data, list):
-            raw_phases = data
-            for item in data:
-                if isinstance(item, dict) and "total_months" in item:
-                    total_months = item["total_months"]
-                    break
-
-        # Validate total_months: must be an integer > 0
-        if total_months is None:
-            return None
-        if not isinstance(total_months, int):
-            try:
-                total_months = int(total_months)
-            except (ValueError, TypeError):
-                return None
-        if total_months <= 0:
-            return None
-
-        if not isinstance(raw_phases, list) or len(raw_phases) != 5:
-            return None
-
-        validated_phases = []
-        for i, phase in enumerate(raw_phases):
-            if not isinstance(phase, dict):
-                return None
-
-            title = phase.get("title")
-            when = phase.get("when")
-            blurb = phase.get("blurb")
-            goal = phase.get("goal")
-            tags = phase.get("tags")
-
-            if not (isinstance(title, str) and title.strip()):
-                return None
-            if not (isinstance(when, str) and when.strip()):
-                return None
-            if not (isinstance(blurb, str) and blurb.strip()):
-                return None
-
-            clean_goal = goal.strip() if isinstance(goal, str) and goal.strip() else f"Achieve key milestone for {title.strip()}."
-
-            # Phase-level hours integer
-            hours_val = phase.get("hours")
-            clean_hours = None
-            if isinstance(hours_val, (int, float)):
-                clean_hours = int(hours_val)
-            elif isinstance(hours_val, str) and hours_val.strip().isdigit():
-                clean_hours = int(hours_val.strip())
-            if clean_hours is None or clean_hours <= 0:
-                clean_hours = int(hpw * 8)
-
-            # Groups and tasks parsing
-            raw_groups = phase.get("groups")
-            clean_groups = []
-
-            if isinstance(raw_groups, list) and len(raw_groups) > 0:
-                for grp in raw_groups:
-                    if not isinstance(grp, dict):
-                        continue
-                    grp_name = str(grp.get("name", "")).strip()
-                    grp_tasks = grp.get("tasks", [])
-                    if isinstance(grp_tasks, list):
-                        valid_tasks = [str(t).strip() for t in grp_tasks if str(t).strip()]
-                        if valid_tasks:
-                            clean_groups.append({
-                                "name": grp_name,
-                                "tasks": valid_tasks
-                            })
-
-            # Requirement 4: The parser must also accept the old flat "tasks" list by wrapping it in one group with an empty name, so nothing breaks.
-            if not clean_groups and "tasks" in phase and isinstance(phase["tasks"], list):
-                old_tasks = [str(t).strip() for t in phase["tasks"] if str(t).strip()]
-                if old_tasks:
-                    clean_groups = [{
-                        "name": "",
-                        "tasks": old_tasks
-                    }]
-
-            if not clean_groups:
-                return None
-
-            flattened_tasks = [t for g in clean_groups for t in g["tasks"]]
-            if not flattened_tasks:
-                return None
-
-            if i == 0:
-                if not isinstance(tags, list):
-                    clean_tags = []
-                else:
-                    clean_tags = [str(t).strip() for t in tags if str(t).strip()]
-            else:
-                clean_tags = []
-
-            validated_phases.append({
-                "title": title.strip(),
-                "when": when.strip(),
-                "blurb": blurb.strip(),
-                "goal": clean_goal,
-                "hours": clean_hours,
-                "total_months": total_months,
-                "groups": clean_groups,
-                "tasks": flattened_tasks,
-                "tags": clean_tags
-            })
-
-        return validated_phases
+        reason = retry_parse_err or parse_err or "other"
+        print(reason)
+        return None, reason
 
     except Exception:
-        return None
+        reason = "other"
+        print(reason)
+        return None, reason

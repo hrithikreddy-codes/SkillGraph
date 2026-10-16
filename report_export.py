@@ -471,7 +471,7 @@ def roadmap_to_html(profile: dict, phases: list[dict]) -> str:
     else:
         subtitle_html = (
             f'<p class="subtitle">A 12-month step-by-step career roadmap for your interest in {html.escape(topic_label)}.</p>\n'
-            f'      <p class="subtitle" style="font-size: 13px; color: var(--muted); margin-top: -10px;">Note: about {hours} hours a week.</p>'
+            f'      <p class="subtitle" style="font-size: 13px; color: var(--muted); margin-top: -10px;">Note: Template roadmap &bull; about {hours} hours a week.</p>'
         )
 
     # Header section

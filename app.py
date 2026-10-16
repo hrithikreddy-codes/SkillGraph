@@ -628,7 +628,7 @@ def render_form():
 
         with st.spinner("Building your roadmap..."):
             import roadmap_ai
-            ai_phases = roadmap_ai.generate_roadmap(
+            ai_phases, fail_reason = roadmap_ai.generate_roadmap(
                 education=education,
                 interest_label=chosen_label,
                 career=career_val,
@@ -640,9 +640,11 @@ def render_form():
         if ai_phases:
             phases = ai_phases
             st.session_state.roadmap_is_ai = True
+            st.session_state.roadmap_fail_reason = None
         else:
             phases = build_roadmap(profile_data)
             st.session_state.roadmap_is_ai = False
+            st.session_state.roadmap_fail_reason = fail_reason
 
         st.session_state.profile = profile_data
         st.session_state.roadmap_phases = phases
@@ -721,7 +723,15 @@ def render_results(profile: dict):
         </div>
         <div class="progress"><div class="bar" style="width:{pct}%"></div></div>
         <div class="pcount">{done} of {total} steps done ({pct}%)</div>"""), unsafe_allow_html=True)
-    st.caption("Personalized with AI" if st.session_state.get("roadmap_is_ai") else "Template roadmap (AI unavailable)")
+    if st.session_state.get("roadmap_is_ai"):
+        st.caption("Personalized with AI")
+    else:
+        reason = st.session_state.get("roadmap_fail_reason")
+        if reason:
+            display_reason = reason.replace("_", " ") if not str(reason).startswith("validation:") else reason
+            st.caption(f"Template roadmap (AI unavailable: {display_reason})")
+        else:
+            st.caption("Template roadmap (AI unavailable)")
 
     if done == total:
         st.success("You finished every step. Time to pick a harder goal and start a new roadmap!")
@@ -760,6 +770,7 @@ def render_results(profile: dict):
         st.session_state.profile = None
         st.session_state.roadmap_phases = None
         st.session_state.roadmap_is_ai = False
+        st.session_state.roadmap_fail_reason = None
         st.rerun()
 
 
