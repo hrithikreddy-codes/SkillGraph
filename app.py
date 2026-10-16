@@ -44,6 +44,34 @@ LOGO_SVG = (
     '<circle cx="26" cy="8" r="3" fill="#fbbf24"/>'
     '</svg>'
 )
+NODES_SVG = (
+    '<svg class="hero-nodes" viewBox="0 0 800 240" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">'
+    '<g stroke="rgba(255,255,255,0.13)" stroke-width="1.2" fill="rgba(255,255,255,0.13)">'
+    '<line x1="60" y1="50" x2="150" y2="160"/>'
+    '<line x1="150" y1="160" x2="230" y2="90"/>'
+    '<line x1="60" y1="50" x2="230" y2="90"/>'
+    '<line x1="230" y1="90" x2="330" y2="180"/>'
+    '<line x1="230" y1="90" x2="420" y2="70"/>'
+    '<line x1="330" y1="180" x2="420" y2="70"/>'
+    '<line x1="330" y1="180" x2="520" y2="170"/>'
+    '<line x1="420" y1="70" x2="610" y2="80"/>'
+    '<line x1="520" y1="170" x2="610" y2="80"/>'
+    '<line x1="520" y1="170" x2="700" y2="180"/>'
+    '<line x1="610" y1="80" x2="700" y2="180"/>'
+    '<line x1="610" y1="80" x2="740" y2="60"/>'
+    '<line x1="700" y1="180" x2="740" y2="60"/>'
+    '<circle cx="60" cy="50" r="3.5"/>'
+    '<circle cx="150" cy="160" r="3"/>'
+    '<circle cx="230" cy="90" r="3.5"/>'
+    '<circle cx="330" cy="180" r="3"/>'
+    '<circle cx="420" cy="70" r="4"/>'
+    '<circle cx="520" cy="170" r="3.5"/>'
+    '<circle cx="610" cy="80" r="3"/>'
+    '<circle cx="700" cy="180" r="3.5"/>'
+    '<circle cx="740" cy="60" r="3"/>'
+    '</g>'
+    '</svg>'
+)
 
 st.set_page_config(page_title="SkillGraph - Your Career Roadmap", page_icon=FAVICON_PATH, layout="centered")
 
@@ -463,10 +491,23 @@ def roadmap_as_markdown(profile: dict, phases: list[dict]) -> str:
 # ============================================================
 # 4. UI
 # ============================================================
-def render_hero():
+def render_hero(slim: bool | None = None):
+    if slim is None:
+        slim = bool(st.session_state.get("profile") or st.session_state.get("ra_results"))
+
+    if slim:
+        st.markdown(clean(f"""
+            <div class="hero hero-slim">
+                {NODES_SVG}
+                <div class="brand">{LOGO_SVG} Skill<b>Graph</b></div>
+                <div class="tagline">Don't guess your career.</div>
+            </div>"""), unsafe_allow_html=True)
+        return
+
     words = "".join(f'<span style="animation-delay:{i * 2}s">{w}</span>' for i, w in enumerate(HERO_WORDS))
     st.markdown(clean(f"""
         <div class="hero">
+            {NODES_SVG}
             <div class="brand">{LOGO_SVG} Skill<b>Graph</b></div>
             <h1>Don't guess your career.</h1>
             <div class="rotator-line"><span>Become</span><div class="rotator">{words}</div></div>
@@ -1254,7 +1295,8 @@ def main():
         st.markdown(DARK_CSS, unsafe_allow_html=True)
 
     st.session_state.setdefault("profile", None)
-    render_hero()
+    has_results = bool(st.session_state.get("profile") or st.session_state.get("ra_results"))
+    render_hero(slim=has_results)
     tab1, tab2 = st.tabs(["Career Roadmap", "Resume Analyzer"])
     with tab1:
         if st.session_state.profile is None:

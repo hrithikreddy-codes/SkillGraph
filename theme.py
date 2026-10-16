@@ -107,10 +107,57 @@ CSS = """
 .hero { position: relative; overflow: hidden; border-radius: 24px; padding: 42px 32px 39px; text-align: center; color: #fff;
   background: linear-gradient(120deg, #0f172a, #1e3a8a, #1d4ed8, #0f172a); background-size: 300% 300%;
   animation: drift 16s ease infinite; margin-bottom: 28px; }
-.hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; filter: blur(60px); opacity: .45; }
-.hero::before { width: 260px; height: 260px; background: #3b82f6; top: -80px; left: -60px; animation: float 9s ease-in-out infinite; }
-.hero::after  { width: 220px; height: 220px; background: #f59e0b; bottom: -100px; right: -40px; opacity: .28; animation: float 11s ease-in-out infinite reverse; }
+.hero-nodes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  animation: nodeDrift 24s ease-in-out infinite alternate;
+}
 .hero > * { position: relative; z-index: 1; }
+
+.hero-slim {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  height: 64px;
+  min-height: 64px;
+  max-height: 64px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(120deg, #0f172a, #1e3a8a, #1d4ed8, #0f172a);
+  background-size: 300% 300%;
+  animation: drift 16s ease infinite;
+  margin-bottom: 24px;
+  color: #fff;
+  box-sizing: border-box;
+}
+.hero-slim > * { position: relative; z-index: 1; }
+.hero-slim .brand {
+  margin-bottom: 0 !important;
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-slim .tagline {
+  font-size: 14px;
+  color: #c7d7f5;
+  font-weight: 500;
+  margin: 0;
+  white-space: nowrap;
+}
+
+@keyframes nodeDrift {
+  0% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.05) translate(-14px, 8px); }
+  100% { transform: scale(1.02) translate(10px, -8px); }
+}
 .brand { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: .2px; margin-bottom: 26px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .brand svg { display: inline-block; vertical-align: middle; flex-shrink: 0; }
 .brand b { color: var(--sky); }
@@ -167,9 +214,14 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
 [data-testid="stGraphvizChart"], [data-testid="stGraphvizChart"] svg { background: transparent !important; }
 [data-testid="stVegaLiteChart"], .vega-embed { background: transparent !important; }
 
-@media (max-width:600px) { .hero { padding:30px 18px; } .when { display:none; } }
+@media (max-width:600px) {
+  .hero { padding:30px 18px; }
+  .hero-slim { padding: 0 16px; height: 64px; min-height: 64px; }
+  .hero-slim .tagline { display: none; }
+  .when { display:none; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .hero, .hero::before, .hero::after, .result-head { animation:none; }
+  .hero, .hero-nodes, .hero-slim, .result-head { animation:none !important; }
   .rotator span { animation:none; } .rotator span:first-child { opacity:1; }
 }
 </style>
@@ -222,6 +274,9 @@ DARK_CSS = """
 .hero .rotator span { color: var(--amber) !important; }
 .hero p.sub { color: #c7d7f5 !important; }
 .hero .brand b { color: var(--sky) !important; }
+.hero-slim { color: #ffffff !important; }
+.hero-slim .brand b { color: var(--sky) !important; }
+.hero-slim .tagline { color: #c7d7f5 !important; }
 .badge { color: #ffffff !important; }
 .goal h4 { color: #ffffff !important; }
 .goal p { color: #dbeafe !important; }
