@@ -104,7 +104,7 @@ CSS = """
 }
 
 /* ---------- Hero: the one big animated moment ---------- */
-.hero { position: relative; overflow: hidden; border-radius: 24px; padding: 56px 32px 52px; text-align: center; color: #fff;
+.hero { position: relative; overflow: hidden; border-radius: 24px; padding: 42px 32px 39px; text-align: center; color: #fff;
   background: linear-gradient(120deg, #0f172a, #1e3a8a, #1d4ed8, #0f172a); background-size: 300% 300%;
   animation: drift 16s ease infinite; margin-bottom: 28px; }
 .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; filter: blur(60px); opacity: .45; }
@@ -114,9 +114,9 @@ CSS = """
 .brand { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: .2px; margin-bottom: 26px; }
 .brand b { color: var(--sky); }
 .hero h1 { font-family: 'Sora', sans-serif; font-size: clamp(30px, 6vw, 48px); font-weight: 800; line-height: 1.15; margin: 0 0 14px; }
-.rotator-line { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: clamp(18px, 3.4vw, 24px); color: #dbeafe; margin-bottom: 18px; }
-.rotator { position: relative; height: 1.5em; width: 11em; text-align: left; }
-.rotator span { position: absolute; left: 0; top: 0; opacity: 0; color: var(--amber); font-weight: 600; white-space: nowrap;
+.rotator-line { display: flex; justify-content: center; align-items: center; gap: 0.35em; font-size: clamp(26px, 5.5vw, 42px); font-weight: 700; line-height: 1.2; color: #dbeafe; margin-bottom: 18px; }
+.rotator { display: inline-grid; text-align: left; }
+.rotator span { grid-area: 1/1; opacity: 0; color: var(--amber); font-weight: 700; white-space: nowrap;
   animation: cycle 12s infinite; animation-fill-mode: both; }
 .hero p.sub { max-width: 560px; margin: 0 auto; color: #c7d7f5; font-size: 17px; line-height: 1.6; }
 
@@ -166,7 +166,7 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
 [data-testid="stGraphvizChart"], [data-testid="stGraphvizChart"] svg { background: transparent !important; }
 [data-testid="stVegaLiteChart"], .vega-embed { background: transparent !important; }
 
-@media (max-width:600px) { .hero { padding:40px 18px; } .rotator { width:9em; } .when { display:none; } }
+@media (max-width:600px) { .hero { padding:30px 18px; } .when { display:none; } }
 @media (prefers-reduced-motion: reduce) {
   .hero, .hero::before, .hero::after, .result-head { animation:none; }
   .rotator span { animation:none; } .rotator span:first-child { opacity:1; }

@@ -260,7 +260,7 @@ INTERESTS = {
     },
 }
 
-HERO_WORDS = ["AI Engineer", "Data Scientist", "UX Designer", "Security Analyst", "Software Developer", "Founder"]
+HERO_WORDS = ["an AI Engineer", "a Data Scientist", "a UX Designer", "a Security Analyst", "a Software Developer", "a Founder"]
 
 
 # ============================================================
@@ -456,8 +456,8 @@ def render_hero():
         <div class="hero">
             <div class="brand">🧭 Skill<b>Graph</b></div>
             <h1>Don't guess your career.</h1>
-            <div class="rotator-line"><span>Become a</span><div class="rotator">{words}</div></div>
-            <p class="sub">Answer four quick questions and get a step-by-step plan for what to learn, build and do next.</p>
+            <div class="rotator-line"><span>Become</span><div class="rotator">{words}</div></div>
+            <p class="sub">Get a step-by-step plan for your career, then check your resume against any job.</p>
         </div>"""), unsafe_allow_html=True)
 
 
