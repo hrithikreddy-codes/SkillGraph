@@ -29,7 +29,7 @@ from analyzer import (
 )
 from file_reader import extract_text
 import roadmap_ai
-from report_export import roadmap_to_html
+from report_export import roadmap_to_html, analysis_to_html
 
 st.set_page_config(page_title="SkillGraph - Your Career Roadmap", page_icon="🧭", layout="centered")
 
@@ -889,8 +889,6 @@ def render_resume_analyzer():
                             match_results.get("gaps", {}),
                         )
 
-                        html_report = build_html_report(job_role, match_results, scores, roadmap)
-
                         # Generate Markdown Report
                         report_md = f"# Career Analysis: {job_role}\n\n"
                         report_md += f"**Match Score:** {scores['match_percent']}%\n\n"
@@ -913,6 +911,15 @@ def render_resume_analyzer():
 
                             for item in roadmap.get("optional", []):
                                 report_md += f"- **{item.get('skill', '')}**: {item.get('reason', '')}\n"
+
+                        html_report = analysis_to_html({
+                            "job_role": job_role,
+                            "match_results": match_results,
+                            "scores": scores,
+                            "other_res": other_res,
+                            "roadmap": roadmap,
+                            "report_md": report_md,
+                        })
 
                         st.session_state.ra_results = {
                             "job_role": job_role,
@@ -1156,24 +1163,16 @@ def render_resume_analyzer():
         st.write("")
         col_d1, col_d2 = st.columns(2)
         safe_name = job_role.lower().replace(" ", "_")
+        html_report_data = res.get("html_report") or analysis_to_html(res)
         col_d1.download_button(
             "Download report (HTML)",
-            data=res["html_report"],
+            data=html_report_data,
             file_name=f"{safe_name}_skillgraph_report.html",
             mime="text/html",
             use_container_width=True,
             key="ra_dl_html",
         )
-        col_d2.download_button(
-            "Download report (Markdown)",
-            data=res["report_md"],
-            file_name=f"{safe_name}_analysis.md",
-            mime="text/markdown",
-            use_container_width=True,
-            key="ra_dl_md",
-        )
-
-        if st.button("🔄 Analyze another resume or job", use_container_width=True, key="ra_start_over"):
+        if col_d2.button("🔄 Analyze another resume or job", use_container_width=True, key="ra_start_over"):
             st.session_state.ra_results = None
             st.session_state.ra_extracted_text = ""
             st.rerun()

@@ -321,9 +321,15 @@ def main():
                         for item in optional_items:
                             report += f"- **{item.get('skill', '')}**: {item.get('reason', '')}\n"
                             
-                html_report = build_html_report(job_role, match_results, scores, roadmap)
+                from report_export import analysis_to_html
+                html_report = analysis_to_html({
+                    "job_role": job_role,
+                    "match_results": match_results,
+                    "scores": scores,
+                    "roadmap": roadmap,
+                    "report_md": report,
+                })
                 st.download_button("Download report (HTML)", data=html_report, file_name="skillgraph_report.html", mime="text/html")
-                st.download_button("📥 Download Full Report", report, file_name="skill_report.md", mime="text/markdown")
                 
                 if debug_mode:
                     try:
@@ -415,11 +421,12 @@ def _legacy_ui_code_do_not_call():
         st.markdown(result)
 
         # --- Download button for the report ---
+        from report_export import analysis_to_html
         st.download_button(
-            label="💾 Download Report as Text",
-            data=result,
-            file_name="resume_analysis_report.md",
-            mime="text/markdown",
+            label="Download report (HTML)",
+            data=analysis_to_html(result),
+            file_name="resume_analysis_report.html",
+            mime="text/html",
         )
 
 
