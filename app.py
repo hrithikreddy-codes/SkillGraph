@@ -12,6 +12,7 @@ File layout (top to bottom):
 
 import html
 import inspect
+from pathlib import Path
 
 import altair as alt
 import pandas as pd
@@ -32,7 +33,19 @@ import roadmap_ai
 from report_export import roadmap_to_html, analysis_to_html
 from theme import CSS, DARK_CSS
 
-st.set_page_config(page_title="SkillGraph - Your Career Roadmap", page_icon="🧭", layout="centered")
+FAVICON_PATH = str(Path(__file__).parent / "favicon.svg")
+LOGO_SVG = (
+    '<svg viewBox="0 0 32 32" width="28" height="28" style="vertical-align: middle; display: inline-block;">'
+    '<rect width="32" height="32" rx="8" fill="#1e3a8a"/>'
+    '<path d="M7 23 L14 12 L21 18 L26 8" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+    '<circle cx="7" cy="23" r="2.6" fill="#fff"/>'
+    '<circle cx="14" cy="12" r="2.6" fill="#fff"/>'
+    '<circle cx="21" cy="18" r="2.6" fill="#fff"/>'
+    '<circle cx="26" cy="8" r="3" fill="#fbbf24"/>'
+    '</svg>'
+)
+
+st.set_page_config(page_title="SkillGraph - Your Career Roadmap", page_icon=FAVICON_PATH, layout="centered")
 
 
 # ============================================================
@@ -454,7 +467,7 @@ def render_hero():
     words = "".join(f'<span style="animation-delay:{i * 2}s">{w}</span>' for i, w in enumerate(HERO_WORDS))
     st.markdown(clean(f"""
         <div class="hero">
-            <div class="brand">🧭 Skill<b>Graph</b></div>
+            <div class="brand">{LOGO_SVG} Skill<b>Graph</b></div>
             <h1>Don't guess your career.</h1>
             <div class="rotator-line"><span>Become</span><div class="rotator">{words}</div></div>
             <p class="sub">Get a step-by-step plan for your career, then check your resume against any job.</p>

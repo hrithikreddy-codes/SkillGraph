@@ -8,6 +8,18 @@ import re
 from typing import Any, Dict, List, Union
 
 
+LOGO_SVG = (
+    '<svg viewBox="0 0 32 32" width="28" height="28" style="vertical-align: middle; display: inline-block;">'
+    '<rect width="32" height="32" rx="8" fill="#1e3a8a"/>'
+    '<path d="M7 23 L14 12 L21 18 L26 8" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+    '<circle cx="7" cy="23" r="2.6" fill="#fff"/>'
+    '<circle cx="14" cy="12" r="2.6" fill="#fff"/>'
+    '<circle cx="21" cy="18" r="2.6" fill="#fff"/>'
+    '<circle cx="26" cy="8" r="3" fill="#fbbf24"/>'
+    '</svg>'
+)
+
+
 def base_html_template(title: str, content: str, footer_text: str = "Personalized Career Roadmap & Skills Intelligence") -> str:
     """
     Returns a self-contained HTML document string with inline CSS (no external assets).
@@ -127,13 +139,21 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
     }}
 
     .brand {{
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       font-size: 13px;
       font-weight: 700;
       color: var(--primary);
       text-transform: uppercase;
       letter-spacing: 1.2px;
       margin-bottom: 10px;
+    }}
+
+    .brand svg {{
+      display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
     }}
 
     .career-title {{
@@ -617,7 +637,7 @@ def roadmap_to_html(profile: dict, phases: list[dict], checked_state=None) -> st
     # Header section
     header_html = f"""
     <div class="card header-card">
-      <div class="brand">🧭 SkillGraph &bull; Career Roadmap</div>
+      <div class="brand">{LOGO_SVG} SkillGraph &bull; Career Roadmap</div>
       <h1 class="career-title">{html.escape(career)}</h1>
       {subtitle_html}
       <div class="tags-wrap">
@@ -810,7 +830,7 @@ def _markdown_report_to_html(md_text: str) -> str:
             doc_title = stripped[2:].strip()
             content_cards.append(f"""
             <div class="card header-card">
-              <div class="brand">🧭 SkillGraph &bull; Resume Analysis Report</div>
+              <div class="brand">{LOGO_SVG} SkillGraph &bull; Resume Analysis Report</div>
               <h1 class="career-title">{html.escape(doc_title)}</h1>
             </div>
             """)
@@ -825,7 +845,7 @@ def _markdown_report_to_html(md_text: str) -> str:
     if not header_card_rendered:
         content_cards.insert(0, f"""
         <div class="card header-card">
-          <div class="brand">🧭 SkillGraph &bull; Resume Analysis Report</div>
+          <div class="brand">{LOGO_SVG} SkillGraph &bull; Resume Analysis Report</div>
           <h1 class="career-title">{html.escape(doc_title)}</h1>
         </div>
         """)
@@ -939,7 +959,7 @@ def analysis_to_html(result: Union[Dict[str, Any], str]) -> str:
 
     cards.append(f"""
     <div class="card header-card">
-      <div class="brand">🧭 SkillGraph &bull; Resume &amp; Job Match Analysis</div>
+      <div class="brand">{LOGO_SVG} SkillGraph &bull; Resume &amp; Job Match Analysis</div>
       <h1 class="career-title">{safe_role}</h1>
       <p class="subtitle">Comprehensive match breakdown, skill gap analysis, and personalized action roadmap.</p>
       <div class="tags-wrap">

@@ -111,7 +111,8 @@ CSS = """
 .hero::before { width: 260px; height: 260px; background: #3b82f6; top: -80px; left: -60px; animation: float 9s ease-in-out infinite; }
 .hero::after  { width: 220px; height: 220px; background: #f59e0b; bottom: -100px; right: -40px; opacity: .28; animation: float 11s ease-in-out infinite reverse; }
 .hero > * { position: relative; z-index: 1; }
-.brand { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: .2px; margin-bottom: 26px; }
+.brand { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: .2px; margin-bottom: 26px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.brand svg { display: inline-block; vertical-align: middle; flex-shrink: 0; }
 .brand b { color: var(--sky); }
 .hero h1 { font-family: 'Sora', sans-serif; font-size: clamp(30px, 6vw, 48px); font-weight: 800; line-height: 1.15; margin: 0 0 14px; }
 .rotator-line { display: flex; justify-content: center; align-items: center; gap: 0.35em; font-size: clamp(26px, 5.5vw, 42px); font-weight: 700; line-height: 1.2; color: #dbeafe; margin-bottom: 18px; }
