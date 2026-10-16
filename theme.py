@@ -117,6 +117,15 @@ CSS = """
   opacity: 0.35;
   animation: nodeDrift 24s ease-in-out infinite alternate;
 }
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(ellipse 85% 75% at 50% 60%, rgba(30, 64, 175, 0.55) 0%, rgba(30, 64, 175, 0.28) 45%, rgba(30, 64, 175, 0.08) 75%, transparent 100%);
+}
 .hero-content {
   position: relative;
   z-index: 1;
@@ -171,10 +180,12 @@ CSS = """
 .brand .wordmark { display: inline-flex; align-items: center; gap: 0; }
 .brand .wordmark b, .brand b { color: var(--sky); }
 .hero h1 { font-family: 'Sora', sans-serif; font-size: clamp(30px, 6vw, 48px); font-weight: 800; line-height: 1.15; margin: 0 0 8px; }
-.rotator-line { display: flex; justify-content: center; align-items: center; gap: 0.35em; font-size: clamp(26px, 5.5vw, 42px); font-weight: 700; line-height: 1.2; color: #dbeafe; margin-bottom: 14px; text-align: center; }
+.rotator-line { display: flex; justify-content: center; align-items: center; font-size: clamp(26px, 5.5vw, 42px); font-weight: 700; line-height: 1.2; color: #dbeafe; margin-bottom: 26px; text-align: center; }
 .rotator { display: inline-grid; text-align: center; justify-items: center; }
-.rotator span { grid-area: 1/1; opacity: 0; color: var(--amber); font-weight: 700; white-space: nowrap; text-align: center;
+.rotator .rot-item, .rotator > span { grid-area: 1/1; opacity: 0; white-space: nowrap; text-align: center;
   animation: cycle 12s infinite; animation-fill-mode: both; }
+.rotator .become { color: #ffffff !important; font-weight: 700; }
+.rotator .role { color: var(--amber) !important; font-weight: 700; }
 .hero p.sub { max-width: 560px; margin: 0 auto; color: #c7d7f5; font-size: 17px; line-height: 1.6; }
 
 @keyframes drift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
@@ -231,7 +242,7 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
 }
 @media (prefers-reduced-motion: reduce) {
   .hero, .hero-nodes, .hero-slim, .result-head { animation:none !important; }
-  .rotator span { animation:none; } .rotator span:first-child { opacity:1; }
+  .rotator .rot-item, .rotator span { animation:none; } .rotator .rot-item:first-child, .rotator span:first-child { opacity:1; }
 }
 </style>
 """
@@ -280,7 +291,8 @@ DARK_CSS = """
 /* Preserve hero and banner contrast */
 .hero h1 { color: #ffffff !important; }
 .hero .rotator-line { color: #dbeafe !important; }
-.hero .rotator span { color: var(--amber) !important; }
+.hero .rotator .become { color: #ffffff !important; }
+.hero .rotator .role { color: var(--amber) !important; }
 .hero p.sub { color: #c7d7f5 !important; }
 .hero .brand b { color: var(--sky) !important; }
 .hero-slim { color: #ffffff !important; }

@@ -529,14 +529,18 @@ def render_hero(slim: bool | None = None):
             </div>"""), unsafe_allow_html=True)
         return
 
-    words = "".join(f'<span style="animation-delay:{i * 2}s">{w}</span>' for i, w in enumerate(HERO_WORDS))
+    words = "".join(
+        f'<span class="rot-item" style="animation-delay:{i * 2}s"><span class="become">Become</span> <span class="role">{w}</span></span>'
+        for i, w in enumerate(HERO_WORDS)
+    )
     st.markdown(clean(f"""
         <div class="hero">
             {NODES_SVG}
+            <div class="hero-overlay"></div>
             <div class="hero-content">
                 <div class="brand">{LOGO_SVG}<span class="wordmark">Skill<b>Graph</b></span></div>
                 <h1>Don't guess your career.</h1>
-                <div class="rotator-line"><span>Become</span><div class="rotator">{words}</div></div>
+                <div class="rotator-line"><div class="rotator">{words}</div></div>
                 <p class="sub">Get a step-by-step plan for your career, then check your resume against any job.</p>
             </div>
         </div>"""), unsafe_allow_html=True)
