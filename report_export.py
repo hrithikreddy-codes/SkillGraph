@@ -342,17 +342,22 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
       margin-bottom: 12px;
       font-size: 15px;
       color: var(--text);
+      cursor: pointer;
     }}
 
     .task-checkbox {{
-      display: inline-block;
       width: 18px;
       height: 18px;
-      border: 2px solid var(--primary);
-      border-radius: 4px;
+      accent-color: #2563eb;
       flex-shrink: 0;
       margin-top: 3px;
-      background: #ffffff;
+      cursor: pointer;
+    }}
+
+    .task-checkbox:checked + .task-text,
+    .task-item:has(:checked) .task-text {{
+      color: #94a3b8;
+      text-decoration: line-through;
     }}
 
     .task-text {{
@@ -431,7 +436,31 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
 </html>"""
 
 
-def roadmap_to_html(profile: dict, phases: list[dict]) -> str:
+def _is_task_checked(checked_state, p: int, g: int, t: int, task: str) -> bool:
+    """Checks whether a given task is ticked in the checked_state."""
+    if not checked_state:
+        return False
+
+    task_str = str(task).strip()
+
+    if isinstance(checked_state, (set, list)):
+        return task_str in checked_state or task in checked_state or (p, g, t) in checked_state or (p, t) in checked_state
+
+    if isinstance(checked_state, dict) or hasattr(checked_state, "get"):
+        if checked_state.get(task_str) or checked_state.get(task):
+            return True
+        if checked_state.get((p, g, t)) or checked_state.get((p, t)):
+            return True
+        suffix = f"_{p}_{g}_{t}"
+        for k in checked_state:
+            if isinstance(k, str) and (k.endswith(suffix) or k == f"task_{p}_{g}_{t}"):
+                if checked_state.get(k):
+                    return True
+
+    return False
+
+
+def roadmap_to_html(profile: dict, phases: list[dict], checked_state=None) -> str:
     """
     Renders a complete, standalone HTML roadmap document from user profile and phase data.
     All user text is escaped to protect against injection.
@@ -526,7 +555,7 @@ def roadmap_to_html(profile: dict, phases: list[dict]) -> str:
         else:
             groups = [{"name": "", "tasks": ph.get("tasks", [])}]
 
-        for grp in groups:
+        for g_idx, grp in enumerate(groups):
             if not isinstance(grp, dict):
                 continue
             grp_name = str(grp.get("name", "")).strip()
@@ -534,13 +563,16 @@ def roadmap_to_html(profile: dict, phases: list[dict]) -> str:
                 tasks_html.append(f'<h3 class="group-title">{html.escape(grp_name)}</h3>')
             grp_tasks = grp.get("tasks", [])
             if isinstance(grp_tasks, list):
-                for task in grp_tasks:
+                for t_idx, task in enumerate(grp_tasks):
                     safe_task = html.escape(str(task))
+                    is_checked = _is_task_checked(checked_state, idx, g_idx, t_idx, str(task))
+                    checked_attr = " checked" if is_checked else ""
+                    task_id = f"task_{idx}_{g_idx}_{t_idx}"
                     tasks_html.append(f"""
-                    <div class="task-item">
-                      <span class="task-checkbox"></span>
+                    <label class="task-item">
+                      <input type="checkbox" class="task-checkbox" data-task-id="{task_id}"{checked_attr}>
                       <span class="task-text">{safe_task}</span>
-                    </div>
+                    </label>
                     """)
 
         tasks_rendered = "".join(tasks_html)
@@ -560,7 +592,50 @@ def roadmap_to_html(profile: dict, phases: list[dict]) -> str:
         </div>
         """)
 
-    body_content = header_html + "\n".join(phases_html)
+    storage_script = """
+    <script>
+    (function() {
+      try {
+        var key = "skillgraph_roadmap_" + (document.title || "roadmap").replace(/[^a-zA-Z0-9_-]/g, "_");
+        var checkboxes = document.querySelectorAll(".task-checkbox");
+        if (!checkboxes || checkboxes.length === 0) return;
+
+        try {
+          var saved = localStorage.getItem(key);
+          if (saved) {
+            var state = JSON.parse(saved);
+            checkboxes.forEach(function(cb, idx) {
+              var taskId = cb.getAttribute("data-task-id");
+              if (taskId && state[taskId] !== undefined) {
+                cb.checked = Boolean(state[taskId]);
+              } else if (state[idx] !== undefined) {
+                cb.checked = Boolean(state[idx]);
+              }
+            });
+          }
+        } catch (e) {}
+
+        function saveState() {
+          try {
+            var state = {};
+            checkboxes.forEach(function(cb, idx) {
+              var taskId = cb.getAttribute("data-task-id") || String(idx);
+              state[taskId] = cb.checked;
+              state[idx] = cb.checked;
+            });
+            localStorage.setItem(key, JSON.stringify(state));
+          } catch (e) {}
+        }
+
+        checkboxes.forEach(function(cb) {
+          cb.addEventListener("change", saveState);
+        });
+      } catch (e) {}
+    })();
+    </script>
+    """
+
+    body_content = header_html + "\n".join(phases_html) + storage_script
     doc_title = f"{career} - Career Roadmap"
     return base_html_template(doc_title, body_content, "Personalized Career Roadmap")
 

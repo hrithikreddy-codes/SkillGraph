@@ -763,7 +763,17 @@ def render_results(profile: dict):
 
     st.write("")
     col1, col2 = st.columns(2)
-    roadmap_html = roadmap_to_html(profile, phases)
+    checked_state = {
+        (p, g, t): bool(st.session_state.get(keys[p][g][t]))
+        for p, ph in enumerate(phases)
+        for g, grp in enumerate(ph.get("groups") or [{"name": "", "tasks": ph.get("tasks", [])}])
+        for t in range(len(grp.get("tasks", [])))
+    }
+    for p_keys in keys:
+        for g_keys in p_keys:
+            for k in g_keys:
+                checked_state[k] = bool(st.session_state.get(k))
+    roadmap_html = roadmap_to_html(profile, phases, checked_state=checked_state)
     col1.download_button("Download roadmap (HTML)", roadmap_html,
                          file_name="skillgraph_roadmap.html", mime="text/html", use_container_width=True)
     if col2.button("Start over", use_container_width=True):
