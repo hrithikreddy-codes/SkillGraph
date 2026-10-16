@@ -2,7 +2,7 @@
 theme.py - Light and Dark theme styling definitions for SkillGraph.
 """
 
-CSS = """
+CSS = r"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
 
@@ -104,7 +104,7 @@ CSS = """
 }
 
 /* ---------- Hero: the one big animated moment ---------- */
-.hero { position: relative; overflow: hidden; border-radius: 24px; padding: 34px 28px 30px; text-align: center; color: #fff;
+.hero { position: relative; overflow: hidden; border-radius: 24px; padding: 24px 28px 20px; text-align: center; color: #fff;
   background: linear-gradient(120deg, #0f172a, #1e3a8a, #1d4ed8, #0f172a); background-size: 300% 300%;
   animation: drift 16s ease infinite; margin-bottom: 20px; }
 .hero-nodes {
@@ -179,15 +179,12 @@ CSS = """
 .brand svg { display: inline-block; vertical-align: middle; flex-shrink: 0; }
 .brand .wordmark { display: inline-flex; align-items: center; gap: 0; }
 .brand .wordmark b, .brand b { color: var(--sky); }
-.hero h1 { font-family: 'Sora', sans-serif; font-size: clamp(30px, 6vw, 48px); font-weight: 800; line-height: 1.15; margin: 0 0 8px; }
-.rotator-line { display: flex; justify-content: center; align-items: center; font-size: clamp(26px, 5.5vw, 42px); font-weight: 700; line-height: 1.2; color: #dbeafe; margin-bottom: 26px; text-align: center; }
-.rotator { display: inline-grid; text-align: center; justify-items: center; }
-.rotator .rot-item, .rotator > span { grid-area: 1/1; opacity: 0; white-space: nowrap; text-align: center;
+.hero h1 { font-family: 'Sora', sans-serif; font-size: clamp(30px, 6vw, 48px); font-weight: 800; line-height: 1.15; margin: 0 0 10px; }
+.hero .become { color: #ffffff; opacity: 0.7; font-size: clamp(16px, 2.6vw, 20px); letter-spacing: 0.5px; text-align: center; margin: 0 0 6px; }
+.rotator { display: grid; justify-items: center; text-align: center; font-size: clamp(28px, 5.5vw, 44px); font-weight: 700; line-height: 1.2; margin: 0 auto 22px; }
+.rotator span { grid-area: 1/1; opacity: 0; color: var(--amber); font-weight: 700; text-align: center;
   animation: cycle 12s infinite; animation-fill-mode: both; }
-.rotator .become { color: #ffffff !important; font-weight: 700; }
-.rotator .role { color: var(--amber) !important; font-weight: 700; }
 .hero p.sub { max-width: 560px; margin: 0 auto; color: #c7d7f5; font-size: 17px; line-height: 1.6; }
-
 @keyframes drift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 @keyframes float { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,24px)} }
 @keyframes cycle { 0%{opacity:0;transform:translateY(14px)} 3%{opacity:1;transform:none} 14%{opacity:1;transform:none} 17%,100%{opacity:0;transform:translateY(-14px)} }
@@ -235,19 +232,19 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
 [data-testid="stVegaLiteChart"], .vega-embed { background: transparent !important; }
 
 @media (max-width:600px) {
-  .hero { padding:30px 18px; }
+  .hero { padding:20px 18px; }
   .hero-slim { padding: 0 16px; height: 64px; min-height: 64px; }
   .hero-slim .tagline { display: none; }
   .when { display:none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .hero, .hero-nodes, .hero-slim, .result-head { animation:none !important; }
-  .rotator .rot-item, .rotator span { animation:none; } .rotator .rot-item:first-child, .rotator span:first-child { opacity:1; }
+  .rotator span { animation:none; } .rotator span:first-child { opacity:1; }
 }
 </style>
 """
 
-DARK_CSS = """
+DARK_CSS = r"""
 <style>
 :root {
   --bg: #0b1220;
@@ -290,9 +287,8 @@ DARK_CSS = """
 
 /* Preserve hero and banner contrast */
 .hero h1 { color: #ffffff !important; }
-.hero .rotator-line { color: #dbeafe !important; }
-.hero .rotator .become { color: #ffffff !important; }
-.hero .rotator .role { color: var(--amber) !important; }
+.hero .become { color: #ffffff !important; opacity: 0.7; }
+.hero .rotator span { color: var(--amber) !important; }
 .hero p.sub { color: #c7d7f5 !important; }
 .hero .brand b { color: var(--sky) !important; }
 .hero-slim { color: #ffffff !important; }
