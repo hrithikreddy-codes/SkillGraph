@@ -30,6 +30,7 @@ from analyzer import (
 from file_reader import extract_text
 import roadmap_ai
 from report_export import roadmap_to_html, analysis_to_html
+from theme import CSS, DARK_CSS
 
 st.set_page_config(page_title="SkillGraph - Your Career Roadmap", page_icon="🧭", layout="centered")
 
@@ -263,85 +264,9 @@ HERO_WORDS = ["AI Engineer", "Data Scientist", "UX Designer", "Security Analyst"
 
 
 # ============================================================
-# 2. STYLES - one CSS block; Streamlit renders it via st.markdown
+# 2. STYLES - imported from theme.py
 # ============================================================
-CSS = """
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
-
-:root { --ink:#0f172a; --muted:#5b6475; --blue:#2563eb; --deep:#1e3a8a; --sky:#60a5fa; --amber:#fbbf24; --line:#e3e8f2; }
-
-.stApp { background:#f4f6fb; color:var(--ink); }
-.stApp, .stApp p, .stApp li, .stApp label, .stApp input { font-family:'DM Sans', Arial, sans-serif; }
-#MainMenu, footer, [data-testid="stHeader"], [data-testid="stToolbar"] { visibility:hidden; height:0; }
-.block-container { max-width:860px; padding-top:1.5rem; padding-bottom:3rem; }
-
-/* ---------- Hero: the one big animated moment ---------- */
-.hero { position:relative; overflow:hidden; border-radius:24px; padding:56px 32px 52px; text-align:center; color:#fff;
-  background:linear-gradient(120deg,#0f172a,#1e3a8a,#1d4ed8,#0f172a); background-size:300% 300%;
-  animation:drift 16s ease infinite; margin-bottom:28px; }
-.hero::before, .hero::after { content:""; position:absolute; border-radius:50%; filter:blur(60px); opacity:.45; }
-.hero::before { width:260px; height:260px; background:#3b82f6; top:-80px; left:-60px; animation:float 9s ease-in-out infinite; }
-.hero::after  { width:220px; height:220px; background:#f59e0b; bottom:-100px; right:-40px; opacity:.28; animation:float 11s ease-in-out infinite reverse; }
-.hero > * { position:relative; z-index:1; }
-.brand { font-family:'Sora',sans-serif; font-weight:700; font-size:20px; letter-spacing:.2px; margin-bottom:26px; }
-.brand b { color:var(--sky); }
-.hero h1 { font-family:'Sora',sans-serif; font-size:clamp(30px,6vw,48px); font-weight:800; line-height:1.15; margin:0 0 14px; }
-.rotator-line { display:flex; justify-content:center; align-items:center; gap:10px; font-size:clamp(18px,3.4vw,24px); color:#dbeafe; margin-bottom:18px; }
-.rotator { position:relative; height:1.5em; width:11em; text-align:left; }
-.rotator span { position:absolute; left:0; top:0; opacity:0; color:var(--amber); font-weight:600; white-space:nowrap;
-  animation:cycle 12s infinite; animation-fill-mode:both; }
-.hero p.sub { max-width:560px; margin:0 auto; color:#c7d7f5; font-size:17px; line-height:1.6; }
-
-@keyframes drift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-@keyframes float { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,24px)} }
-@keyframes cycle { 0%{opacity:0;transform:translateY(14px)} 3%{opacity:1;transform:none} 14%{opacity:1;transform:none} 17%,100%{opacity:0;transform:translateY(-14px)} }
-@keyframes rise { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
-
-/* ---------- Form ---------- */
-[data-testid="stForm"] { background:#fff; border:1px solid var(--line); border-radius:20px; padding:28px; box-shadow:0 12px 32px rgba(15,23,42,.06); }
-.form-title { font-family:'Sora',sans-serif; font-size:22px; font-weight:700; margin:0 0 4px; }
-.form-hint { color:var(--muted); margin:0 0 18px; }
-[data-baseweb="select"] > div, .stTextInput input { border-radius:12px !important; }
-.stApp label p { font-weight:600; }
-
-/* ---------- Buttons ---------- */
-div[data-testid="stFormSubmitButton"] button, .stButton button, .stDownloadButton button {
-  border-radius:12px; font-weight:700; padding:.7rem 1.2rem; border:1px solid var(--line); transition:transform .15s, box-shadow .15s; }
-div[data-testid="stFormSubmitButton"] button { width:100%; background:linear-gradient(90deg,#2563eb,#1d4ed8); color:#fff; border:none; font-size:17px; }
-div[data-testid="stFormSubmitButton"] button:hover { transform:translateY(-2px); box-shadow:0 10px 22px rgba(37,99,235,.35); color:#fff; }
-
-/* ---------- Results ---------- */
-.result-head { background:#fff; border:1px solid var(--line); border-radius:20px; padding:28px; margin-bottom:18px;
-  box-shadow:0 12px 32px rgba(15,23,42,.06); animation:rise .6s ease both; }
-.career { font-family:'Sora',sans-serif; font-size:clamp(26px,5vw,36px); font-weight:800; color:var(--deep); margin:0 0 8px; }
-.summary { color:var(--muted); line-height:1.65; margin:0 0 14px; }
-.tag { display:inline-block; padding:6px 12px; background:#e0ecff; color:#1e40af; border-radius:999px; margin:4px 6px 4px 0; font-size:13px; font-weight:600; }
-.note { background:#eff6ff; border-left:4px solid var(--blue); padding:14px 16px; border-radius:0 12px 12px 0; margin-top:14px; line-height:1.6; }
-.tips { margin:12px 0 0 18px; color:var(--ink); line-height:1.7; }
-
-.progress { height:12px; background:#dfe6f3; border-radius:999px; overflow:hidden; }
-.bar { height:100%; background:linear-gradient(90deg,#3b82f6,#2563eb); border-radius:999px; transition:width .8s cubic-bezier(.2,.8,.2,1); }
-.pcount { color:var(--muted); font-size:14px; margin:8px 0 20px; }
-
-[data-testid="stVerticalBlockBorderWrapper"] { background:#fff; border-radius:18px; border:1px solid var(--line); }
-.phase-top { display:flex; align-items:center; gap:14px; }
-.badge { flex:0 0 40px; height:40px; border-radius:50%; background:var(--blue); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Sora',sans-serif; font-weight:700; }
-.phase-title { font-family:'Sora',sans-serif; font-size:19px; font-weight:700; margin:0; }
-.when { margin-left:auto; font-size:13px; font-weight:600; color:#92400e; background:#fef3c7; padding:4px 10px; border-radius:999px; white-space:nowrap; }
-.phase-blurb { color:var(--muted); margin:10px 0 6px; line-height:1.6; }
-.goal { background:linear-gradient(135deg,#0f172a,#1e3a8a); color:#fff; border-radius:18px; padding:26px; margin-top:18px; }
-.goal h4 { font-family:'Sora',sans-serif; margin:0 0 8px; }
-.goal p { color:#dbeafe; line-height:1.6; margin:0; }
-.foot { text-align:center; color:#6b7280; padding:28px 0 0; font-size:14px; }
-
-@media (max-width:600px) { .hero { padding:40px 18px; } .rotator { width:9em; } .when { display:none; } }
-@media (prefers-reduced-motion: reduce) {
-  .hero, .hero::before, .hero::after, .result-head { animation:none; }
-  .rotator span { animation:none; } .rotator span:first-child { opacity:1; }
-}
-</style>
-"""
+# CSS and DARK_CSS are imported from theme.py
 
 
 def clean(markup: str) -> str:
@@ -784,39 +709,89 @@ def render_results(profile: dict):
         st.rerun()
 
 
-def restyle_dot_graph(dot_string: str) -> str:
-    """Restyles the Graphviz DOT graph to the SkillGraph design palette."""
+def restyle_dot_graph(dot_string: str, is_dark: bool = False) -> str:
+    """Restyles the Graphviz DOT graph to the SkillGraph design palette based on theme."""
     if not dot_string:
         return dot_string
     styled = dot_string
+
+    text_color = "#e5ecf8" if is_dark else "#0f172a"
+    grid_color = "#24304d" if is_dark else "#e3e8f2"
+    edge_color = "#60a5fa"
+    root_fill = "#16213a" if is_dark else "#1e3a8a"
+    root_border = "#3b82f6" if is_dark else "#1e3a8a"
+    root_font = "#e5ecf8" if is_dark else "white"
+    cat_bg = "#16213a" if is_dark else "#1e3a8a"
+    cat_font = "#e5ecf8" if is_dark else "white"
+    missing_bg = "#111a2e" if is_dark else "#ffffff"
+    missing_font = text_color
+
+    # Ensure bgcolor is transparent and font is DM Sans
+    if 'bgcolor="transparent"' not in styled:
+        styled = styled.replace(
+            'node [fontname="Helvetica", shape=plain];',
+            'bgcolor="transparent";\n    node [fontname="DM Sans, sans-serif", shape=plain];',
+        )
+    styled = styled.replace('fontname="Helvetica"', 'fontname="DM Sans, sans-serif"')
+
+    # Edge styling
     styled = styled.replace(
         'edge [color="grey", style="solid"];',
+        f'edge [color="{edge_color}", penwidth=1.2, style="solid"];',
+    )
+    styled = styled.replace(
         'edge [color="#60a5fa", penwidth=1.2, style="solid"];',
+        f'edge [color="{edge_color}", penwidth=1.2, style="solid"];',
     )
-    styled = styled.replace(
-        'node [fontname="Helvetica", shape=plain];',
-        'bgcolor="transparent";\n    node [fontname="DM Sans, sans-serif", shape=plain];',
-    )
-    styled = styled.replace(
-        'fillcolor="darkblue"',
-        'fillcolor="#1e3a8a", color="#1e3a8a"',
-    )
-    styled = styled.replace('BGCOLOR="darkgrey"', 'BGCOLOR="#1e3a8a"')
+
+    # Root node fill & font
+    styled = styled.replace('fillcolor="darkblue", fontcolor="white"', f'fillcolor="{root_fill}", color="{root_border}", fontcolor="{root_font}"')
+    styled = styled.replace('fillcolor="darkblue"', f'fillcolor="{root_fill}", color="{root_border}", fontcolor="{root_font}"')
+    styled = styled.replace('fillcolor="#1e3a8a", color="#1e3a8a"', f'fillcolor="{root_fill}", color="{root_border}", fontcolor="{root_font}"')
+    styled = styled.replace('fillcolor="#16213a", color="#3b82f6", fontcolor="#e5ecf8"', f'fillcolor="{root_fill}", color="{root_border}", fontcolor="{root_font}"')
+
+    # Category header
+    styled = styled.replace('BGCOLOR="darkgrey"><B><FONT COLOR="white"', f'BGCOLOR="{cat_bg}"><B><FONT COLOR="{cat_font}"')
+    styled = styled.replace('BGCOLOR="darkgrey"', f'BGCOLOR="{cat_bg}"')
+    styled = styled.replace('BGCOLOR="#1e3a8a"><B><FONT COLOR="white"', f'BGCOLOR="{cat_bg}"><B><FONT COLOR="{cat_font}"')
+    styled = styled.replace('BGCOLOR="#16213a"><B><FONT COLOR="#e5ecf8"', f'BGCOLOR="{cat_bg}"><B><FONT COLOR="{cat_font}"')
+
+    # Matched skills (blue)
     styled = styled.replace('BGCOLOR="#2e7d32"', 'BGCOLOR="#2563eb"')
+
+    # Partial skills (amber)
     styled = styled.replace('BGCOLOR="#f9a825"', 'BGCOLOR="#fbbf24"')
     styled = styled.replace('<FONT COLOR="black"', '<FONT COLOR="#0f172a"')
+
+    # Missing skills (surface + contrast text)
     styled = styled.replace(
         'BGCOLOR="#c62828"><FONT COLOR="white"',
-        'BGCOLOR="#ffffff"><FONT COLOR="#0f172a"',
+        f'BGCOLOR="{missing_bg}"><FONT COLOR="{missing_font}"',
     )
     styled = styled.replace(
-        'CELLBORDER="1"',
-        'CELLBORDER="1" COLOR="#e3e8f2"',
+        'BGCOLOR="#ffffff"><FONT COLOR="#0f172a"',
+        f'BGCOLOR="{missing_bg}"><FONT COLOR="{missing_font}"',
     )
+    styled = styled.replace(
+        'BGCOLOR="#111a2e"><FONT COLOR="#e5ecf8"',
+        f'BGCOLOR="{missing_bg}"><FONT COLOR="{missing_font}"',
+    )
+
+    # Table cell borders / grid lines
+    if f'COLOR="{grid_color}"' not in styled:
+        if 'COLOR="#e3e8f2"' in styled:
+            styled = styled.replace('COLOR="#e3e8f2"', f'COLOR="{grid_color}"')
+        elif 'COLOR="#24304d"' in styled:
+            styled = styled.replace('COLOR="#24304d"', f'COLOR="{grid_color}"')
+        else:
+            styled = styled.replace('CELLBORDER="1"', f'CELLBORDER="1" COLOR="{grid_color}"')
+
     return styled
 
 
-def render_resume_analyzer():
+def render_resume_analyzer(is_dark: bool = False):
+    if not is_dark and st.session_state.get("theme_toggle"):
+        is_dark = True
     st.session_state.setdefault("ra_results", None)
     st.session_state.setdefault("ra_extracted_text", "")
 
@@ -939,7 +914,7 @@ def render_resume_analyzer():
                         exp_req = job_data.get("experience_requirements", [])
                         other_res = assess_other_requirements(final_resume_text, soft, exp_req) if (soft or exp_req) else None
 
-                        dot_string = build_graph(job_role, match_results)
+                        dot_string = build_graph(job_role, match_results, is_dark=is_dark)
 
                         missing_skills = match_results.get("missing", [])
                         partial_skills = match_results.get("partial", [])
@@ -1111,6 +1086,8 @@ def render_resume_analyzer():
                 {"Status": "Partial", "Count": scores["partial_count"]},
                 {"Status": "Missing", "Count": scores["missing_count"]},
             ])
+            text_color = "#e5ecf8" if is_dark else "#0f172a"
+            grid_color = "#24304d" if is_dark else "#e3e8f2"
             dist_chart = (
                 alt.Chart(chart_df)
                 .mark_bar(cornerRadius=6, height=26)
@@ -1120,11 +1097,11 @@ def render_resume_analyzer():
                         sort=None,
                         title=None,
                         axis=alt.Axis(
-                            labelColor="#0f172a",
+                            labelColor=text_color,
                             labelFontSize=13,
                             labelFont="DM Sans, sans-serif",
-                            domainColor="#e3e8f2",
-                            tickColor="#e3e8f2",
+                            domainColor=grid_color,
+                            tickColor=grid_color,
                         ),
                     ),
                     x=alt.X(
@@ -1132,11 +1109,11 @@ def render_resume_analyzer():
                         title="Number of Skills",
                         axis=alt.Axis(
                             grid=True,
-                            gridColor="#e3e8f2",
-                            domainColor="#e3e8f2",
-                            tickColor="#e3e8f2",
-                            labelColor="#0f172a",
-                            titleColor="#0f172a",
+                            gridColor=grid_color,
+                            domainColor=grid_color,
+                            tickColor=grid_color,
+                            labelColor=text_color,
+                            titleColor=text_color,
                             labelFont="DM Sans, sans-serif",
                             titleFont="DM Sans, sans-serif",
                             tickMinStep=1,
@@ -1164,7 +1141,7 @@ def render_resume_analyzer():
         with st.container(border=True):
             st.markdown("#### 🕸️ Skill Graph")
             dot_string = res["dot_string"]
-            styled_dot = restyle_dot_graph(dot_string)
+            styled_dot = restyle_dot_graph(dot_string, is_dark=is_dark)
             if hasattr(st, "dialog"):
                 @st.dialog("Full Screen Skill Graph", width="large")
                 def show_full_graph():
@@ -1243,7 +1220,15 @@ def render_resume_analyzer():
 
 
 def main():
+    if "theme_toggle" not in st.session_state:
+        st.session_state["theme_toggle"] = (st.query_params.get("theme") == "dark")
+    is_dark = st.toggle("🌙 Dark", key="theme_toggle")
+    st.query_params["theme"] = "dark" if is_dark else "light"
+
     st.markdown(CSS, unsafe_allow_html=True)
+    if is_dark:
+        st.markdown(DARK_CSS, unsafe_allow_html=True)
+
     st.session_state.setdefault("profile", None)
     render_hero()
     tab1, tab2 = st.tabs(["Career Roadmap", "Resume Analyzer"])
@@ -1253,7 +1238,7 @@ def main():
         else:
             render_results(st.session_state.profile)
     with tab2:
-        render_resume_analyzer()
+        render_resume_analyzer(is_dark=is_dark)
     st.markdown('<div class="foot">SkillGraph © 2026 - Helping students find their direction.</div>',
                 unsafe_allow_html=True)
 

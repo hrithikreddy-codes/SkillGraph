@@ -709,7 +709,7 @@ def categorize(skill):
 # FUNCTION — Graphviz DOT Builder
 # ---------------------------------------------------------------------------
 
-def build_graph(job_role, compare_result):
+def build_graph(job_role, compare_result, is_dark: bool = False):
     """
     Builds a Graphviz DOT string drawn as a tree grouped by skill category.
     """
@@ -731,17 +731,34 @@ def build_graph(job_role, compare_result):
                 "mark": mark
             })
             
+    # Theme colors
+    matched_bg = "#2563eb"
+    matched_text = "white"
+    partial_bg = "#fbbf24"
+    partial_text = "#0f172a"
+    missing_bg = "#111a2e" if is_dark else "#ffffff"
+    missing_text = "#e5ecf8" if is_dark else "#0f172a"
+
     # Only group required skills (skip nice-to-have)
-    add_skills(compare_result.get("matched", []), "#2e7d32", "white", "✓ ")
-    add_skills(compare_result.get("partial", []), "#f9a825", "black", "~ ")
-    add_skills(compare_result.get("missing", []), "#c62828", "white", "✗ ")
-    
+    add_skills(compare_result.get("matched", []), matched_bg, matched_text, "✓ ")
+    add_skills(compare_result.get("partial", []), partial_bg, partial_text, "~ ")
+    add_skills(compare_result.get("missing", []), missing_bg, missing_text, "✗ ")
+
+    root_fill = "#16213a" if is_dark else "#1e3a8a"
+    root_border = "#3b82f6" if is_dark else "#1e3a8a"
+    root_font = "#e5ecf8" if is_dark else "white"
+    cat_bg = "#16213a" if is_dark else "#1e3a8a"
+    cat_font = "#e5ecf8" if is_dark else "white"
+    cell_border_color = "#24304d" if is_dark else "#e3e8f2"
+    edge_color = "#60a5fa"
+
     lines = [
         "digraph G {",
         "    rankdir=TB;",
-        '    node [fontname="Helvetica", shape=plain];',
-        '    edge [color="grey", style="solid"];',
-        f'    "{safe_role}" [shape=box, style="filled,rounded", fillcolor="darkblue", fontcolor="white", fontsize=18];'
+        '    bgcolor="transparent";',
+        '    node [fontname="DM Sans, sans-serif", shape=plain];',
+        f'    edge [color="{edge_color}", penwidth=1.2, style="solid"];',
+        f'    "{safe_role}" [shape=box, style="filled,rounded", fillcolor="{root_fill}", color="{root_border}", fontcolor="{root_font}", fontsize=18];'
     ]
     
     for i, (cat, skills) in enumerate(categories.items()):
@@ -751,8 +768,8 @@ def build_graph(job_role, compare_result):
         node_id = f"cat_{i}"
         
         # Build HTML table
-        html = '<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">'
-        html += f'<TR><TD BGCOLOR="darkgrey"><B><FONT COLOR="white">{cat}</FONT></B></TD></TR>'
+        html = f'<TABLE BORDER="0" CELLBORDER="1" COLOR="{cell_border_color}" CELLSPACING="0" CELLPADDING="4">'
+        html += f'<TR><TD BGCOLOR="{cat_bg}"><B><FONT COLOR="{cat_font}">{cat}</FONT></B></TD></TR>'
         
         for s in skills:
             html += f'<TR><TD BGCOLOR="{s["bg_color"]}"><FONT COLOR="{s["text_color"]}" POINT-SIZE="13">{s["mark"]}{s["name"]}</FONT></TD></TR>'

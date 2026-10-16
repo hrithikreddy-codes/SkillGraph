@@ -31,6 +31,67 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
       --text: #0f172a;
       --muted: #5b6475;
       --border: #e3e8f2;
+      --item-bg: #f8fafc;
+      --code-bg: #ffffff;
+      --code-text: #0f172a;
+      --tag-bg: #f1f5f9;
+      --when-bg: #eff6ff;
+      --progress-bg: #e2e8f0;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      --checked-text: #94a3b8;
+
+      /* Badges */
+      --matched-bg: #dbeafe;
+      --matched-text: #1e40af;
+      --matched-border: #bfdbfe;
+
+      --partial-bg: #fef3c7;
+      --partial-text: #92400e;
+      --partial-border: #fde68a;
+
+      --missing-bg: #fee2e2;
+      --missing-text: #991b1b;
+      --missing-border: #fecaca;
+
+      --low-bg: #e0f2fe;
+      --low-text: #075985;
+    }}
+
+    @media (prefers-color-scheme: dark) {{
+      :root {{
+        --primary: #3b82f6;
+        --deep: #93c5fd;
+        --amber: #fbbf24;
+        --bg: #0b1220;
+        --card-bg: #111a2e;
+        --text: #e5ecf8;
+        --muted: #9aa8c2;
+        --border: #24304d;
+        --item-bg: #16213a;
+        --code-bg: #16213a;
+        --code-text: #e5ecf8;
+        --tag-bg: #1c2c52;
+        --when-bg: #1e293b;
+        --progress-bg: #1e293b;
+        --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        --checked-text: #64748b;
+
+        /* Badges */
+        --matched-bg: #1e3a8a;
+        --matched-text: #bfdbfe;
+        --matched-border: #2563eb;
+
+        --partial-bg: #451a03;
+        --partial-text: #fde68a;
+        --partial-border: #92400e;
+
+        --missing-bg: #450a0a;
+        --missing-text: #fecaca;
+        --missing-border: #991b1b;
+
+        --low-bg: #082f49;
+        --low-text: #bae6fd;
+      }}
     }}
 
     * {{
@@ -58,7 +119,7 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
       border-radius: 18px;
       padding: 28px;
       margin-bottom: 24px;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      box-shadow: var(--shadow);
     }}
 
     .header-card {{
@@ -98,7 +159,7 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
 
     .tag {{
       display: inline-block;
-      background: #f1f5f9;
+      background: var(--tag-bg);
       color: var(--text);
       padding: 5px 12px;
       border-radius: 999px;
@@ -108,20 +169,20 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
     }}
 
     .tag-blue {{
-      background: #dbeafe;
-      color: #1e40af;
-      border-color: #bfdbfe;
+      background: var(--matched-bg);
+      color: var(--matched-text);
+      border-color: var(--matched-border);
     }}
 
     .tag-amber {{
-      background: #fef3c7;
-      color: #92400e;
-      border-color: #fde68a;
+      background: var(--partial-bg);
+      color: var(--partial-text);
+      border-color: var(--partial-border);
     }}
 
     /* Progress bar */
     .progress-wrap {{
-      background: #e2e8f0;
+      background: var(--progress-bg);
       border-radius: 999px;
       height: 14px;
       overflow: hidden;
@@ -153,35 +214,35 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
     }}
 
     .badge-matched {{
-      background: #dbeafe;
-      color: #1e40af;
-      border: 1px solid #bfdbfe;
+      background: var(--matched-bg);
+      color: var(--matched-text);
+      border: 1px solid var(--matched-border);
     }}
 
     .badge-partial {{
-      background: #fef3c7;
-      color: #92400e;
-      border: 1px solid #fde68a;
+      background: var(--partial-bg);
+      color: var(--partial-text);
+      border: 1px solid var(--partial-border);
     }}
 
     .badge-missing {{
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fecaca;
+      background: var(--missing-bg);
+      color: var(--missing-text);
+      border: 1px solid var(--missing-border);
     }}
 
     .badge-subtle {{
       font-size: 11px;
       padding: 2px 8px;
       border-radius: 999px;
-      background: #f1f5f9;
-      color: #64748b;
+      background: var(--tag-bg);
+      color: var(--muted);
       border: 1px solid var(--border);
     }}
 
     /* Skill items */
     .skill-item {{
-      background: #f8fafc;
+      background: var(--item-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 14px 16px;
@@ -219,7 +280,7 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
 
     /* Roadmap step card */
     .roadmap-step {{
-      background: #f8fafc;
+      background: var(--item-bg);
       border-left: 4px solid var(--primary);
       border-radius: 0 12px 12px 0;
       padding: 16px;
@@ -239,30 +300,30 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
     }}
 
     .priority-high {{
-      background: #fee2e2;
-      color: #991b1b;
+      background: var(--missing-bg);
+      color: var(--missing-text);
     }}
 
     .priority-medium {{
-      background: #fef3c7;
-      color: #92400e;
+      background: var(--partial-bg);
+      color: var(--partial-text);
     }}
 
     .priority-low {{
-      background: #e0f2fe;
-      color: #075985;
+      background: var(--low-bg);
+      color: var(--low-text);
     }}
 
     .code-bullet {{
       display: block;
-      background: #ffffff;
+      background: var(--code-bg);
       border: 1px solid var(--border);
       padding: 8px 12px;
       border-radius: 6px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 13px;
       margin-top: 6px;
-      color: #0f172a;
+      color: var(--code-text);
       line-height: 1.4;
     }}
 
@@ -298,7 +359,7 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
       font-size: 13px;
       font-weight: 600;
       color: var(--primary);
-      background: #eff6ff;
+      background: var(--when-bg);
       padding: 4px 10px;
       border-radius: 6px;
       white-space: nowrap;
@@ -356,7 +417,7 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
 
     .task-checkbox:checked + .task-text,
     .task-item:has(:checked) .task-text {{
-      color: #94a3b8;
+      color: var(--checked-text);
       text-decoration: line-through;
     }}
 
@@ -373,6 +434,35 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
     }}
 
     @media print {{
+      :root {{
+        --primary: #2563eb !important;
+        --deep: #1e3a8a !important;
+        --amber: #fbbf24 !important;
+        --bg: #ffffff !important;
+        --card-bg: #ffffff !important;
+        --text: #0f172a !important;
+        --muted: #5b6475 !important;
+        --border: #e3e8f2 !important;
+        --item-bg: #ffffff !important;
+        --code-bg: #ffffff !important;
+        --code-text: #0f172a !important;
+        --tag-bg: #f8fafc !important;
+        --when-bg: #eff6ff !important;
+        --progress-bg: #e2e8f0 !important;
+        --shadow: none !important;
+        --checked-text: #64748b !important;
+        --matched-bg: #dbeafe !important;
+        --matched-text: #1e40af !important;
+        --matched-border: #bfdbfe !important;
+        --partial-bg: #fef3c7 !important;
+        --partial-text: #92400e !important;
+        --partial-border: #fde68a !important;
+        --missing-bg: #fee2e2 !important;
+        --missing-text: #991b1b !important;
+        --missing-border: #fecaca !important;
+        --low-bg: #e0f2fe !important;
+        --low-text: #075985 !important;
+      }}
       body {{
         background: #ffffff !important;
         padding: 0 !important;
@@ -382,6 +472,7 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
         max-width: 100% !important;
       }}
       .card {{
+        background: #ffffff !important;
         border: 1px solid #cbd5e1 !important;
         box-shadow: none !important;
         margin-bottom: 16px !important;
@@ -394,6 +485,25 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
         page-break-after: avoid !important;
         break-after: avoid !important;
       }}
+      .career-title, .phase-title, .skill-name {{
+        color: #000000 !important;
+      }}
+      .subtitle, .phase-blurb, .skill-detail strong {{
+        color: #475569 !important;
+      }}
+      .skill-detail, .task-item {{
+        color: #000000 !important;
+      }}
+      .code-bullet {{
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #000000 !important;
+      }}
+      .phase-when {{
+        background: #eff6ff !important;
+        color: #1e40af !important;
+        border: 1px solid #bfdbfe !important;
+      }}
       .task-checkbox {{
         border: 2px solid #000000 !important;
       }}
@@ -404,6 +514,7 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
       }}
       .progress-wrap {{
         border: 1px solid #94a3b8 !important;
+        background: #e2e8f0 !important;
       }}
       .progress-bar {{
         background: #2563eb !important;
