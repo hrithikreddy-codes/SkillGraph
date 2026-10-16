@@ -323,6 +323,18 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
       padding-left: 44px;
     }}
 
+    .group-title {{
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--deep);
+      margin-top: 16px;
+      margin-bottom: 10px;
+    }}
+
+    .group-title:first-child {{
+      margin-top: 0;
+    }}
+
     .task-item {{
       display: flex;
       align-items: flex-start;
@@ -371,6 +383,11 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
         padding: 20px !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
+      }}
+      .group-title {{
+        color: #000000 !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
       }}
       .task-checkbox {{
         border: 2px solid #000000 !important;
@@ -486,7 +503,13 @@ def roadmap_to_html(profile: dict, phases: list[dict]) -> str:
     for idx, ph in enumerate(phases):
         p_num = idx + 1
         title = html.escape(ph.get("title", f"Phase {p_num}"))
-        when = html.escape(ph.get("when", ""))
+        when = html.escape(str(ph.get("when", "")))
+        hours_val = ph.get("hours")
+        if hours_val:
+            safe_hours = html.escape(str(hours_val))
+            when_display = f"{when} &bull; about {safe_hours} hours" if when else f"about {safe_hours} hours"
+        else:
+            when_display = when
         blurb = html.escape(ph.get("blurb", ""))
 
         tags_html = ""
@@ -497,14 +520,28 @@ def roadmap_to_html(profile: dict, phases: list[dict]) -> str:
                 tags_html = f'<div class="phase-tags">{tag_spans}</div>'
 
         tasks_html = []
-        for task in ph.get("tasks", []):
-            safe_task = html.escape(str(task))
-            tasks_html.append(f"""
-            <div class="task-item">
-              <span class="task-checkbox"></span>
-              <span class="task-text">{safe_task}</span>
-            </div>
-            """)
+        raw_groups = ph.get("groups")
+        if isinstance(raw_groups, list) and len(raw_groups) > 0:
+            groups = raw_groups
+        else:
+            groups = [{"name": "", "tasks": ph.get("tasks", [])}]
+
+        for grp in groups:
+            if not isinstance(grp, dict):
+                continue
+            grp_name = str(grp.get("name", "")).strip()
+            if grp_name:
+                tasks_html.append(f'<h3 class="group-title">{html.escape(grp_name)}</h3>')
+            grp_tasks = grp.get("tasks", [])
+            if isinstance(grp_tasks, list):
+                for task in grp_tasks:
+                    safe_task = html.escape(str(task))
+                    tasks_html.append(f"""
+                    <div class="task-item">
+                      <span class="task-checkbox"></span>
+                      <span class="task-text">{safe_task}</span>
+                    </div>
+                    """)
 
         tasks_rendered = "".join(tasks_html)
 
@@ -513,7 +550,7 @@ def roadmap_to_html(profile: dict, phases: list[dict]) -> str:
           <div class="phase-top">
             <span class="phase-badge">{p_num}</span>
             <h2 class="phase-title">{title}</h2>
-            <span class="phase-when">{when}</span>
+            <span class="phase-when">{when_display}</span>
           </div>
           <p class="phase-blurb">{blurb}</p>
           {tags_html}

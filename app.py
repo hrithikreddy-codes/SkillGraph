@@ -416,7 +416,7 @@ def build_roadmap(profile: dict) -> list[dict]:
         field = profile.get("other_interest", "").strip() or profile.get("career", "").strip() or "your chosen field"
         user_skills = profile.get("skills", [])
         tags = user_skills if user_skills else ["Fundamentals", "Core Tools", "Best Practices"]
-        return [
+        phases = [
             {"title": "Build your foundation", "when": "Weeks 1-6",
              "blurb": f"Get comfortable with core principles and fundamental tools for {field}.",
              "tasks": [
@@ -450,55 +450,59 @@ def build_roadmap(profile: dict) -> list[dict]:
              "tasks": level["prep"] + [f"Practice technical and scenario-based interview questions for {field} every week"],
              "tags": []},
         ]
+    else:
+        topic = INTERESTS[profile["interest"]]
+        if profile.get("interest") == "software" and "tiers" in topic:
+            tier = get_education_tier(profile.get("education", ""))
+            tier_data = topic["tiers"].get(tier, topic["tiers"]["builder"])
+            user_skills = profile.get("skills", [])
 
-    topic = INTERESTS[profile["interest"]]
-    if profile.get("interest") == "software" and "tiers" in topic:
-        tier = get_education_tier(profile.get("education", ""))
-        tier_data = topic["tiers"].get(tier, topic["tiers"]["builder"])
-        user_skills = profile.get("skills", [])
+            foundation_tasks = filter_tasks_by_skills(tier_data["foundation"], user_skills)
+            core_tasks = filter_tasks_by_skills(tier_data["core"], user_skills)
+            projects_tasks = filter_tasks_by_skills(tier_data["projects"], user_skills)
+            tools = tier_data.get("tools", topic["tools"])
+            exp_tasks = filter_tasks_by_skills(level["experience"] + ["Enter one hackathon or online competition"], user_skills)
+            prep_tasks = filter_tasks_by_skills(level["prep"] + [f"Practice {topic['interview']} questions every week"], user_skills)
 
-        foundation_tasks = filter_tasks_by_skills(tier_data["foundation"], user_skills)
-        core_tasks = filter_tasks_by_skills(tier_data["core"], user_skills)
-        projects_tasks = filter_tasks_by_skills(tier_data["projects"], user_skills)
-        tools = tier_data.get("tools", topic["tools"])
-        exp_tasks = filter_tasks_by_skills(level["experience"] + ["Enter one hackathon or online competition"], user_skills)
-        prep_tasks = filter_tasks_by_skills(level["prep"] + [f"Practice {topic['interview']} questions every week"], user_skills)
+            phases = [
+                {"title": "Build your foundation", "when": "Weeks 1-6",
+                 "blurb": "Get comfortable with the basics before anything advanced.",
+                 "tasks": foundation_tasks, "tags": tools},
+                {"title": "Learn the core skills", "when": "Months 2-4",
+                 "blurb": "These are the skills people in this field use every day.",
+                 "tasks": core_tasks, "tags": []},
+                {"title": "Build real projects", "when": "Months 4-6",
+                 "blurb": "Projects prove what you can do. Put every one on GitHub or in a portfolio.",
+                 "tasks": projects_tasks, "tags": []},
+                {"title": "Gain experience", "when": "Months 6-9",
+                 "blurb": "Work with other people and real deadlines.",
+                 "tasks": exp_tasks, "tags": []},
+                {"title": "Prepare for your career", "when": "Months 9-12",
+                 "blurb": "Turn your skills into something a recruiter or college can see.",
+                 "tasks": prep_tasks, "tags": []},
+            ]
+        else:
+            phases = [
+                {"title": "Build your foundation", "when": "Weeks 1-6",
+                 "blurb": "Get comfortable with the basics before anything advanced.",
+                 "tasks": topic["foundation"], "tags": topic["tools"]},
+                {"title": "Learn the core skills", "when": "Months 2-4",
+                 "blurb": "These are the skills people in this field use every day.",
+                 "tasks": topic["core"], "tags": []},
+                {"title": "Build real projects", "when": "Months 4-6",
+                 "blurb": "Projects prove what you can do. Put every one on GitHub or in a portfolio.",
+                 "tasks": topic["projects"], "tags": []},
+                {"title": "Gain experience", "when": "Months 6-9",
+                 "blurb": "Work with other people and real deadlines.",
+                 "tasks": level["experience"] + ["Enter one hackathon or online competition"], "tags": []},
+                {"title": "Prepare for your career", "when": "Months 9-12",
+                 "blurb": "Turn your skills into something a recruiter or college can see.",
+                 "tasks": level["prep"] + [f"Practice {topic['interview']} questions every week"], "tags": []},
+            ]
 
-        return [
-            {"title": "Build your foundation", "when": "Weeks 1-6",
-             "blurb": "Get comfortable with the basics before anything advanced.",
-             "tasks": foundation_tasks, "tags": tools},
-            {"title": "Learn the core skills", "when": "Months 2-4",
-             "blurb": "These are the skills people in this field use every day.",
-             "tasks": core_tasks, "tags": []},
-            {"title": "Build real projects", "when": "Months 4-6",
-             "blurb": "Projects prove what you can do. Put every one on GitHub or in a portfolio.",
-             "tasks": projects_tasks, "tags": []},
-            {"title": "Gain experience", "when": "Months 6-9",
-             "blurb": "Work with other people and real deadlines.",
-             "tasks": exp_tasks, "tags": []},
-            {"title": "Prepare for your career", "when": "Months 9-12",
-             "blurb": "Turn your skills into something a recruiter or college can see.",
-             "tasks": prep_tasks, "tags": []},
-        ]
-
-    return [
-        {"title": "Build your foundation", "when": "Weeks 1-6",
-         "blurb": "Get comfortable with the basics before anything advanced.",
-         "tasks": topic["foundation"], "tags": topic["tools"]},
-        {"title": "Learn the core skills", "when": "Months 2-4",
-         "blurb": "These are the skills people in this field use every day.",
-         "tasks": topic["core"], "tags": []},
-        {"title": "Build real projects", "when": "Months 4-6",
-         "blurb": "Projects prove what you can do. Put every one on GitHub or in a portfolio.",
-         "tasks": topic["projects"], "tags": []},
-        {"title": "Gain experience", "when": "Months 6-9",
-         "blurb": "Work with other people and real deadlines.",
-         "tasks": level["experience"] + ["Enter one hackathon or online competition"], "tags": []},
-        {"title": "Prepare for your career", "when": "Months 9-12",
-         "blurb": "Turn your skills into something a recruiter or college can see.",
-         "tasks": level["prep"] + [f"Practice {topic['interview']} questions every week"], "tags": []},
-    ]
+    for ph in phases:
+        ph["groups"] = [{"name": "", "tasks": list(ph.get("tasks", []))}]
+    return phases
 
 
 def roadmap_as_markdown(profile: dict, phases: list[dict]) -> str:
@@ -665,9 +669,15 @@ def render_results(profile: dict):
     rid = st.session_state.roadmap_id
 
     # Checkbox keys include the roadmap id, so a new roadmap starts with a clean slate.
-    keys = [[f"task_{rid}_{p}_{t}" for t in range(len(ph["tasks"]))] for p, ph in enumerate(phases)]
-    total = sum(len(k) for k in keys)
-    done = sum(bool(st.session_state.get(k)) for group in keys for k in group)
+    keys = [
+        [
+            [f"task_{rid}_{p}_{g}_{t}" for t in range(len(grp.get("tasks", [])))]
+            for g, grp in enumerate(ph.get("groups") or [{"name": "", "tasks": ph.get("tasks", [])}])
+        ]
+        for p, ph in enumerate(phases)
+    ]
+    total = sum(len(grp_keys) for phase_keys in keys for grp_keys in phase_keys)
+    done = sum(bool(st.session_state.get(k)) for phase_keys in keys for grp_keys in phase_keys for k in grp_keys)
     pct = round(done / total * 100) if total > 0 else 0
 
     chips = f'<span class="tag">{html.escape(profile["education"])}</span><span class="tag">{topic_emoji} {html.escape(topic_label)}</span>'
@@ -718,14 +728,20 @@ def render_results(profile: dict):
 
     for p, ph in enumerate(phases):
         with st.container(border=True):
+            when_label = f"{ph['when']} &bull; about {ph['hours']} hours" if ph.get("hours") else ph["when"]
             st.markdown(clean(f"""
                 <div class="phase-top"><div class="badge">{p + 1}</div>
-                <p class="phase-title">{ph["title"]}</p><span class="when">{ph["when"]}</span></div>
+                <p class="phase-title">{ph["title"]}</p><span class="when">{when_label}</span></div>
                 <p class="phase-blurb">{ph["blurb"]}</p>"""), unsafe_allow_html=True)
             if ph["tags"]:
                 st.markdown("".join(f'<span class="tag">{t}</span>' for t in ph["tags"]), unsafe_allow_html=True)
-            for t, task in enumerate(ph["tasks"]):
-                st.checkbox(task, key=keys[p][t])
+            groups = ph.get("groups") or [{"name": "", "tasks": ph.get("tasks", [])}]
+            for g, grp in enumerate(groups):
+                grp_name = grp.get("name", "").strip()
+                if grp_name:
+                    st.markdown(f"**{grp_name}**")
+                for t, task in enumerate(grp.get("tasks", [])):
+                    st.checkbox(task, key=keys[p][g][t])
             if p == 1 and topic_resources:
                 links = " &nbsp;|&nbsp; ".join(f"[{name}]({url})" for name, url in topic_resources)
                 st.markdown(f"**Free places to learn:** {links}")

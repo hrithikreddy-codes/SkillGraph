@@ -24,8 +24,10 @@ def generate_roadmap(education, interest_label, career, skills, strengths, hours
             - when (str)
             - blurb (str)
             - goal (str)
+            - hours (int)
             - total_months (int)
-            - tasks (list of strings, max 4)
+            - groups (list of dicts with 'name' and 'tasks')
+            - tasks (list of strings)
             - tags (list of strings for phase 1; empty list for phases 2-5)
         Returns None on any error or parsing failure.
     """
@@ -58,7 +60,7 @@ def generate_roadmap(education, interest_label, career, skills, strengths, hours
         skills_str = ", ".join(clean_skills) if clean_skills else "None"
         strengths_str = ", ".join(strengths) if isinstance(strengths, list) and strengths else (str(strengths) if strengths else "None")
 
-        prompt = f"""You are an expert career and learning mentor. Create a personalized career learning roadmap sized to the user's weekly study budget.
+        prompt = f"""You are an expert career and learning mentor. Create a personalized career learning roadmap structured into skill groups and sized to the user's weekly study budget.
 
 Candidate Profile:
 - Education level: {education}
@@ -78,40 +80,47 @@ Rules:
      * under 5 hrs/week -> 18 months
      For this candidate ({hpw:g} hrs/week), set "total_months" to {target_months}.
    - Split the total plan length across the same 5 phases and write the "when" labels to match (e.g. {when_guide}).
-   - Fewer hours means fewer, smaller tasks per phase (never more than 4 tasks per phase), not just a longer timeline. Scope each task so it realistically fits within the study budget.
+   - Add a phase-level "hours" integer: a rough total effort that must not exceed hours_per_week x weeks in that phase.
 
-2. Use the exact 5 phase titles in this order:
+2. Phase Groups and Structure:
+   - Change each phase from a flat "tasks" list to "groups": include 2 to 3 groups per phase.
+   - Each group must be formatted as: {{"name": "<Specific Skill Area>", "tasks": ["<task 1>", "<task 2>"]}}.
+   - Each group must contain 2 to 3 tasks.
+   - Group names must be specific skill areas of the field (for example "Databases", "Networking", "Testing", "API Design", "Frontend State", "Security Hardening").
+   - NEVER use generic group names like "Other", "Skills", "Tasks", "General", or "Misc".
+
+3. Task Prefixes & Build Limits:
+   - Every single task MUST start with "Learn:", "Practice:", or "Build:" (e.g., "Learn: relational schema design", "Practice: write integration tests", "Build: a REST API with FastAPI"). Tasks must be short, concrete, and actionable.
+   - At most ONE "Build:" task per phase unless the phase is longer than 2 months (phases longer than 2 months may contain up to 2 Build tasks).
+
+4. Use the exact 5 phase titles in this order:
    - Phase 1: "Build your foundation"
    - Phase 2: "Learn the core skills"
    - Phase 3: "Build real projects"
    - Phase 4: "Gain experience"
    - Phase 5: "Prepare for your career"
 
-3. Task prefixes:
-   - Every single task MUST start with "Learn:", "Practice:", or "Build:" (e.g., "Learn: core syntax and data structures", "Practice: solve 5 beginner algorithm problems", "Build: a CLI budget tracker"). Tasks must be short, concrete, and actionable.
-
-4. Learner Tier & Difficulty:
+5. Learner Tier & Difficulty:
    - For starter-tier learners (School, Intermediate / 12th, or beginners): provide exploratory, beginner-friendly steps with free tools. Do NOT ask for mastery of advanced topics (Docker, microservices, CI/CD, system design) in the first 12 months; mention them as awareness only (e.g., "Learn: awareness of containerization concepts and what Docker solves").
    - For college / B.Tech / Degree learners: focus on production-grade tools, deeper computer science fundamentals, and technical interview preparation.
 
-5. Handling existing skills:
+6. Handling existing skills:
    - If the user's skills list is empty or "None", assume a beginner.
    - If the user has existing skills, build on them and say in the Phase 1 blurb which known skills the plan builds on.
 
-6. Make tasks differ meaningfully by interest ({interest_label}) and target career ({career}). Do NOT reuse generic tasks across fields.
+7. Make tasks differ meaningfully by interest ({interest_label}) and target career ({career}). Do NOT reuse generic tasks across fields.
 
-7. Task count and Goal:
-   - Keep each phase to at most 4 tasks (between 2 to 4 tasks, never more than 4).
+8. Goal field:
    - Add one short "goal" field per phase: a one-line outcome the learner can check (e.g., "You can build and deploy a small API", "You can conduct exploratory data analysis on a real-world dataset").
 
-8. Controllable actions (no outcome promises):
+9. Controllable actions (no outcome promises):
    - Do NOT promise outcomes like getting an internship or job. Phrase career tasks strictly as actions the learner controls (e.g., "Practice: apply to 10 internships with tailored resumes", NOT "Get an internship" or "Land a job").
 
-9. Tags:
+10. Tags:
    - Phase 1 must include a "tags" list with 3-5 key tools, languages, or foundational concepts (e.g., ["Python", "Git", "VS Code"]).
    - Phases 2, 3, 4, and 5 must have an empty "tags" list ([]).
 
-10. Return JSON only with "total_months" integer and "phases" list. No markdown formatting, no code fences (```json ... ```), no introductory or concluding text.
+11. Return JSON only with "total_months" integer and "phases" list. No markdown formatting, no code fences (```json ... ```), no introductory or concluding text.
 
 Output format:
 {{
@@ -120,60 +129,120 @@ Output format:
     {{
       "title": "Build your foundation",
       "when": "...",
+      "hours": {int(hpw * 6)},
       "blurb": "Short summary of what to achieve in this phase (if user had skills, explicitly state which known skills the plan builds on).",
       "goal": "You can write basic scripts and use Git for version control.",
-      "tasks": [
-        "Learn: core language syntax and variables",
-        "Practice: solve 10 basic coding exercises",
-        "Build: a small command-line tool"
+      "groups": [
+        {{
+          "name": "Core Programming",
+          "tasks": [
+            "Learn: language syntax, variables, and control flow",
+            "Practice: solve 10 basic algorithm exercises"
+          ]
+        }},
+        {{
+          "name": "Developer Environment",
+          "tasks": [
+            "Learn: terminal commands and VS Code setup",
+            "Build: a small command-line utility"
+          ]
+        }}
       ],
       "tags": ["Tool 1", "Tool 2", "Tool 3"]
     }},
     {{
       "title": "Learn the core skills",
       "when": "...",
+      "hours": {int(hpw * 10)},
       "blurb": "Short summary of what to achieve in this phase.",
       "goal": "You can build a functional CRUD application with a database.",
-      "tasks": [
-        "Learn: relational databases and SQL queries",
-        "Practice: design a database schema for an application",
-        "Build: a backend API connected to SQLite"
+      "groups": [
+        {{
+          "name": "Databases",
+          "tasks": [
+            "Learn: relational databases and SQL queries",
+            "Practice: design a schema with foreign keys"
+          ]
+        }},
+        {{
+          "name": "Backend APIs",
+          "tasks": [
+            "Practice: implement REST endpoints with input validation",
+            "Build: a backend API connected to SQLite"
+          ]
+        }}
       ],
       "tags": []
     }},
     {{
       "title": "Build real projects",
       "when": "...",
+      "hours": {int(hpw * 8)},
       "blurb": "Short summary of what to achieve in this phase.",
       "goal": "You have 2 full projects documented and hosted online.",
-      "tasks": [
-        "Build: a full-stack project solving a real problem",
-        "Practice: write comprehensive README documentation",
-        "Build: deploy the application to a free hosting platform"
+      "groups": [
+        {{
+          "name": "Project Architecture",
+          "tasks": [
+            "Learn: clean code organization and modular design",
+            "Practice: write comprehensive README documentation"
+          ]
+        }},
+        {{
+          "name": "Full-Stack Implementation",
+          "tasks": [
+            "Practice: implement authentication and user flows",
+            "Build: a full-stack project solving a real problem"
+          ]
+        }}
       ],
       "tags": []
     }},
     {{
       "title": "Gain experience",
       "when": "...",
+      "hours": {int(hpw * 12)},
       "blurb": "Short summary of what to achieve in this phase.",
       "goal": "You have collaborated with other developers on a shared codebase.",
-      "tasks": [
-        "Practice: contribute a bug fix or docs to an open-source repo",
-        "Practice: participate in a hackathon or team build",
-        "Build: collaborate on a feature using pull requests"
+      "groups": [
+        {{
+          "name": "Testing & Code Quality",
+          "tasks": [
+            "Learn: automated testing patterns and CI workflows",
+            "Practice: write unit and integration test suites"
+          ]
+        }},
+        {{
+          "name": "Open Source Collaboration",
+          "tasks": [
+            "Practice: contribute a bug fix or docs to an open repo",
+            "Build: collaborate on a feature using pull requests"
+          ]
+        }}
       ],
       "tags": []
     }},
     {{
       "title": "Prepare for your career",
       "when": "...",
+      "hours": {int(hpw * 12)},
       "blurb": "Short summary of what to achieve in this phase.",
       "goal": "You have an active portfolio and application pipeline ready.",
-      "tasks": [
-        "Build: a clean 1-page portfolio website showcasing top projects",
-        "Practice: apply to 10 internships or junior roles with tailored resumes",
-        "Practice: complete 20 technical interview practice questions"
+      "groups": [
+        {{
+          "name": "Portfolio & Branding",
+          "tasks": [
+            "Practice: write concise project case studies",
+            "Build: a clean 1-page portfolio website"
+          ]
+        }},
+        {{
+          "name": "Interview Preparation",
+          "tasks": [
+            "Practice: solve 20 technical interview practice questions",
+            "Practice: apply to 10 internships or junior roles with tailored resumes"
+          ]
+        }}
       ],
       "tags": []
     }}
@@ -236,7 +305,6 @@ Output format:
             when = phase.get("when")
             blurb = phase.get("blurb")
             goal = phase.get("goal")
-            tasks = phase.get("tasks")
             tags = phase.get("tags")
 
             if not (isinstance(title, str) and title.strip()):
@@ -245,14 +313,52 @@ Output format:
                 return None
             if not (isinstance(blurb, str) and blurb.strip()):
                 return None
-            if not (isinstance(tasks, list) and len(tasks) >= 1 and all(isinstance(t, str) and t.strip() for t in tasks)):
-                return None
-
-            clean_tasks = [t.strip() for t in tasks[:4]]
-            if len(clean_tasks) < 1 or len(clean_tasks) > 4:
-                return None
 
             clean_goal = goal.strip() if isinstance(goal, str) and goal.strip() else f"Achieve key milestone for {title.strip()}."
+
+            # Phase-level hours integer
+            hours_val = phase.get("hours")
+            clean_hours = None
+            if isinstance(hours_val, (int, float)):
+                clean_hours = int(hours_val)
+            elif isinstance(hours_val, str) and hours_val.strip().isdigit():
+                clean_hours = int(hours_val.strip())
+            if clean_hours is None or clean_hours <= 0:
+                clean_hours = int(hpw * 8)
+
+            # Groups and tasks parsing
+            raw_groups = phase.get("groups")
+            clean_groups = []
+
+            if isinstance(raw_groups, list) and len(raw_groups) > 0:
+                for grp in raw_groups:
+                    if not isinstance(grp, dict):
+                        continue
+                    grp_name = str(grp.get("name", "")).strip()
+                    grp_tasks = grp.get("tasks", [])
+                    if isinstance(grp_tasks, list):
+                        valid_tasks = [str(t).strip() for t in grp_tasks if str(t).strip()]
+                        if valid_tasks:
+                            clean_groups.append({
+                                "name": grp_name,
+                                "tasks": valid_tasks
+                            })
+
+            # Requirement 4: The parser must also accept the old flat "tasks" list by wrapping it in one group with an empty name, so nothing breaks.
+            if not clean_groups and "tasks" in phase and isinstance(phase["tasks"], list):
+                old_tasks = [str(t).strip() for t in phase["tasks"] if str(t).strip()]
+                if old_tasks:
+                    clean_groups = [{
+                        "name": "",
+                        "tasks": old_tasks
+                    }]
+
+            if not clean_groups:
+                return None
+
+            flattened_tasks = [t for g in clean_groups for t in g["tasks"]]
+            if not flattened_tasks:
+                return None
 
             if i == 0:
                 if not isinstance(tags, list):
@@ -267,8 +373,10 @@ Output format:
                 "when": when.strip(),
                 "blurb": blurb.strip(),
                 "goal": clean_goal,
+                "hours": clean_hours,
                 "total_months": total_months,
-                "tasks": clean_tasks,
+                "groups": clean_groups,
+                "tasks": flattened_tasks,
                 "tags": clean_tags
             })
 
