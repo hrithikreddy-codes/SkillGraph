@@ -33,33 +33,74 @@ CSS = """
 #MainMenu, footer, [data-testid="stHeader"], [data-testid="stToolbar"] { visibility: hidden; height: 0; }
 .block-container { max-width: 860px; padding-top: 1.5rem; padding-bottom: 3rem; }
 
-/* ---------- Theme toggle fixed pill ---------- */
-.st-key-theme_toggle {
+/* ---------- Theme icon button top right ---------- */
+.st-key-theme_btn {
   position: fixed;
   top: 14px;
   right: 18px;
   z-index: 1000;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 4px 12px;
   box-shadow: var(--shadow);
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  width: auto;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  transition: all 0.2s ease;
 }
-.st-key-theme_toggle label {
-  cursor: pointer;
-  margin-bottom: 0 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px;
+
+.st-key-theme_btn:hover {
+  background: var(--surface-2);
+  border-color: var(--blue);
+  transform: translateY(-1px);
 }
-.st-key-theme_toggle p {
-  font-weight: 600;
-  font-size: 13px;
+
+.st-key-theme_btn button,
+.stButton.st-key-theme_btn button {
+  width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
   margin: 0 !important;
-  color: var(--text);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.st-key-theme_btn button:hover,
+.st-key-theme_btn button:focus,
+.st-key-theme_btn button:active,
+.stButton.st-key-theme_btn button:hover,
+.stButton.st-key-theme_btn button:focus,
+.stButton.st-key-theme_btn button:active {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.st-key-theme_btn button p,
+.stButton.st-key-theme_btn button p {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  color: var(--text) !important;
 }
 
 /* ---------- Hero: the one big animated moment ---------- */
@@ -497,23 +538,42 @@ div[data-testid="stFormSubmitButton"] button p {
   color: #ffffff !important;
 }
 
-/* Theme Toggle Pill in Dark Mode */
-.st-key-theme_toggle {
+/* Theme Button in Dark Mode */
+.st-key-theme_btn {
   background: var(--surface) !important;
-  border-color: var(--line) !important;
+  border: 1px solid var(--line) !important;
   box-shadow: var(--shadow) !important;
 }
 
-.st-key-theme_toggle p, .st-key-theme_toggle span, .st-key-theme_toggle label {
+.st-key-theme_btn:hover {
+  background: var(--surface-2) !important;
+  border-color: var(--blue) !important;
+}
+
+.st-key-theme_btn button,
+.stButton.st-key-theme_btn button {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   color: var(--text) !important;
 }
 
-.st-key-theme_toggle [role="switch"] {
-  background-color: var(--surface-2) !important;
+.st-key-theme_btn button:hover,
+.st-key-theme_btn button:focus,
+.st-key-theme_btn button:active,
+.stButton.st-key-theme_btn button:hover,
+.stButton.st-key-theme_btn button:focus,
+.stButton.st-key-theme_btn button:active {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: var(--text) !important;
 }
 
-.st-key-theme_toggle [role="switch"][aria-checked="true"] {
-  background-color: var(--blue) !important;
+.st-key-theme_btn button p,
+.stButton.st-key-theme_btn button p {
+  color: var(--text) !important;
 }
 
 /* Graphviz and Altair transparent backgrounds */

@@ -790,7 +790,7 @@ def restyle_dot_graph(dot_string: str, is_dark: bool = False) -> str:
 
 
 def render_resume_analyzer(is_dark: bool = False):
-    if not is_dark and st.session_state.get("theme_toggle"):
+    if not is_dark and (st.session_state.get("theme") == "dark" or st.session_state.get("theme_toggle")):
         is_dark = True
     st.session_state.setdefault("ra_results", None)
     st.session_state.setdefault("ra_extracted_text", "")
@@ -1220,10 +1220,21 @@ def render_resume_analyzer(is_dark: bool = False):
 
 
 def main():
-    if "theme_toggle" not in st.session_state:
-        st.session_state["theme_toggle"] = (st.query_params.get("theme") == "dark")
-    is_dark = st.toggle("🌙 Dark", key="theme_toggle")
+    if "theme" not in st.session_state:
+        st.session_state["theme"] = "dark" if st.query_params.get("theme") == "dark" else "light"
+
+    is_dark = (st.session_state["theme"] == "dark")
+    st.session_state["theme_toggle"] = is_dark
     st.query_params["theme"] = "dark" if is_dark else "light"
+
+    btn_label = "☀️" if is_dark else "🌙"
+    btn_help = "Switch to light mode" if is_dark else "Switch to dark mode"
+    if st.button(btn_label, key="theme_btn", help=btn_help):
+        new_theme = "light" if is_dark else "dark"
+        st.session_state["theme"] = new_theme
+        st.session_state["theme_toggle"] = (new_theme == "dark")
+        st.query_params["theme"] = new_theme
+        st.rerun()
 
     st.markdown(CSS, unsafe_allow_html=True)
     if is_dark:
