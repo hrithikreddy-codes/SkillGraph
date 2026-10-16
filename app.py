@@ -591,6 +591,15 @@ def render_form():
             placeholder="Example: AI Engineer",
             key="rf_career",
         )
+        hours = st.slider(
+            "Hours per week you can study",
+            min_value=2,
+            max_value=40,
+            value=8,
+            step=1,
+            help="Be realistic. We size your plan to this.",
+            key="rf_hours",
+        )
         submitted = st.button("Generate my roadmap", type="primary", use_container_width=True, key="rf_submit")
 
     if submitted:
@@ -610,6 +619,7 @@ def render_form():
             "skills": skills,
             "strengths": strengths,
             "career": career_val,
+            "hours": hours,
         }
 
         with st.spinner("Building your roadmap..."):
@@ -620,6 +630,7 @@ def render_form():
                 career=career_val,
                 skills=skills,
                 strengths=strengths,
+                hours_per_week=hours,
             )
 
         if ai_phases:
@@ -675,12 +686,28 @@ def render_results(profile: dict):
     tips = "".join(tips_items)
     tips_html = f'<ul class="tips">{tips}</ul>' if tips else ""
 
+    hours = profile.get("hours", 8)
+    is_ai = st.session_state.get("roadmap_is_ai", False)
+    total_months = None
+    if is_ai and phases:
+        for ph in phases:
+            if isinstance(ph, dict) and ph.get("total_months"):
+                total_months = ph["total_months"]
+                break
+
+    if is_ai and total_months:
+        summary_line = f"A {total_months}-month starting plan built for your level and your interest in {html.escape(topic_label)}, about {hours} hours a week."
+        note_content = f'{level["note"]}{tips_html}'
+    else:
+        summary_line = f"A 12-month starting plan built for your level and your interest in {html.escape(topic_label)}."
+        note_content = f'Note: about {hours} hours a week.<br>{level["note"]}{tips_html}'
+
     st.markdown(clean(f"""
         <div class="result-head">
             <h2 class="career">{html.escape(profile["career"])}</h2>
-            <p class="summary">A 12-month starting plan built for your level and your interest in {html.escape(topic_label)}.</p>
+            <p class="summary">{summary_line}</p>
             <div>{chips}</div>
-            <div class="note">{level["note"]}{tips_html}</div>
+            <div class="note">{note_content}</div>
         </div>
         <div class="progress"><div class="bar" style="width:{pct}%"></div></div>
         <div class="pcount">{done} of {total} steps done ({pct}%)</div>"""), unsafe_allow_html=True)

@@ -440,13 +440,29 @@ def roadmap_to_html(profile: dict, phases: list[dict]) -> str:
 
     career = profile.get("career", "").strip() or topic_label
     education = profile.get("education", "")
+    hours = profile.get("hours", 8)
+
+    total_months = None
+    if phases and isinstance(phases, list):
+        for ph in phases:
+            if isinstance(ph, dict) and ph.get("total_months"):
+                total_months = ph["total_months"]
+                break
+
+    if total_months:
+        subtitle_html = f'<p class="subtitle">A {total_months}-month step-by-step career roadmap for your interest in {html.escape(topic_label)}, about {hours} hours a week.</p>'
+    else:
+        subtitle_html = (
+            f'<p class="subtitle">A 12-month step-by-step career roadmap for your interest in {html.escape(topic_label)}.</p>\n'
+            f'      <p class="subtitle" style="font-size: 13px; color: var(--muted); margin-top: -10px;">Note: about {hours} hours a week.</p>'
+        )
 
     # Header section
     header_html = f"""
     <div class="card header-card">
       <div class="brand">🧭 SkillGraph &bull; Career Roadmap</div>
       <h1 class="career-title">{html.escape(career)}</h1>
-      <p class="subtitle">A 12-month step-by-step career roadmap for your interest in {html.escape(topic_label)}.</p>
+      {subtitle_html}
       <div class="tags-wrap">
         <span class="tag">{html.escape(education)}</span>
         <span class="tag">{html.escape(topic_emoji)} {html.escape(topic_label)}</span>
