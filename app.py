@@ -28,6 +28,8 @@ from analyzer import (
     score_breakdown,
 )
 from file_reader import extract_text
+import roadmap_ai
+from report_export import roadmap_to_html
 
 st.set_page_config(page_title="SkillGraph - Your Career Roadmap", page_icon="🧭", layout="centered")
 
@@ -105,6 +107,62 @@ PRESET_STRENGTHS = [
 INTERESTS = {
     "software": {
         "label": "Software Development", "emoji": "💻",
+        "tiers": {
+            "starter": {
+                "foundation": [
+                    "Explore coding basics with Python: variables, loops, conditionals, and functions",
+                    "Create your first web page using free tools: HTML & CSS on CodePen or Replit",
+                    "Learn how software works by building simple interactive text games",
+                ],
+                "core": [
+                    "Practice basic programming logic: lists, dictionaries, and simple problem-solving",
+                    "Build a simple interactive browser app or visual game using free online editors",
+                    "Create a free GitHub account and learn how to save and share your code",
+                ],
+                "projects": [
+                    "Beginner: interactive quiz or text-adventure game in Python",
+                    "Intermediate: personal hobby, profile, or club webpage styled with HTML & CSS",
+                    "Creative: mini calculator or budget tracker app built with free tools",
+                ],
+                "tools": ["Python", "HTML/CSS", "Replit", "VS Code", "GitHub"],
+            },
+            "builder": {
+                "foundation": [
+                    "Master Python or JavaScript fundamentals: data types, functions, modules, and error handling",
+                    "Understand how the web works: HTML5, responsive CSS, and HTTP client-server communication",
+                    "Set up Git, GitHub, and a modern local development environment in VS Code",
+                ],
+                "core": [
+                    "Build backend services and REST APIs with Node.js, Express, Flask, or FastAPI",
+                    "Learn relational databases: SQL schema design, CRUD queries, and joins",
+                    "Connect frontend user interfaces to backend REST APIs with database persistence",
+                ],
+                "projects": [
+                    "Beginner: responsive personal portfolio website hosted on GitHub Pages",
+                    "Intermediate: task manager or note-taking web app with user login and a database",
+                    "Advanced: full-stack CRUD application deployed on a free cloud platform",
+                ],
+                "tools": ["Python", "JavaScript", "Git", "SQL", "VS Code", "REST APIs"],
+            },
+            "job_ready": {
+                "foundation": [
+                    "Master programming concepts in Python, TypeScript, or Java: OOP, async programming, and clean code",
+                    "Configure professional development workflows: Git branching, Linux CLI, and VS Code debugging",
+                    "Understand web architecture: RESTful standards, async I/O, authentication, and API security",
+                ],
+                "core": [
+                    "Master Data Structures & Algorithms: arrays, trees, graphs, sorting, and Big-O complexity",
+                    "Build scalable backend services or microservices using FastAPI, Spring Boot, or Node.js",
+                    "Design production schemas with PostgreSQL or MongoDB, indexing, and transactions",
+                ],
+                "projects": [
+                    "Full-Stack: web application with JWT authentication, relational database, and unit tests",
+                    "Systems: high-performance REST API with Docker containerization and CI/CD pipelines",
+                    "Capstone: internship-ready collaborative project or open-source contribution with live deployment",
+                ],
+                "tools": ["Python", "TypeScript", "Git", "PostgreSQL", "Docker", "REST APIs"],
+            },
+        },
         "foundation": ["Learn Python or JavaScript basics: variables, loops, functions",
                        "Understand how the web works: HTML, CSS and HTTP",
                        "Set up Git and a GitHub account"],
@@ -323,6 +381,35 @@ def render_skills_input(label: str, key: str, placeholder: str = "Type a skill a
         return []
 
 
+def get_education_tier(education: str) -> str:
+    if education in ("School", "Intermediate / 12th"):
+        return "starter"
+    elif education == "B.Tech / Engineering":
+        return "job_ready"
+    return "builder"
+
+
+def task_mentions_skill(task: str, user_skills: list[str]) -> bool:
+    if not user_skills:
+        return False
+    import re
+    for skill in user_skills:
+        s = skill.strip()
+        if not s:
+            continue
+        if re.match(r'^[A-Za-z0-9_]+$', s):
+            if re.search(r'\b' + re.escape(s) + r'\b', task, flags=re.IGNORECASE):
+                return True
+        else:
+            if s.lower() in task.lower():
+                return True
+    return False
+
+
+def filter_tasks_by_skills(tasks: list[str], user_skills: list[str]) -> list[str]:
+    return [t for t in tasks if not task_mentions_skill(t, user_skills)]
+
+
 def build_roadmap(profile: dict) -> list[dict]:
     level = LEVELS[profile["education"]]
     if profile.get("interest") == "other":
@@ -365,6 +452,36 @@ def build_roadmap(profile: dict) -> list[dict]:
         ]
 
     topic = INTERESTS[profile["interest"]]
+    if profile.get("interest") == "software" and "tiers" in topic:
+        tier = get_education_tier(profile.get("education", ""))
+        tier_data = topic["tiers"].get(tier, topic["tiers"]["builder"])
+        user_skills = profile.get("skills", [])
+
+        foundation_tasks = filter_tasks_by_skills(tier_data["foundation"], user_skills)
+        core_tasks = filter_tasks_by_skills(tier_data["core"], user_skills)
+        projects_tasks = filter_tasks_by_skills(tier_data["projects"], user_skills)
+        tools = tier_data.get("tools", topic["tools"])
+        exp_tasks = filter_tasks_by_skills(level["experience"] + ["Enter one hackathon or online competition"], user_skills)
+        prep_tasks = filter_tasks_by_skills(level["prep"] + [f"Practice {topic['interview']} questions every week"], user_skills)
+
+        return [
+            {"title": "Build your foundation", "when": "Weeks 1-6",
+             "blurb": "Get comfortable with the basics before anything advanced.",
+             "tasks": foundation_tasks, "tags": tools},
+            {"title": "Learn the core skills", "when": "Months 2-4",
+             "blurb": "These are the skills people in this field use every day.",
+             "tasks": core_tasks, "tags": []},
+            {"title": "Build real projects", "when": "Months 4-6",
+             "blurb": "Projects prove what you can do. Put every one on GitHub or in a portfolio.",
+             "tasks": projects_tasks, "tags": []},
+            {"title": "Gain experience", "when": "Months 6-9",
+             "blurb": "Work with other people and real deadlines.",
+             "tasks": exp_tasks, "tags": []},
+            {"title": "Prepare for your career", "when": "Months 9-12",
+             "blurb": "Turn your skills into something a recruiter or college can see.",
+             "tasks": prep_tasks, "tags": []},
+        ]
+
     return [
         {"title": "Build your foundation", "when": "Weeks 1-6",
          "blurb": "Get comfortable with the basics before anything advanced.",
@@ -485,14 +602,35 @@ def render_form():
             return
 
         chosen_label = other_field.strip() if interest == "other" else INTERESTS[interest]["label"]
-        st.session_state.profile = {
+        career_val = career.strip() or chosen_label
+        profile_data = {
             "education": education,
             "interest": interest,
             "other_interest": other_field.strip() if interest == "other" else "",
             "skills": skills,
             "strengths": strengths,
-            "career": career.strip() or chosen_label,
+            "career": career_val,
         }
+
+        with st.spinner("Building your roadmap..."):
+            import roadmap_ai
+            ai_phases = roadmap_ai.generate_roadmap(
+                education=education,
+                interest_label=chosen_label,
+                career=career_val,
+                skills=skills,
+                strengths=strengths,
+            )
+
+        if ai_phases:
+            phases = ai_phases
+            st.session_state.roadmap_is_ai = True
+        else:
+            phases = build_roadmap(profile_data)
+            st.session_state.roadmap_is_ai = False
+
+        st.session_state.profile = profile_data
+        st.session_state.roadmap_phases = phases
         st.session_state.roadmap_id = st.session_state.get("roadmap_id", 0) + 1
         st.rerun()
 
@@ -509,7 +647,10 @@ def render_results(profile: dict):
         topic_emoji = topic_data["emoji"]
         topic_resources = topic_data.get("resources", [])
 
-    phases = build_roadmap(profile)
+    phases = st.session_state.get("roadmap_phases")
+    if not phases:
+        phases = build_roadmap(profile)
+        st.session_state.roadmap_phases = phases
     rid = st.session_state.roadmap_id
 
     # Checkbox keys include the roadmap id, so a new roadmap starts with a clean slate.
@@ -543,6 +684,7 @@ def render_results(profile: dict):
         </div>
         <div class="progress"><div class="bar" style="width:{pct}%"></div></div>
         <div class="pcount">{done} of {total} steps done ({pct}%)</div>"""), unsafe_allow_html=True)
+    st.caption("Personalized with AI" if st.session_state.get("roadmap_is_ai") else "Template roadmap (AI unavailable)")
 
     if done == total:
         st.success("You finished every step. Time to pick a harder goal and start a new roadmap!")
@@ -568,10 +710,13 @@ def render_results(profile: dict):
 
     st.write("")
     col1, col2 = st.columns(2)
-    col1.download_button("Download roadmap", roadmap_as_markdown(profile, phases),
-                         file_name="my_roadmap.md", mime="text/markdown", use_container_width=True)
+    roadmap_html = roadmap_to_html(profile, phases)
+    col1.download_button("Download roadmap (HTML)", roadmap_html,
+                         file_name="skillgraph_roadmap.html", mime="text/html", use_container_width=True)
     if col2.button("Start over", use_container_width=True):
         st.session_state.profile = None
+        st.session_state.roadmap_phases = None
+        st.session_state.roadmap_is_ai = False
         st.rerun()
 
 
