@@ -45,30 +45,53 @@ LOGO_SVG = (
     '</svg>'
 )
 NODES_SVG = (
-    '<svg class="hero-nodes" viewBox="0 0 800 240" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">'
-    '<g stroke="rgba(255,255,255,0.13)" stroke-width="1.2" fill="rgba(255,255,255,0.13)">'
-    '<line x1="60" y1="50" x2="150" y2="160"/>'
-    '<line x1="150" y1="160" x2="230" y2="90"/>'
-    '<line x1="60" y1="50" x2="230" y2="90"/>'
-    '<line x1="230" y1="90" x2="330" y2="180"/>'
-    '<line x1="230" y1="90" x2="420" y2="70"/>'
-    '<line x1="330" y1="180" x2="420" y2="70"/>'
-    '<line x1="330" y1="180" x2="520" y2="170"/>'
-    '<line x1="420" y1="70" x2="610" y2="80"/>'
-    '<line x1="520" y1="170" x2="610" y2="80"/>'
-    '<line x1="520" y1="170" x2="700" y2="180"/>'
-    '<line x1="610" y1="80" x2="700" y2="180"/>'
-    '<line x1="610" y1="80" x2="740" y2="60"/>'
-    '<line x1="700" y1="180" x2="740" y2="60"/>'
-    '<circle cx="60" cy="50" r="3.5"/>'
-    '<circle cx="150" cy="160" r="3"/>'
-    '<circle cx="230" cy="90" r="3.5"/>'
-    '<circle cx="330" cy="180" r="3"/>'
-    '<circle cx="420" cy="70" r="4"/>'
-    '<circle cx="520" cy="170" r="3.5"/>'
-    '<circle cx="610" cy="80" r="3"/>'
-    '<circle cx="700" cy="180" r="3.5"/>'
-    '<circle cx="740" cy="60" r="3"/>'
+    '<svg class="hero-nodes" viewBox="0 0 1000 450" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">'
+    '<g stroke="#ffffff" stroke-width="1" fill="#ffffff">'
+    '<line x1="50" y1="80" x2="80" y2="240"/>'
+    '<line x1="80" y1="240" x2="60" y2="380"/>'
+    '<line x1="50" y1="80" x2="190" y2="140"/>'
+    '<line x1="80" y1="240" x2="190" y2="140"/>'
+    '<line x1="80" y1="240" x2="220" y2="310"/>'
+    '<line x1="60" y1="380" x2="220" y2="310"/>'
+    '<line x1="190" y1="140" x2="280" y2="70"/>'
+    '<line x1="190" y1="140" x2="380" y2="180"/>'
+    '<line x1="220" y1="310" x2="380" y2="180"/>'
+    '<line x1="220" y1="310" x2="420" y2="360"/>'
+    '<line x1="280" y1="70" x2="500" y2="90"/>'
+    '<line x1="380" y1="180" x2="500" y2="90"/>'
+    '<line x1="380" y1="180" x2="540" y2="270"/>'
+    '<line x1="420" y1="360" x2="540" y2="270"/>'
+    '<line x1="420" y1="360" x2="680" y2="380"/>'
+    '<line x1="500" y1="90" x2="640" y2="160"/>'
+    '<line x1="500" y1="90" x2="720" y2="80"/>'
+    '<line x1="540" y1="270" x2="640" y2="160"/>'
+    '<line x1="540" y1="270" x2="680" y2="380"/>'
+    '<line x1="640" y1="160" x2="720" y2="80"/>'
+    '<line x1="640" y1="160" x2="820" y2="220"/>'
+    '<line x1="680" y1="380" x2="860" y2="350"/>'
+    '<line x1="720" y1="80" x2="920" y2="110"/>'
+    '<line x1="820" y1="220" x2="860" y2="350"/>'
+    '<line x1="820" y1="220" x2="920" y2="110"/>'
+    '<line x1="820" y1="220" x2="950" y2="270"/>'
+    '<line x1="860" y1="350" x2="950" y2="270"/>'
+    '<line x1="920" y1="110" x2="950" y2="270"/>'
+    '<circle cx="50" cy="80" r="3"/>'
+    '<circle cx="80" cy="240" r="3"/>'
+    '<circle cx="60" cy="380" r="3"/>'
+    '<circle cx="190" cy="140" r="3.5"/>'
+    '<circle cx="220" cy="310" r="3"/>'
+    '<circle cx="280" cy="70" r="3"/>'
+    '<circle cx="380" cy="180" r="3.5"/>'
+    '<circle cx="420" cy="360" r="3"/>'
+    '<circle cx="500" cy="90" r="3.5"/>'
+    '<circle cx="540" cy="270" r="3"/>'
+    '<circle cx="640" cy="160" r="3.5"/>'
+    '<circle cx="680" cy="380" r="3"/>'
+    '<circle cx="720" cy="80" r="3"/>'
+    '<circle cx="820" cy="220" r="3.5"/>'
+    '<circle cx="860" cy="350" r="3"/>'
+    '<circle cx="920" cy="110" r="3"/>'
+    '<circle cx="950" cy="270" r="3"/>'
     '</g>'
     '</svg>'
 )
@@ -499,8 +522,10 @@ def render_hero(slim: bool | None = None):
         st.markdown(clean(f"""
             <div class="hero hero-slim">
                 {NODES_SVG}
-                <div class="brand">{LOGO_SVG} Skill<b>Graph</b></div>
-                <div class="tagline">Don't guess your career.</div>
+                <div class="hero-content">
+                    <div class="brand">{LOGO_SVG}<span class="wordmark">Skill<b>Graph</b></span></div>
+                    <div class="tagline">Don't guess your career.</div>
+                </div>
             </div>"""), unsafe_allow_html=True)
         return
 
@@ -508,10 +533,12 @@ def render_hero(slim: bool | None = None):
     st.markdown(clean(f"""
         <div class="hero">
             {NODES_SVG}
-            <div class="brand">{LOGO_SVG} Skill<b>Graph</b></div>
-            <h1>Don't guess your career.</h1>
-            <div class="rotator-line"><span>Become</span><div class="rotator">{words}</div></div>
-            <p class="sub">Get a step-by-step plan for your career, then check your resume against any job.</p>
+            <div class="hero-content">
+                <div class="brand">{LOGO_SVG}<span class="wordmark">Skill<b>Graph</b></span></div>
+                <h1>Don't guess your career.</h1>
+                <div class="rotator-line"><span>Become</span><div class="rotator">{words}</div></div>
+                <p class="sub">Get a step-by-step plan for your career, then check your resume against any job.</p>
+            </div>
         </div>"""), unsafe_allow_html=True)
 
 
