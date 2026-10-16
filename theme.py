@@ -500,33 +500,125 @@ li[role="option"] * {
   color: var(--text) !important;
 }
 
-/* File Uploader */
+/* File Uploader in Dark Mode — styled to match white input fields */
+[data-testid="stFileUploaderDropzone"],
 [data-testid="stFileUploader"] section {
-  background-color: var(--surface) !important;
-  border: 1px dashed var(--line) !important;
-  color: var(--text) !important;
+  background-color: #ffffff !important;
+  border: 1px dashed #cbd5e1 !important;
+  border-radius: 12px !important;
+  color: #475569 !important;
 }
 
+[data-testid="stFileUploaderDropzone"]:hover,
 [data-testid="stFileUploader"] section:hover {
-  border-color: var(--blue) !important;
+  border-color: #94a3b8 !important;
 }
 
-[data-testid="stFileUploader"] section small, [data-testid="stFileUploader"] span, [data-testid="stFileUploader"] div {
-  color: var(--muted) !important;
+[data-testid="stFileUploaderDropzone"] small,
+[data-testid="stFileUploaderDropzone"] span,
+[data-testid="stFileUploaderDropzone"] div,
+[data-testid="stFileUploaderDropzone"] p,
+[data-testid="stFileUploader"] section small,
+[data-testid="stFileUploader"] section span,
+[data-testid="stFileUploader"] section div,
+[data-testid="stFileUploader"] section p {
+  color: #475569 !important;
+  -webkit-text-fill-color: #475569 !important;
 }
 
-[data-testid="stFileUploader"] button {
-  background-color: var(--surface-2) !important;
-  color: var(--text) !important;
-  border-color: var(--line) !important;
+[data-testid="stFileUploaderDropzone"] svg,
+[data-testid="stFileUploader"] section svg {
+  fill: #475569 !important;
+  color: #475569 !important;
 }
 
+.stApp [data-testid="stFileUploaderDropzone"] button,
+.stApp [data-testid="stFileUploader"] section button,
+.stApp [data-testid="stFileUploader"] button[kind="secondary"],
+.stApp [data-testid="stFileUploader"] button[data-testid="baseButton-secondary"],
+[data-testid="stFileUploaderDropzone"] button,
+[data-testid="stFileUploader"] section button {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.stApp [data-testid="stFileUploaderDropzone"] button:hover,
+.stApp [data-testid="stFileUploader"] section button:hover,
+.stApp [data-testid="stFileUploader"] button[kind="secondary"]:hover,
+.stApp [data-testid="stFileUploader"] button[data-testid="baseButton-secondary"]:hover,
+[data-testid="stFileUploaderDropzone"] button:hover,
+[data-testid="stFileUploader"] section button:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.stApp [data-testid="stFileUploaderDropzone"] button p,
+.stApp [data-testid="stFileUploaderDropzone"] button span,
+.stApp [data-testid="stFileUploader"] section button p,
+.stApp [data-testid="stFileUploader"] section button span,
+[data-testid="stFileUploaderDropzone"] button p,
+[data-testid="stFileUploader"] section button p {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+/* File chip after upload */
+[data-testid="stFileUploaderFileData"],
 [data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] {
-  background-color: var(--surface-2) !important;
+  background-color: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  color: #0f172a !important;
 }
 
+[data-testid="stFileUploaderFileName"],
 [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] {
-  color: var(--text) !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  font-weight: 600;
+}
+
+[data-testid="stFileUploaderFileData"] small,
+[data-testid="stFileUploaderFileData"] span,
+[data-testid="stFileUploaderFileData"] div,
+[data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] small,
+[data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] span,
+[data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] div {
+  color: #475569 !important;
+  -webkit-text-fill-color: #475569 !important;
+}
+
+.stApp [data-testid="stFileUploaderFileData"] button,
+.stApp [data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] button,
+[data-testid="stFileUploaderFileData"] button {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #475569 !important;
+}
+
+.stApp [data-testid="stFileUploaderFileData"] button:hover,
+.stApp [data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] button:hover,
+[data-testid="stFileUploaderFileData"] button:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-testid="stFileUploaderFileData"] svg,
+[data-testid="stFileUploaderFileData"] button svg,
+[data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] svg {
+  fill: #475569 !important;
+  color: #475569 !important;
+}
+
+[data-testid="stFileUploaderFileData"] button:hover svg {
+  fill: #0f172a !important;
+  color: #0f172a !important;
 }
 
 /* Bordered Containers & Forms */

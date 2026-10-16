@@ -889,6 +889,12 @@ def render_resume_analyzer(is_dark: bool = False):
                         key="ra_resume_pasted",
                         label_visibility="collapsed",
                     )
+                st.markdown(
+                    '<p style="color: var(--muted) !important; font-size: 13px; margin: 6px 0 0; line-height: 1.4;">'
+                    '🔒 Your resume is sent to an AI service (Groq) for analysis. SkillGraph doesn\'t save it to disk, and it\'s cleared when your session ends.'
+                    '</p>',
+                    unsafe_allow_html=True,
+                )
 
             with col2:
                 st.markdown("**2️⃣ Job Description or Target Role**")
