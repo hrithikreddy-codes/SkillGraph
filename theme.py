@@ -184,43 +184,127 @@ DARK_CSS = """
 .goal h4 { color: #ffffff !important; }
 .goal p { color: #dbeafe !important; }
 
-/* Inputs & Textareas */
-.stTextInput input, .stTextArea textarea, [data-baseweb="input"], [data-baseweb="base-input"] {
-  background-color: var(--surface) !important;
-  color: var(--text) !important;
-  border-color: var(--line) !important;
+/* Placeholder color --muted in all inputs */
+::placeholder,
+.stTextInput input::placeholder,
+.stTextArea textarea::placeholder,
+div[data-baseweb="input"] input::placeholder,
+div[data-baseweb="textarea"] textarea::placeholder,
+div[data-baseweb="base-input"] input::placeholder,
+div[data-baseweb="base-input"] textarea::placeholder,
+[data-baseweb="select"] input::placeholder,
+[data-baseweb="select"] div[data-placeholder="true"],
+[data-baseweb="select"] div[aria-hidden="true"] {
+  color: var(--muted) !important;
+  opacity: 1 !important;
 }
 
-.stTextInput input:focus, .stTextArea textarea:focus {
+/* Inputs & Textareas - 1px --line border, 1px #2563eb on focus with soft blue glow */
+div[data-baseweb="input"],
+div[data-baseweb="textarea"],
+div[data-baseweb="base-input"] {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+div[data-baseweb="input"]:focus-within,
+div[data-baseweb="textarea"]:focus-within,
+div[data-baseweb="base-input"]:focus-within {
+  border: 1px solid #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+  outline: none !important;
+}
+
+.stTextInput input,
+.stTextArea textarea,
+div[data-baseweb="input"] input,
+div[data-baseweb="textarea"] textarea,
+div[data-baseweb="base-input"] input,
+div[data-baseweb="base-input"] textarea {
+  background-color: transparent !important;
+  color: var(--text) !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.stTextInput input:focus,
+.stTextArea textarea:focus,
+div[data-baseweb="input"] input:focus,
+div[data-baseweb="textarea"] textarea:focus,
+div[data-baseweb="base-input"] input:focus,
+div[data-baseweb="base-input"] textarea:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Selectboxes and Multiselects */
+[data-baseweb="select"] > div {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-baseweb="select"] > div:hover {
+  background-color: var(--surface-2) !important;
   border-color: var(--blue) !important;
 }
 
-.stTextInput input::placeholder, .stTextArea textarea::placeholder {
-  color: var(--muted) !important;
+[data-baseweb="select"] > div:focus-within {
+  background-color: var(--surface-2) !important;
+  border: 1px solid #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+  outline: none !important;
 }
 
-/* Selectboxes & Dropdown Popovers */
-[data-baseweb="select"] > div {
-  background-color: var(--surface) !important;
+[data-baseweb="select"] input {
+  background-color: transparent !important;
   color: var(--text) !important;
-  border-color: var(--line) !important;
+  border: none !important;
+  outline: none !important;
 }
 
-[data-baseweb="select"] span, [data-baseweb="select"] div {
+[data-baseweb="select"] [role="combobox"] {
+  background-color: transparent !important;
+}
+
+[data-baseweb="select"] span,
+[data-baseweb="select"] div {
   color: var(--text) !important;
 }
 
 [data-baseweb="select"] svg {
-  fill: var(--muted) !important;
+  fill: var(--text) !important;
+  color: var(--text) !important;
 }
 
-[data-baseweb="popover"], [data-baseweb="popover"] > div, [data-baseweb="menu"], ul[role="listbox"], li[role="option"] {
+/* Open Dropdown Menus */
+[data-baseweb="popover"],
+[data-baseweb="popover"] > div,
+[data-baseweb="menu"],
+ul[role="listbox"] {
   background-color: var(--surface) !important;
   color: var(--text) !important;
-  border-color: var(--line) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: var(--shadow) !important;
 }
 
-li[role="option"]:hover, li[role="option"][aria-selected="true"], [aria-selected="true"] {
+li[role="option"] {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+li[role="option"]:hover,
+li[role="option"]:focus,
+li[role="option"][aria-selected="true"],
+li[role="option"][aria-selected="true"]:hover {
   background-color: var(--surface-2) !important;
   color: var(--text) !important;
 }
@@ -230,17 +314,23 @@ li[role="option"] * {
 }
 
 /* Multiselect Tags */
-.stMultiSelect [data-baseweb="tag"], [data-baseweb="tag"] {
-  background-color: var(--tag-bg) !important;
-  color: var(--tag-text) !important;
+[data-baseweb="tag"],
+.stMultiSelect [data-baseweb="tag"] {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 999px !important;
 }
 
-.stMultiSelect [data-baseweb="tag"] span, [data-baseweb="tag"] span {
-  color: var(--tag-text) !important;
+[data-baseweb="tag"] span,
+.stMultiSelect [data-baseweb="tag"] span {
+  color: var(--text) !important;
 }
 
-.stMultiSelect [data-baseweb="tag"] svg, [data-baseweb="tag"] svg {
-  fill: var(--tag-text) !important;
+[data-baseweb="tag"] svg,
+.stMultiSelect [data-baseweb="tag"] svg {
+  fill: var(--text) !important;
+  color: var(--text) !important;
 }
 
 /* Tabs */
@@ -348,27 +438,63 @@ li[role="option"] * {
   color: var(--text) !important;
 }
 
-/* Buttons */
-.stButton button, .stDownloadButton button {
+/* Secondary Buttons (Start over, Download, Full Screen Graph) */
+.stButton button,
+.stDownloadButton button,
+button[kind="secondary"],
+button[data-testid="baseButton-secondary"] {
   background-color: var(--surface) !important;
   color: var(--text) !important;
   border: 1px solid var(--line) !important;
+  box-shadow: var(--shadow) !important;
 }
 
-.stButton button:hover, .stDownloadButton button:hover {
+.stButton button:hover,
+.stDownloadButton button:hover,
+button[kind="secondary"]:hover,
+button[data-testid="baseButton-secondary"]:hover {
   background-color: var(--surface-2) !important;
   color: var(--text) !important;
   border-color: var(--blue) !important;
 }
 
+.stButton button p,
+.stDownloadButton button p,
+button[kind="secondary"] p,
+button[data-testid="baseButton-secondary"] p {
+  color: var(--text) !important;
+}
+
+/* Primary Buttons ("Generate my roadmap", "Analyze Resume & Match Skills") */
+.stButton button[kind="primary"],
+.stButton button[data-testid="baseButton-primary"],
+button[kind="primary"],
+button[data-testid="baseButton-primary"],
 div[data-testid="stFormSubmitButton"] button {
   background: linear-gradient(90deg, #2563eb, #1d4ed8) !important;
   color: #ffffff !important;
   border: none !important;
+  font-weight: 700 !important;
 }
 
+.stButton button[kind="primary"]:hover,
+.stButton button[data-testid="baseButton-primary"]:hover,
+button[kind="primary"]:hover,
+button[data-testid="baseButton-primary"]:hover,
 div[data-testid="stFormSubmitButton"] button:hover {
+  background: linear-gradient(90deg, #1d4ed8, #1e40af) !important;
+  color: #ffffff !important;
+  border: none !important;
   box-shadow: 0 10px 22px rgba(37, 99, 235, 0.45) !important;
+  transform: translateY(-2px);
+}
+
+.stButton button[kind="primary"] p,
+.stButton button[data-testid="baseButton-primary"] p,
+button[kind="primary"] p,
+button[data-testid="baseButton-primary"] p,
+div[data-testid="stFormSubmitButton"] button p {
+  color: #ffffff !important;
 }
 
 /* Theme Toggle Pill in Dark Mode */
