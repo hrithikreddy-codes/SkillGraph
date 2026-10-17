@@ -209,6 +209,10 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
 .career { font-family: 'Sora', sans-serif; font-size: clamp(26px, 5vw, 36px); font-weight: 800; color: var(--deep); margin: 0 0 8px; }
 .summary { color: var(--muted); line-height: 1.65; margin: 0 0 14px; }
 .tag { display: inline-block; padding: 6px 12px; background: var(--tag-bg); color: var(--tag-text); border-radius: 999px; margin: 4px 6px 4px 0; font-size: 13px; font-weight: 600; }
+.tag.sg-chip-skill, .sg-chip-skill { background: #dbeafe; color: #1e40af; border: none; }
+.tag.sg-chip-matched, .sg-chip-matched { background: #dcfce7; color: #15803d; border: none; }
+.tag.sg-chip-partial, .sg-chip-partial { background: #fef3c7; color: #b45309; border: none; }
+.tag.sg-chip-missing, .sg-chip-missing { background: #fee2e2; color: #b91c1c; border: none; }
 .note { background: var(--note-bg); border-left: 4px solid var(--blue); padding: 14px 16px; border-radius: 0 12px 12px 0; margin-top: 14px; line-height: 1.6; }
 .tips { margin: 12px 0 0 18px; color: var(--text); line-height: 1.7; }
 
@@ -933,23 +937,27 @@ input::placeholder {
    DARK MODE OVERRIDES: CHIPS & SPINNERS
    ------------------------------------------------------------ */
 
-/* 1. Career Roadmap hero chips — style lightning user-skill chip to match other chips */
-.result-head span.tag[style*="#dbeafe"],
-.result-head span.tag[style*="1e40af"],
-.result-head .tag[style*="#dbeafe"],
-.result-head .tag[style*="1e40af"],
-span.tag[style*="#dbeafe"],
-span.tag[style*="1e40af"] {
-  background: var(--tag-bg) !important;
-  color: var(--tag-text) !important;
-  -webkit-text-fill-color: var(--tag-text) !important;
+/* 1. Career Roadmap learner skill chips (⚡ ...) in dark mode */
+.tag.sg-chip-skill,
+span.tag.sg-chip-skill,
+.sg-chip-skill,
+span.sg-chip-skill,
+.stApp .tag.sg-chip-skill,
+.stApp span.sg-chip-skill,
+.stMarkdown .tag.sg-chip-skill,
+.stMarkdown span.sg-chip-skill,
+.result-head span.tag.sg-chip-skill,
+.result-head .tag.sg-chip-skill {
+  background: #1e2a4a !important;
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
   border-radius: 999px !important;
   padding: 6px 12px !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   margin: 4px 6px 4px 0 !important;
   display: inline-block !important;
-  border: none !important;
 }
 
 /* 2. Spinner and status text in dark mode */
@@ -963,29 +971,34 @@ span.tag[style*="1e40af"] {
 .stSpinner span,
 .stSpinner div,
 .stSpinner [role="status"],
-.stSpinner [role="status"] p,
-.stSpinner [role="status"] span,
+.stSpinner [role="status"] *,
 [data-testid="stSpinner"] p,
 [data-testid="stSpinner"] span,
 [data-testid="stSpinner"] div,
 [data-testid="stSpinner"] [role="status"],
-[data-testid="stSpinner"] [role="status"] p,
-[data-testid="stSpinner"] [role="status"] span,
-[data-testid="stSpinner"] [data-testid="stMarkdownContainer"] p,
-[data-testid="stStatusWidget"] p,
-[data-testid="stStatusWidget"] span {
+[data-testid="stSpinner"] [role="status"] *,
+[data-testid="stSpinner"] [data-testid="stMarkdownContainer"] *,
+[data-testid="stStatusWidget"] * {
   color: var(--text) !important;
   -webkit-text-fill-color: var(--text) !important;
 }
 
 .stSpinner [data-testid="stSpinnerIcon"],
 [data-testid="stSpinner"] [data-testid="stSpinnerIcon"],
+[data-testid="stSpinnerIcon"],
 .stSpinner span[class*="eafbkhs"],
 [data-testid="stSpinner"] span[class*="eafbkhs"],
+.stSpinner [role="progressbar"],
+[data-testid="stSpinner"] [role="progressbar"],
+.stSpinner div > span > span,
+[data-testid="stSpinner"] div > span > span,
 div[data-testid="stSpinner"] > div > span:first-child,
 .stSpinner > div > span:first-child {
   border-color: rgba(96, 165, 250, 0.25) !important;
   border-top-color: #60a5fa !important;
+  border-right-color: rgba(96, 165, 250, 0.25) !important;
+  border-bottom-color: rgba(96, 165, 250, 0.25) !important;
+  border-left-color: rgba(96, 165, 250, 0.25) !important;
 }
 
 .stSpinner svg,
@@ -994,13 +1007,18 @@ div[data-testid="stSpinner"] > div > span:first-child,
 [data-testid="stSpinner"] [data-testid="stSpinnerIcon"] svg {
   color: #60a5fa !important;
   fill: #60a5fa !important;
+  stroke: #60a5fa !important;
 }
 
 /* 3. Skills Breakdown chips in dark mode */
-span.tag[style*="#dcfce7"],
-span.tag[style*="15803d"],
-.tag[style*="#dcfce7"],
-.tag[style*="15803d"] {
+.tag.sg-chip-matched,
+span.tag.sg-chip-matched,
+.sg-chip-matched,
+span.sg-chip-matched,
+.stApp .tag.sg-chip-matched,
+.stApp span.sg-chip-matched,
+.stMarkdown .tag.sg-chip-matched,
+.stMarkdown span.sg-chip-matched {
   background: rgba(34, 197, 94, 0.15) !important;
   color: #86efac !important;
   -webkit-text-fill-color: #86efac !important;
@@ -1013,10 +1031,14 @@ span.tag[style*="15803d"],
   font-weight: 600 !important;
 }
 
-span.tag[style*="#fef3c7"],
-span.tag[style*="b45309"],
-.tag[style*="#fef3c7"],
-.tag[style*="b45309"] {
+.tag.sg-chip-partial,
+span.tag.sg-chip-partial,
+.sg-chip-partial,
+span.sg-chip-partial,
+.stApp .tag.sg-chip-partial,
+.stApp span.sg-chip-partial,
+.stMarkdown .tag.sg-chip-partial,
+.stMarkdown span.sg-chip-partial {
   background: rgba(245, 158, 11, 0.15) !important;
   color: #fcd34d !important;
   -webkit-text-fill-color: #fcd34d !important;
@@ -1029,10 +1051,14 @@ span.tag[style*="b45309"],
   font-weight: 600 !important;
 }
 
-span.tag[style*="#fee2e2"],
-span.tag[style*="b91c1c"],
-.tag[style*="#fee2e2"],
-.tag[style*="b91c1c"] {
+.tag.sg-chip-missing,
+span.tag.sg-chip-missing,
+.sg-chip-missing,
+span.sg-chip-missing,
+.stApp .tag.sg-chip-missing,
+.stApp span.sg-chip-missing,
+.stMarkdown .tag.sg-chip-missing,
+.stMarkdown span.sg-chip-missing {
   background: rgba(239, 68, 68, 0.15) !important;
   color: #fca5a5 !important;
   -webkit-text-fill-color: #fca5a5 !important;

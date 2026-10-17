@@ -835,7 +835,7 @@ def render_results(profile: dict):
     chips += "".join(f'<span class="tag">{html.escape(s)}</span>' for s in profile.get("strengths", []))
     user_skills = profile.get("skills", [])
     if user_skills:
-        chips += "".join(f'<span class="tag" style="background:#dbeafe; color:#1e40af;">⚡ {html.escape(s)}</span>' for s in user_skills)
+        chips += "".join(f'<span class="tag sg-chip-skill">⚡ {html.escape(s)}</span>' for s in user_skills)
     tips_items = []
     for s in profile.get("strengths", []):
         if s in STRENGTH_TIPS:
@@ -1252,7 +1252,7 @@ def render_resume_analyzer(is_dark: bool = False):
         with st.container(border=True):
             st.markdown("#### 📋 Skills Breakdown")
             if match_results.get("matched"):
-                tags_html = "".join(f'<span class="tag" style="background:#dcfce7; color:#15803d;">✓ {html.escape(s)}</span>' for s in match_results["matched"])
+                tags_html = "".join(f'<span class="tag sg-chip-matched">✓ {html.escape(s)}</span>' for s in match_results["matched"])
                 st.markdown(f"**Matched Skills:**<br>{tags_html}", unsafe_allow_html=True)
             else:
                 st.info("No direct skill matches found.")
@@ -1262,14 +1262,14 @@ def render_resume_analyzer(is_dark: bool = False):
             with col_g1:
                 st.markdown("**Partial Matches (needs strengthening):**")
                 if match_results.get("partial"):
-                    p_html = "".join(f'<span class="tag" style="background:#fef3c7; color:#b45309;">~ {html.escape(s)}</span>' for s in match_results["partial"])
+                    p_html = "".join(f'<span class="tag sg-chip-partial">~ {html.escape(s)}</span>' for s in match_results["partial"])
                     st.markdown(p_html, unsafe_allow_html=True)
                 else:
                     st.caption("None")
             with col_g2:
                 st.markdown("**Missing Required Skills:**")
                 if match_results.get("missing"):
-                    m_html = "".join(f'<span class="tag" style="background:#fee2e2; color:#b91c1c;">✗ {html.escape(s)}</span>' for s in match_results["missing"])
+                    m_html = "".join(f'<span class="tag sg-chip-missing">✗ {html.escape(s)}</span>' for s in match_results["missing"])
                     st.markdown(m_html, unsafe_allow_html=True)
                 else:
                     st.caption("None")
