@@ -636,6 +636,17 @@ def clean(markup: str) -> str:
     return "\n".join(line.strip() for line in markup.splitlines() if line.strip())
 
 
+def slugify_filename(text: str, fallback: str) -> str:
+    """Lowercase, replace runs of non-alphanumeric chars with an underscore,
+    strip leading/trailing underscores, truncate to 50 chars, and return fallback if empty.
+    """
+    s = str(text or "").lower()
+    s = re.sub(r"[^a-z0-9]+", "_", s)
+    s = s.strip("_")
+    s = s[:50].rstrip("_")
+    return s if s else fallback
+
+
 # ============================================================
 # 3. LOGIC - turn the user's answers into a list of phases
 # ============================================================
@@ -1240,8 +1251,14 @@ def render_results(profile: dict):
             for k in g_keys:
                 checked_state[k] = bool(st.session_state.get(k))
     roadmap_html = roadmap_to_html(profile, phases, checked_state=checked_state)
-    col1.download_button("Download roadmap (HTML)", roadmap_html,
-                         file_name="skillgraph_roadmap.html", mime="text/html", width="stretch")
+    career_title = profile.get("career", "")
+    col1.download_button(
+        "Download roadmap (HTML)",
+        roadmap_html,
+        file_name=f"{slugify_filename(career_title, 'career')}_roadmap.html",
+        mime="text/html",
+        width="stretch",
+    )
     if col2.button("Start over", width="stretch"):
         st.session_state.profile = None
         st.session_state.roadmap_phases = None
@@ -1954,12 +1971,11 @@ def render_resume_analyzer(is_dark: bool = False):
 
         st.write("")
         col_d1, col_d2 = st.columns(2)
-        safe_name = job_role.lower().replace(" ", "_")
         html_report_data = res.get("html_report") or analysis_to_html(res)
         col_d1.download_button(
             "Download report (HTML)",
             data=html_report_data,
-            file_name=f"{safe_name}_skillgraph_report.html",
+            file_name=f"{slugify_filename(job_role, 'role')}_report.html",
             mime="text/html",
             width="stretch",
             key="ra_dl_html",
