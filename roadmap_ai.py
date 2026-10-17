@@ -419,6 +419,7 @@ Rules:
 3. Ordering & Field Basics:
    - Field basics (for example typography and color for design; core syntax and dev setup for software) belong in the foundation phase (Phase 1: "Build your foundation"), never later.
    - Later phases must build on the basics established in Phase 1.
+   - Order tasks inside a phase so a Build task comes after the Learn and Practice tasks it depends on, and never before the things the learner would deploy or connect to it (e.g., learn principles, build the project, then deploy or document it).
 
 4. Phase Groups and Structure:
    - Structure each phase into 2 to 3 groups.
@@ -430,6 +431,9 @@ Rules:
 5. Task Prefixes, Awareness & Build Limits:
    - Every single task MUST start with "Learn:", "Practice:", "Build:", or "Awareness:" (e.g., "Learn: relational schema design", "Practice: write integration tests", "Build: a REST API with FastAPI", "Awareness: database sharding concepts"). Tasks must be short, concrete, and actionable.
    - At most ONE "Build:" task per phase across all phases.
+   - Size Build tasks to the phase hours:
+     * For a phase under 70 hours, the Build must be a small project (e.g., a simple CLI script, lightweight single-page tool, or focused CRUD component).
+     * For a phase under 70 hours, Docker, CI, Kubernetes and similar tooling must be "Awareness:" only (never Learn, Practice, or Build).
    - Prefix topics beyond the core of the stated career with "Awareness:" and keep them small. Never make them Build tasks.
    - Heavy items (fixing a bug in a popular library, ML system design questions, sharding) are Awareness-only unless the phase is 100+ hours.
 
@@ -460,6 +464,7 @@ Rules:
 9. Hosting and Tools:
    - Only name hosting platforms and tools with a current free tier (Render, Vercel, Netlify).
    - NEVER mention Heroku.
+   - Note: Hosting platforms and tools are for deployment tasks only, NEVER for the "resources" list.
 
 10. Goal Field:
     - Add one short "goal" field per phase: a one-line outcome saying what the learner can do at the end (e.g., "You can build and deploy a small API", "You can conduct exploratory data analysis on a real-world dataset"). If omitted, it will default to empty.
@@ -467,6 +472,7 @@ Rules:
 
 11. Resources Field:
     - Add a "resources" list per phase containing 1-2 real, widely known names (for example "freeCodeCamp", "MDN Web Docs", "Nielsen Norman Group").
+    - Resources must be learning resources (courses, docs, tutorials, practice sites). Never hosting platforms or tools (Render, Vercel, Netlify), and never vague names like "Git & GitHub".
     - Names only, no URLs. No parentheses, no notes, no generic phrases like "guides" or "free trials".
 
 12. Handling Existing Skills & Strengths:
@@ -549,18 +555,18 @@ Output format:
       "resources": ["The Odin Project", "Full Stack Open"],
       "groups": [
         {{
-          "name": "Project Architecture & Deployment",
+          "name": "Full-Stack Implementation",
           "tasks": [
             "Learn: clean code organization and modular design",
-            "Practice: deploy a full-stack project to Render or Vercel",
-            "Practice: write comprehensive README documentation"
+            "Practice: implement authentication and user flows",
+            "Build: a full-stack project solving a real problem"
           ]
         }},
         {{
-          "name": "Full-Stack Implementation",
+          "name": "Deployment & Documentation",
           "tasks": [
-            "Practice: implement authentication and user flows",
-            "Build: a full-stack project solving a real problem"
+            "Practice: deploy the full-stack project to Render or Vercel",
+            "Practice: write comprehensive README documentation"
           ]
         }}
       ],
@@ -572,12 +578,12 @@ Output format:
       "hours": {phase_hours[3]},
       "blurb": "Short summary of what to achieve in this phase.",
       "goal": "You have collaborated with other developers on an external codebase.",
-      "resources": ["GitHub Skills", "Linux Foundation Mentorship"],
+      "resources": ["Exercism", "Linux Foundation Mentorship"],
       "groups": [
         {{
           "name": "Testing & Code Quality",
           "tasks": [
-            "Learn: automated testing patterns and CI workflows",
+            "Learn: automated testing patterns and code quality standards",
             "Practice: write unit and integration test suites"
           ]
         }},
