@@ -100,7 +100,7 @@ def main():
 
     # --- Analyze button ---
     st.subheader("3️⃣  Run the analysis", anchor=False)
-    analyze_button = st.button("🚀 Analyze", use_container_width=True)
+    analyze_button = st.button("🚀 Analyze", width="stretch")
 
     if analyze_button:
         try:
@@ -238,7 +238,7 @@ def main():
                 
                 @st.dialog("Full Screen Skill Graph", width="large")
                 def show_full_graph():
-                    st.graphviz_chart(dot_string, use_container_width=True)
+                    st.graphviz_chart(dot_string, width="stretch")
                 
                 if st.button("🔍 View Full Screen Graph"):
                     show_full_graph()
@@ -383,7 +383,7 @@ def _legacy_ui_code_do_not_call():
 
     # --- Analyze button ---
     st.subheader("3️⃣  Run the analysis", anchor=False)
-    analyze_button = st.button("🚀 Analyze My Resume", use_container_width=True)
+    analyze_button = st.button("🚀 Analyze My Resume", width="stretch")
 
     # --- When the button is clicked ---
     if analyze_button:

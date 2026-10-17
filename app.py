@@ -613,7 +613,7 @@ def render_form():
             help="Be realistic. We size your plan to this.",
             key="rf_hours",
         )
-        submitted = st.button("Generate my roadmap", type="primary", use_container_width=True, key="rf_submit")
+        submitted = st.button("Generate my roadmap", type="primary", width="stretch", key="rf_submit")
 
     if submitted:
         if education is None or interest is None:
@@ -797,8 +797,8 @@ def render_results(profile: dict):
                 checked_state[k] = bool(st.session_state.get(k))
     roadmap_html = roadmap_to_html(profile, phases, checked_state=checked_state)
     col1.download_button("Download roadmap (HTML)", roadmap_html,
-                         file_name="skillgraph_roadmap.html", mime="text/html", use_container_width=True)
-    if col2.button("Start over", use_container_width=True):
+                         file_name="skillgraph_roadmap.html", mime="text/html", width="stretch")
+    if col2.button("Start over", width="stretch"):
         st.session_state.profile = None
         st.session_state.roadmap_phases = None
         st.session_state.roadmap_is_ai = False
@@ -959,7 +959,7 @@ def render_resume_analyzer(is_dark: bool = False):
             )
 
             st.write("")
-            analyze_button = st.button("🚀 Analyze Resume & Match Skills", type="primary", use_container_width=True, key="ra_analyze_btn")
+            analyze_button = st.button("🚀 Analyze Resume & Match Skills", type="primary", width="stretch", key="ra_analyze_btn")
 
             if analyze_button:
                 final_resume_text = resume_pasted.strip()
@@ -1243,7 +1243,7 @@ def render_resume_analyzer(is_dark: bool = False):
                 .configure_view(strokeWidth=0)
                 .configure(background="transparent")
             )
-            st.altair_chart(dist_chart, use_container_width=True)
+            st.altair_chart(dist_chart, width="stretch")
 
         with st.container(border=True):
             st.markdown("#### 🕸️ Skill Graph")
@@ -1252,11 +1252,11 @@ def render_resume_analyzer(is_dark: bool = False):
             if hasattr(st, "dialog"):
                 @st.dialog("Full Screen Skill Graph", width="large")
                 def show_full_graph():
-                    st.graphviz_chart(styled_dot, use_container_width=True)
+                    st.graphviz_chart(styled_dot, width="stretch")
 
                 if st.button("🔍 View Full Screen Graph", key="ra_full_graph_btn"):
                     show_full_graph()
-            st.graphviz_chart(styled_dot, use_container_width=True)
+            st.graphviz_chart(styled_dot, width="stretch")
             st.caption("🔵 Blue ✓ = Matched | 🟡 Amber ~ = Partial | ⚪ White/Bordered ✗ = Missing")
 
         with st.container(border=True):
@@ -1317,10 +1317,10 @@ def render_resume_analyzer(is_dark: bool = False):
             data=html_report_data,
             file_name=f"{safe_name}_skillgraph_report.html",
             mime="text/html",
-            use_container_width=True,
+            width="stretch",
             key="ra_dl_html",
         )
-        if col_d2.button("🔄 Analyze another resume or job", use_container_width=True, key="ra_start_over"):
+        if col_d2.button("🔄 Analyze another resume or job", width="stretch", key="ra_start_over"):
             st.session_state.ra_results = None
             st.session_state.ra_extracted_text = ""
             st.rerun()
