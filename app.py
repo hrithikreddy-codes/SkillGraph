@@ -994,7 +994,7 @@ def render_hero(slim: bool | None = None):
 
 
 def render_form():
-    with st.container(border=True):
+    with st.container(border=True, key="sg_card_roadmap_form"):
         st.markdown(clean("""
             <p class="form-title">🎯 Create your career roadmap</p>
             <p class="form-hint">It takes under a minute. You can start over any time.</p>"""),
@@ -1201,7 +1201,7 @@ def render_results(profile: dict):
         st.success("You finished every step. Time to pick a harder goal and start a new roadmap!")
 
     for p, ph in enumerate(phases):
-        with st.container(border=True):
+        with st.container(border=True, key=f"sg_card_phase_{p}"):
             when_label = f"{ph['when']} &bull; up to {ph['hours']} hours" if ph.get("hours") else ph["when"]
             goal_val = str(ph.get("goal") or "").strip()
             goal_html = f'<p class="phase-goal" style="font-size: 14px; color: var(--text); margin: 0 0 10px; line-height: 1.5;"><strong>Goal:</strong> {html.escape(goal_val)}</p>' if goal_val else ""
@@ -1514,7 +1514,7 @@ def render_resume_analyzer(is_dark: bool = False):
     )
 
     if not has_valid_results:
-        with st.container(border=True):
+        with st.container(border=True, key="sg_card_analyzer_input"):
             st.markdown(clean("""
                 <p class="form-title">📄 Analyze Your Resume Against a Job</p>
                 <p class="form-hint">Upload or paste your resume and target role to get an in-depth gap analysis, skill graph, and roadmap.</p>"""),
@@ -1728,7 +1728,7 @@ def render_resume_analyzer(is_dark: bool = False):
             <div class="pcount">{pct}% Match Score ({scores["matched_count"]} matched, {scores["partial_count"]} partial, {scores["missing_count"]} missing)</div>"""),
             unsafe_allow_html=True)
 
-        with st.container(border=True):
+        with st.container(border=True, key="sg_card_metrics"):
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("Required skills", scores["total_required"])
             m2.metric("Matched", scores["matched_count"])
@@ -1737,7 +1737,7 @@ def render_resume_analyzer(is_dark: bool = False):
             if not scores.get("consistent", True):
                 st.warning("⚠️ Warning: Score calculations had slight inconsistencies due to alternative skills.")
 
-        with st.container(border=True):
+        with st.container(border=True, key="sg_card_skills"):
             st.markdown("#### 📋 Skills Breakdown")
             if match_results.get("matched"):
                 tags_html = "".join(f'<span class="tag sg-chip-matched">✓ {html.escape(s)}</span>' for s in match_results["matched"])
@@ -1803,7 +1803,7 @@ def render_resume_analyzer(is_dark: bool = False):
 
         other_res = res.get("other_res")
         if other_res and other_res.get("results"):
-            with st.container(border=True):
+            with st.container(border=True, key="sg_card_other_reqs"):
                 st.markdown("#### 📌 Other Requirements (Soft Skills & Experience)")
                 for item_res in other_res["results"]:
                     it = item_res.get("item", "")
@@ -1814,7 +1814,7 @@ def render_resume_analyzer(is_dark: bool = False):
                     else:
                         st.markdown(f"- **{it}**: :gray[Not shown]")
 
-        with st.container(border=True):
+        with st.container(border=True, key="sg_card_match_overview"):
             bar_icon = (
                 '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" '
                 'stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" '
@@ -1909,7 +1909,7 @@ def render_resume_analyzer(is_dark: bool = False):
             )
             st.altair_chart(dist_chart, width="stretch")
 
-        with st.container(border=True):
+        with st.container(border=True, key="sg_card_skill_graph"):
             st.markdown(f"#### {GRAPH_ICON_SVG}Skill Graph", unsafe_allow_html=True)
             if hasattr(st, "dialog"):
                 @st.dialog("Full Screen Skill Graph", width="large")
@@ -1920,7 +1920,7 @@ def render_resume_analyzer(is_dark: bool = False):
                     show_full_graph()
             st.markdown(build_skill_tree_html(job_role, match_results, is_fullscreen=False), unsafe_allow_html=True)
 
-        with st.container(border=True):
+        with st.container(border=True, key="sg_card_roadmap"):
             st.markdown("#### 🚀 Your Actionable Roadmap")
             missing_skills = match_results.get("missing", [])
             partial_skills = match_results.get("partial", [])

@@ -263,29 +263,42 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
 .bar { height: 100%; background: linear-gradient(90deg, #3b82f6, #2563eb); border-radius: 999px; transition: width .8s cubic-bezier(.2, .8, .2, 1); }
 .pcount { color: var(--muted); font-size: 14px; margin: 8px 0 20px; }
 
-/* Cards & Bordered Containers in Light Mode */
-[data-testid="stVerticalBlockBorderWrapper"],
-.stVerticalBlock.st-emotion-cache-1s3lgy2,
-[data-testid="stVerticalBlock"][class*="1s3lgy2"],
-div[data-testid="stVerticalBlock"]:has(> div .phase-top),
-div[data-testid="stVerticalBlock"]:has(> div [data-testid="stMetric"]),
-div[data-testid="stVerticalBlock"]:has(> div [data-testid="stVegaLiteChart"]),
-div[data-testid="stVerticalBlock"]:has(> div .sg-tree-wrapper),
-div[data-testid="stVerticalBlock"]:has(> div .sg-chip-matched),
-div[data-testid="stVerticalBlock"]:has(> div .form-title),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .phase-top),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stMetric"]),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stVegaLiteChart"]),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .sg-tree-wrapper),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .sg-chip-matched),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .form-title),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stExpander"]):not(:has(> [data-testid="stVerticalBlock"])),
-div[data-testid="stVerticalBlock"]:has(.phase-top):not(:has([data-testid="stVerticalBlock"])),
-[data-testid="stForm"] {
+/* Page-level wrappers must NEVER look like cards */
+.stMainBlockContainer,
+[data-testid="stMainBlockContainer"],
+.block-container,
+[data-testid="stAppViewContainer"] > .main,
+[data-testid="stAppViewContainer"] > .main > .block-container,
+[data-testid="stAppViewContainer"] > .main > .block-container > div[data-testid="stVerticalBlock"],
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .hero),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .foot),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stTabs"]),
+div[data-testid="stElementContainer"]:has(> .hero),
+div[data-testid="stElementContainer"]:has(> .foot),
+[data-testid="stTabs"],
+[data-baseweb="tab-list"] {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Real Cards in Light Mode */
+[class*="st-key-sg_card_"],
+[data-baseweb="tab-panel"] [class*="st-key-sg_card_"],
+[data-baseweb="tab-panel"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-baseweb="tab-panel"] [data-testid="stForm"] {
   background: var(--surface) !important;
   border: var(--sg-card-border-width) solid var(--line) !important;
   border-radius: var(--sg-card-radius) !important;
   box-shadow: var(--sg-card-shadow) !important;
+}
+
+/* A card nested inside another card must not get its own shadow or a second border */
+[class*="st-key-sg_card_"] [class*="st-key-sg_card_"],
+[data-baseweb="tab-panel"] [data-testid="stForm"] [class*="st-key-sg_card_"] {
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Expanders in Light Mode */
@@ -1586,29 +1599,42 @@ label[data-baseweb="checkbox"][aria-checked="true"] > span:first-child {
   color: #0f172a !important;
 }
 
-/* Cards & Bordered Containers in Dark Mode */
-[data-testid="stVerticalBlockBorderWrapper"],
-.stVerticalBlock.st-emotion-cache-1s3lgy2,
-[data-testid="stVerticalBlock"][class*="1s3lgy2"],
-div[data-testid="stVerticalBlock"]:has(> div .phase-top),
-div[data-testid="stVerticalBlock"]:has(> div [data-testid="stMetric"]),
-div[data-testid="stVerticalBlock"]:has(> div [data-testid="stVegaLiteChart"]),
-div[data-testid="stVerticalBlock"]:has(> div .sg-tree-wrapper),
-div[data-testid="stVerticalBlock"]:has(> div .sg-chip-matched),
-div[data-testid="stVerticalBlock"]:has(> div .form-title),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .phase-top),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stMetric"]),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stVegaLiteChart"]),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .sg-tree-wrapper),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .sg-chip-matched),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .form-title),
-div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stExpander"]):not(:has(> [data-testid="stVerticalBlock"])),
-div[data-testid="stVerticalBlock"]:has(.phase-top):not(:has([data-testid="stVerticalBlock"])),
-[data-testid="stForm"] {
+/* Page-level wrappers must NEVER look like cards */
+.stMainBlockContainer,
+[data-testid="stMainBlockContainer"],
+.block-container,
+[data-testid="stAppViewContainer"] > .main,
+[data-testid="stAppViewContainer"] > .main > .block-container,
+[data-testid="stAppViewContainer"] > .main > .block-container > div[data-testid="stVerticalBlock"],
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .hero),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .foot),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stTabs"]),
+div[data-testid="stElementContainer"]:has(> .hero),
+div[data-testid="stElementContainer"]:has(> .foot),
+[data-testid="stTabs"],
+[data-baseweb="tab-list"] {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Real Cards in Dark Mode */
+[class*="st-key-sg_card_"],
+[data-baseweb="tab-panel"] [class*="st-key-sg_card_"],
+[data-baseweb="tab-panel"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-baseweb="tab-panel"] [data-testid="stForm"] {
   background: var(--surface) !important;
   border: var(--sg-card-border-width) solid rgba(148, 163, 184, 0.2) !important;
   border-radius: var(--sg-card-radius) !important;
   box-shadow: var(--sg-card-shadow) !important;
+}
+
+/* A card nested inside another card must not get its own shadow or a second border */
+[class*="st-key-sg_card_"] [class*="st-key-sg_card_"],
+[data-baseweb="tab-panel"] [data-testid="stForm"] [class*="st-key-sg_card_"] {
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Alert Boxes (st.info, st.success, st.error, st.warning) */
