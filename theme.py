@@ -30,7 +30,17 @@ CSS = r"""
 
 .stApp { background: var(--bg); color: var(--text); }
 .stApp, .stApp p, .stApp li, .stApp label, .stApp input { font-family: 'DM Sans', Arial, sans-serif; }
-#MainMenu, footer, [data-testid="stHeader"], [data-testid="stToolbar"] { visibility: hidden; height: 0; }
+#MainMenu, footer, [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stElementToolbar"], .stElementToolbar { visibility: hidden; height: 0; }
+[data-testid="stElementToolbar"], .stElementToolbar, [data-testid="stElementToolbarButtonContainer"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
 .block-container { max-width: 860px; padding-top: 1.5rem; padding-bottom: 3rem; }
 
 /* ---------- Theme icon button top right ---------- */
@@ -57,6 +67,33 @@ CSS = r"""
   background: var(--surface-2);
   border-color: var(--blue);
   transform: translateY(-1px);
+}
+
+.theme-toggle-icon {
+  position: fixed;
+  top: 14px;
+  right: 18px;
+  z-index: 1001;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+body:has(.st-key-theme_btn:hover) .theme-toggle-icon,
+.st-key-theme_btn:hover ~ * .theme-toggle-icon {
+  transform: translateY(-1px);
+}
+
+.theme-toggle-svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  color: var(--text);
+  stroke: var(--text);
 }
 
 .st-key-theme_btn button,
@@ -96,11 +133,9 @@ CSS = r"""
 
 .st-key-theme_btn button p,
 .stButton.st-key-theme_btn button p {
+  display: none !important;
   margin: 0 !important;
   padding: 0 !important;
-  font-size: 18px !important;
-  line-height: 1 !important;
-  color: var(--text) !important;
 }
 
 /* ---------- Hero: the one big animated moment ---------- */
@@ -268,6 +303,24 @@ DARK_CSS = r"""
 }
 
 /* Base App Dark Overrides */
+[data-testid="stElementToolbar"],
+.stElementToolbar,
+[data-testid="stElementToolbarButtonContainer"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.theme-toggle-svg {
+  color: var(--text) !important;
+  stroke: var(--text) !important;
+}
+
 .stApp {
   background-color: var(--bg) !important;
   color: var(--text) !important;

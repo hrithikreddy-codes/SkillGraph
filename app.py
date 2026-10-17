@@ -45,6 +45,24 @@ LOGO_SVG = (
     '<circle cx="26" cy="8" r="3" fill="#fbbf24"/>'
     '</svg>'
 )
+SUN_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" '
+    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+    'class="theme-toggle-svg">'
+    '<circle cx="12" cy="12" r="4"/>'
+    '<path d="M12 2v2"/><path d="M12 20v2"/>'
+    '<path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/>'
+    '<path d="M2 12h2"/><path d="M20 12h2"/>'
+    '<path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>'
+    '</svg>'
+)
+MOON_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" '
+    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+    'class="theme-toggle-svg">'
+    '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
+    '</svg>'
+)
 NODES_SVG = (
     '<svg class="hero-nodes" viewBox="0 0 1000 450" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">'
     '<g stroke="#ffffff" stroke-width="1" fill="#ffffff">'
@@ -775,16 +793,23 @@ def render_form():
             "hours": hours,
         }
 
-        with st.spinner("Building your roadmap..."):
-            import roadmap_ai
-            ai_phases, fail_reason = roadmap_ai.generate_roadmap(
-                education=education,
-                interest_label=chosen_label,
-                career=career_val,
-                skills=skills,
-                strengths=strengths,
-                hours_per_week=hours,
-            )
+        roadmap_loading_ph = st.empty()
+        ai_phases = None
+        fail_reason = None
+        try:
+            with roadmap_loading_ph.container():
+                with st.spinner("Building your roadmap..."):
+                    import roadmap_ai
+                    ai_phases, fail_reason = roadmap_ai.generate_roadmap(
+                        education=education,
+                        interest_label=chosen_label,
+                        career=career_val,
+                        skills=skills,
+                        strengths=strengths,
+                        hours_per_week=hours,
+                    )
+        finally:
+            roadmap_loading_ph.empty()
 
         if ai_phases:
             phases = ai_phases
@@ -1118,109 +1143,122 @@ def render_resume_analyzer(is_dark: bool = False):
                 if extra_skills:
                     final_resume_text += "\n\nAdditional Skills: " + ", ".join(extra_skills)
 
-                with st.spinner("Analyzing your resume against the target role..."):
-                    try:
-                        resume_data = extract_resume_skills(final_resume_text)
-                        if extra_skills:
-                            curr_skills = resume_data.get("skills", [])
-                            seen_skills = {s.lower() for s in curr_skills}
-                            for es in extra_skills:
-                                if es and es.lower() not in seen_skills:
-                                    curr_skills.append(es)
-                                    seen_skills.add(es.lower())
-                            resume_data["skills"] = curr_skills
+                loading_placeholder = st.empty()
+                error_msg = None
+                should_stop = False
+                try:
+                    with loading_placeholder.container():
+                        with st.spinner(
+                            "Analyzing your resume against the target role...\n\n"
+                            "This usually takes under a minute, but can take up to two if the AI service is busy. Please keep this tab open."
+                        ):
+                            resume_data = extract_resume_skills(final_resume_text)
+                            if extra_skills:
+                                curr_skills = resume_data.get("skills", [])
+                                seen_skills = {s.lower() for s in curr_skills}
+                                for es in extra_skills:
+                                    if es and es.lower() not in seen_skills:
+                                        curr_skills.append(es)
+                                        seen_skills.add(es.lower())
+                                resume_data["skills"] = curr_skills
 
-                        try:
-                            job_data = extract_job_skills(final_job_text)
-                        except JobExtractionError as e:
-                            st.session_state.ra_results = None
-                            st.error(str(e))
-                            st.stop()
+                            try:
+                                job_data = extract_job_skills(final_job_text)
+                            except JobExtractionError as e:
+                                error_msg = str(e)
+                                should_stop = True
+                            else:
+                                if not job_data.get("required_skills"):
+                                    error_msg = (
+                                        "Could not extract any required skills from the job description or role. "
+                                        "Please provide a more detailed job posting or role description."
+                                    )
+                                    should_stop = True
+                                else:
+                                    match_results = compare(final_resume_text, resume_data, job_data)
+                                    scores = score_breakdown(match_results)
+                                    if scores.get("total_required", 0) <= 0:
+                                        error_msg = (
+                                            "Analysis found 0 required skills for this role. "
+                                            "Please provide a more detailed job description."
+                                        )
+                                        should_stop = True
+                                    else:
+                                        match_results["match_percent"] = scores["match_percent"]
 
-                        if not job_data.get("required_skills"):
-                            st.session_state.ra_results = None
-                            st.error(
-                                "Could not extract any required skills from the job description or role. "
-                                "Please provide a more detailed job posting or role description."
-                            )
-                            st.stop()
+                                        job_role = job_data.get("role", "Target Role") or "Target Role"
 
-                        match_results = compare(final_resume_text, resume_data, job_data)
-                        scores = score_breakdown(match_results)
-                        if scores.get("total_required", 0) <= 0:
-                            raise ValueError(
-                                "Analysis found 0 required skills for this role. "
-                                "Please provide a more detailed job description."
-                            )
+                                        soft = job_data.get("soft_skills", [])
+                                        exp_req = job_data.get("experience_requirements", [])
+                                        other_res = assess_other_requirements(final_resume_text, soft, exp_req) if (soft or exp_req) else None
 
-                        match_results["match_percent"] = scores["match_percent"]
+                                        dot_string = build_graph(job_role, match_results, is_dark=is_dark)
 
-                        job_role = job_data.get("role", "Target Role") or "Target Role"
+                                        missing_skills = match_results.get("missing", [])
+                                        partial_skills = match_results.get("partial", [])
+                                        roadmap = generate_roadmap(
+                                            missing_skills,
+                                            partial_skills,
+                                            job_role,
+                                            resume_data.get("projects", []),
+                                            final_job_text,
+                                            match_results.get("evidence", {}),
+                                            match_results.get("gaps", {}),
+                                        )
 
-                        soft = job_data.get("soft_skills", [])
-                        exp_req = job_data.get("experience_requirements", [])
-                        other_res = assess_other_requirements(final_resume_text, soft, exp_req) if (soft or exp_req) else None
+                                        # Generate Markdown Report
+                                        report_md = f"# Career Analysis: {job_role}\n\n"
+                                        report_md += f"**Match Score:** {scores['match_percent']}%\n\n"
+                                        report_md += f"### ✅ Matched Skills\n{', '.join(match_results['matched']) if match_results['matched'] else 'None'}\n\n"
+                                        if match_results.get("partial"):
+                                            report_md += f"### ⚠️ Partial Skills\n{', '.join(match_results['partial'])}\n\n"
+                                        report_md += f"### ❌ Missing Skills\n{', '.join(match_results['missing']) if match_results['missing'] else 'None'}\n\n"
+                                        report_md += "### 🚀 Your Roadmap\n"
+                                        if not missing_skills and not partial_skills:
+                                            report_md += "You already have all required skills!\n"
+                                        else:
+                                            for step in roadmap.get("steps", []):
+                                                report_md += f"\n#### {step.get('order', '?')}. {step.get('skill', '')} ({step.get('priority', 'Medium')} Priority)\n"
+                                                report_md += f"- **Why this is a gap:** {step.get('why_gap', '')}\n"
+                                                report_md += f"- **Learn:** {step.get('learn', '')}\n"
+                                                report_md += f"- **Apply:** {step.get('apply', '')}\n"
+                                                report_md += f"- **What proves it:** {step.get('prove', '')}\n"
+                                                report_md += f"- **Example resume bullet:** {step.get('example_bullet', '')}\n"
+                                                report_md += f"- **Estimated effort:** {step.get('suggested_effort', '')}\n"
 
-                        dot_string = build_graph(job_role, match_results, is_dark=is_dark)
+                                            for item in roadmap.get("optional", []):
+                                                report_md += f"- **{item.get('skill', '')}**: {item.get('reason', '')}\n"
 
-                        missing_skills = match_results.get("missing", [])
-                        partial_skills = match_results.get("partial", [])
-                        roadmap = generate_roadmap(
-                            missing_skills,
-                            partial_skills,
-                            job_role,
-                            resume_data.get("projects", []),
-                            final_job_text,
-                            match_results.get("evidence", {}),
-                            match_results.get("gaps", {}),
-                        )
+                                        html_report = analysis_to_html({
+                                            "job_role": job_role,
+                                            "match_results": match_results,
+                                            "scores": scores,
+                                            "other_res": other_res,
+                                            "roadmap": roadmap,
+                                            "report_md": report_md,
+                                        })
 
-                        # Generate Markdown Report
-                        report_md = f"# Career Analysis: {job_role}\n\n"
-                        report_md += f"**Match Score:** {scores['match_percent']}%\n\n"
-                        report_md += f"### ✅ Matched Skills\n{', '.join(match_results['matched']) if match_results['matched'] else 'None'}\n\n"
-                        if match_results.get("partial"):
-                            report_md += f"### ⚠️ Partial Skills\n{', '.join(match_results['partial'])}\n\n"
-                        report_md += f"### ❌ Missing Skills\n{', '.join(match_results['missing']) if match_results['missing'] else 'None'}\n\n"
-                        report_md += "### 🚀 Your Roadmap\n"
-                        if not missing_skills and not partial_skills:
-                            report_md += "You already have all required skills!\n"
-                        else:
-                            for step in roadmap.get("steps", []):
-                                report_md += f"\n#### {step.get('order', '?')}. {step.get('skill', '')} ({step.get('priority', 'Medium')} Priority)\n"
-                                report_md += f"- **Why this is a gap:** {step.get('why_gap', '')}\n"
-                                report_md += f"- **Learn:** {step.get('learn', '')}\n"
-                                report_md += f"- **Apply:** {step.get('apply', '')}\n"
-                                report_md += f"- **What proves it:** {step.get('prove', '')}\n"
-                                report_md += f"- **Example resume bullet:** {step.get('example_bullet', '')}\n"
-                                report_md += f"- **Estimated effort:** {step.get('suggested_effort', '')}\n"
+                                        st.session_state.ra_results = {
+                                            "job_role": job_role,
+                                            "match_results": match_results,
+                                            "scores": scores,
+                                            "other_res": other_res,
+                                            "dot_string": dot_string,
+                                            "roadmap": roadmap,
+                                            "html_report": html_report,
+                                            "report_md": report_md,
+                                        }
+                                        st.rerun()
+                except Exception as e:
+                    error_msg = str(e)
+                finally:
+                    loading_placeholder.empty()
 
-                            for item in roadmap.get("optional", []):
-                                report_md += f"- **{item.get('skill', '')}**: {item.get('reason', '')}\n"
-
-                        html_report = analysis_to_html({
-                            "job_role": job_role,
-                            "match_results": match_results,
-                            "scores": scores,
-                            "other_res": other_res,
-                            "roadmap": roadmap,
-                            "report_md": report_md,
-                        })
-
-                        st.session_state.ra_results = {
-                            "job_role": job_role,
-                            "match_results": match_results,
-                            "scores": scores,
-                            "other_res": other_res,
-                            "dot_string": dot_string,
-                            "roadmap": roadmap,
-                            "html_report": html_report,
-                            "report_md": report_md,
-                        }
-                        st.rerun()
-                    except Exception as e:
-                        st.session_state.ra_results = None
-                        st.error(str(e))
+                if error_msg:
+                    st.session_state.ra_results = None
+                    st.error(error_msg)
+                    if should_stop:
+                        st.stop()
     else:
         res = st.session_state.ra_results
         job_role = res["job_role"]
@@ -1474,14 +1512,16 @@ def main():
     st.session_state["theme_toggle"] = is_dark
     st.query_params["theme"] = "dark" if is_dark else "light"
 
-    btn_label = "☀️" if is_dark else "🌙"
     btn_help = "Switch to light mode" if is_dark else "Switch to dark mode"
-    if st.button(btn_label, key="theme_btn", help=btn_help):
+    if st.button("", key="theme_btn", help=btn_help):
         new_theme = "light" if is_dark else "dark"
         st.session_state["theme"] = new_theme
         st.session_state["theme_toggle"] = (new_theme == "dark")
         st.query_params["theme"] = new_theme
         st.rerun()
+
+    toggle_svg = SUN_SVG if is_dark else MOON_SVG
+    st.markdown(f'<div class="theme-toggle-icon">{toggle_svg}</div>', unsafe_allow_html=True)
 
     st.markdown(CSS, unsafe_allow_html=True)
     if is_dark:
