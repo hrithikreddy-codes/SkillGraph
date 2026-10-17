@@ -271,12 +271,32 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
 [data-testid="stVegaLiteChart"], .vega-embed { background: transparent !important; }
 
 /* ---------- Skill Graph HTML Tree (Light Mode) ---------- */
+:root {
+  --tree-line: #3b82f6;
+  --tree-row-gap: 20px;
+  --tree-stub-height: 14px;
+  --tree-stem-height: 14px;
+  --tree-col-pad: 6px;
+  --tree-card-max-width: 220px;
+}
+
 .sg-tree-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
   margin: 14px 0 8px 0;
+  box-sizing: border-box;
+  font-size: 13px;
+  position: relative;
+}
+
+.sg-tree-graph-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  position: relative;
   box-sizing: border-box;
 }
 
@@ -285,6 +305,10 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   flex-direction: column;
   align-items: center;
   width: 100%;
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
 }
 
 .sg-tree-root-pill {
@@ -293,120 +317,177 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   justify-content: center;
   font-family: 'DM Sans', Arial, sans-serif;
   font-weight: 700;
-  font-size: 14px;
-  padding: 6px 18px;
+  font-size: 1.05em;
+  padding: 0.4em 1.4em;
   border-radius: 9999px;
   text-align: center;
   background: #1e3a8a;
   color: #ffffff;
   border: 1.5px solid #1e3a8a;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
-  z-index: 2;
+  z-index: 3;
+  line-height: 1.3;
 }
 
 .sg-tree-root-stem {
   width: 2px;
-  height: 16px;
-  background: #60a5fa;
+  height: var(--tree-stem-height, 14px);
+  background: var(--tree-line, #3b82f6);
   margin: 0 auto;
+  z-index: 1;
 }
 
-.sg-tree-branches {
+.sg-tree-rows {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
+  position: relative;
   margin: 0;
   padding: 0;
 }
 
+.sg-tree-row {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  width: 100%;
+  position: relative;
+  margin-bottom: var(--tree-row-gap, 20px);
+  box-sizing: border-box;
+}
+
+.sg-tree-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Vertical trunk running down the horizontal center to the next row's bar */
+.sg-tree-row:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: calc(-1 * var(--tree-row-gap, 20px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  background: var(--tree-line, #3b82f6);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Card columns: no fixed widths */
 .sg-tree-card-col {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 16px 8px 12px 8px;
-  flex: 1 1 170px;
-  max-width: 260px;
-  min-width: 155px;
+  padding-top: var(--tree-stub-height, 14px);
+  padding-left: var(--tree-col-pad, 6px);
+  padding-right: var(--tree-col-pad, 6px);
   box-sizing: border-box;
+  flex: 1 1 0;
+  max-width: var(--tree-card-max-width, 220px);
+  min-width: 0;
 }
 
+/* Left half of horizontal bar */
 .sg-tree-card-col::before {
   content: "";
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: #60a5fa;
-}
-
-.sg-tree-card-col:first-child::before {
-  left: 50%;
-}
-
-.sg-tree-card-col:last-child::before {
   right: 50%;
+  width: 50%;
+  height: 2px;
+  background: var(--tree-line, #3b82f6);
+  z-index: 2;
 }
 
-.sg-tree-card-col:only-child::before {
-  display: none;
-}
-
+/* Right half of horizontal bar AND vertical stub dropping into the card */
 .sg-tree-card-col::after {
   content: "";
   position: absolute;
   top: 0;
   left: 50%;
-  transform: translateX(-50%);
-  width: 2px;
-  height: 16px;
-  background: #60a5fa;
+  width: 50%;
+  height: var(--tree-stub-height, 14px);
+  border-top: 2px solid var(--tree-line, #3b82f6);
+  border-left: 2px solid var(--tree-line, #3b82f6);
+  box-sizing: border-box;
+  z-index: 2;
+  background: transparent;
 }
 
+/* First card in row: omit left half of horizontal bar */
+.sg-tree-card-col:first-child::before {
+  display: none !important;
+}
+
+/* Last card in row: omit right half of horizontal bar, retain vertical stub */
+.sg-tree-card-col:last-child::after {
+  border-top: none !important;
+}
+
+/* Single card in row: omit both left and right halves, retain vertical stub */
+.sg-tree-card-col:only-child::before {
+  display: none !important;
+}
+.sg-tree-card-col:only-child::after {
+  border-top: none !important;
+}
+
+/* Card container: opaque background & z-index above trunk */
 .sg-tree-card {
   display: flex;
   flex-direction: column;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  position: relative;
+  z-index: 3;
   width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-sizing: border-box;
 }
 
 .sg-tree-card-header {
   font-family: 'DM Sans', Arial, sans-serif;
-  font-size: 13px;
+  font-size: 0.9em;
   font-weight: 700;
-  padding: 7px 12px;
+  padding: 0.35em 0.5em;
   text-align: center;
   background: #1e3a8a;
   color: #ffffff;
   border-bottom: 1px solid #1e3a8a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .sg-tree-card-body {
   display: flex;
   flex-direction: column;
-  padding: 8px 7px;
-  gap: 5px;
+  padding: 0.35em;
+  gap: 0.25em;
   background: #ffffff;
+  box-sizing: border-box;
 }
 
 .sg-tree-node {
   display: flex;
   align-items: center;
   font-family: 'DM Sans', Arial, sans-serif;
-  font-size: 12px;
+  font-size: 0.82em;
   font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 6px;
-  line-height: 1.35;
+  padding: 0.25em 0.5em;
+  border-radius: 4px;
+  line-height: 1.3;
   text-align: left;
   box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sg-node-matched {
@@ -435,6 +516,7 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   gap: 12px;
   margin-top: 16px;
   width: 100%;
+  flex-shrink: 0;
 }
 
 .sg-tree-legend .sg-tree-node {
@@ -530,99 +612,70 @@ div[role="dialog"] button[aria-label="Close"]:hover {
   border-radius: 50% !important;
 }
 
-/* Fullscreen Tree rules */
+/* Fullscreen Tree rules: em-based sizing derived from min(vw, vh) */
 .sg-tree-fullscreen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  height: 100%;
-  max-height: calc(92vh - 70px);
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  box-sizing: border-box;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: calc(92vh - 65px) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
-.sg-tree-fullscreen .sg-tree-branches {
-  flex-wrap: nowrap !important;
-  gap: 0;
-  width: 100%;
-  justify-content: center;
-  align-items: flex-start;
-  flex: 1 1 auto;
-  overflow: hidden;
-}
-
-.sg-tree-fullscreen .sg-tree-card-col {
-  flex: 1 1 0;
-  min-width: 110px;
-  max-width: 280px;
-  padding: clamp(6px, 1.2vh, 12px) clamp(3px, 0.5vw, 6px) 0 clamp(3px, 0.5vw, 6px);
-}
-
-.sg-tree-fullscreen .sg-tree-card-col::before {
-  height: 2px;
-}
-
-.sg-tree-fullscreen .sg-tree-card-col::after {
-  height: clamp(6px, 1.2vh, 12px);
-}
-
-.sg-tree-fullscreen .sg-tree-card {
-  display: flex;
-  flex-direction: column;
-  border-radius: 8px;
-  overflow: hidden;
-  width: 100%;
-}
-
-.sg-tree-fullscreen .sg-tree-card-header {
-  font-size: clamp(11px, 1.35vh, 13.5px);
-  font-weight: 700;
-  padding: clamp(3px, 0.6vh, 6px) clamp(4px, 0.6vw, 8px);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sg-tree-fullscreen .sg-tree-card-body {
-  display: flex;
-  flex-direction: column;
-  padding: clamp(3px, 0.5vh, 6px);
-  gap: clamp(2px, 0.35vh, 4px);
-  overflow: hidden;
-}
-
-.sg-tree-fullscreen .sg-tree-node {
-  font-size: clamp(9.5px, 1.2vh, 12px);
-  padding: clamp(2px, 0.35vh, 4px) clamp(4px, 0.5vw, 8px);
-  border-radius: 4px;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sg-tree-fullscreen .sg-tree-root-pill {
-  font-size: clamp(11px, 1.4vh, 14px);
-  padding: clamp(3px, 0.6vh, 6px) clamp(10px, 1.3vw, 16px);
-}
-
-.sg-tree-fullscreen .sg-tree-root-stem {
-  height: clamp(6px, 1.2vh, 12px);
+.sg-tree-fullscreen .sg-tree-graph-area {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
 }
 
 .sg-tree-fullscreen .sg-tree-legend {
-  margin-top: clamp(6px, 1.2vh, 12px);
-  gap: clamp(8px, 1.5vw, 16px);
+  flex-shrink: 0 !important;
+  margin-top: auto !important;
+  padding-top: 8px !important;
+  padding-bottom: 2px !important;
+  font-size: 12px !important;
+  z-index: 10 !important;
 }
 
-.sg-tree-fullscreen .sg-tree-legend .sg-tree-node {
-  font-size: clamp(10px, 1.15vh, 12px);
-  padding: clamp(3px, 0.4vh, 5px) clamp(8px, 1vw, 12px);
+/* Sizing derived from min(vw, vh) based on number of rows */
+.sg-tree-fullscreen[data-rows="1"] .sg-tree-graph-area {
+  font-size: clamp(10px, min(1.3vw, 2.1vh), 15px);
+  --tree-row-gap: 1.5em;
+  --tree-stub-height: 1.1em;
+  --tree-stem-height: 1.1em;
+  --tree-col-pad: 0.4em;
+  --tree-card-max-width: 16em;
+}
+
+.sg-tree-fullscreen[data-rows="2"] .sg-tree-graph-area {
+  font-size: clamp(8.5px, min(1.05vw, 1.35vh), 12.5px);
+  --tree-row-gap: 1.15em;
+  --tree-stub-height: 0.9em;
+  --tree-stem-height: 0.9em;
+  --tree-col-pad: 0.35em;
+  --tree-card-max-width: 14em;
+}
+
+.sg-tree-fullscreen[data-rows="3"] .sg-tree-graph-area,
+.sg-tree-fullscreen[data-rows="4"] .sg-tree-graph-area {
+  font-size: clamp(7.5px, min(0.92vw, 0.95vh), 10.5px);
+  --tree-row-gap: 0.85em;
+  --tree-stub-height: 0.75em;
+  --tree-stem-height: 0.75em;
+  --tree-col-pad: 0.3em;
+  --tree-card-max-width: 12.5em;
 }
 
 
@@ -631,6 +684,15 @@ div[role="dialog"] button[aria-label="Close"]:hover {
   .hero-slim { padding: 0 16px; height: 64px; min-height: 64px; }
   .hero-slim .tagline { display: none; }
   .when { display:none; }
+  .sg-tree-wrapper:not(.sg-tree-fullscreen) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    padding-bottom: 8px;
+  }
+  .sg-tree-wrapper:not(.sg-tree-fullscreen) .sg-tree-row {
+    min-width: 440px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .hero, .hero-nodes, .hero-slim, .result-head { animation:none !important; }
@@ -1527,6 +1589,10 @@ span.sg-chip-missing,
 }
 
 /* ---------- Skill Graph Tree (Dark Mode Overrides) ---------- */
+:root {
+  --tree-line: #60a5fa;
+}
+
 .sg-tree-root-pill {
   background: #16213a !important;
   color: #e5ecf8 !important;
@@ -1538,9 +1604,17 @@ span.sg-chip-missing,
   background: #60a5fa !important;
 }
 
-.sg-tree-card-col::before,
-.sg-tree-card-col::after {
+.sg-tree-row:not(:last-child)::before {
   background: #60a5fa !important;
+}
+
+.sg-tree-card-col::before {
+  background: #60a5fa !important;
+}
+
+.sg-tree-card-col::after {
+  background: transparent !important;
+  border-color: #60a5fa !important;
 }
 
 .sg-tree-card {

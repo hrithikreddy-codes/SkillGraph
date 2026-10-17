@@ -1041,31 +1041,42 @@ def build_skill_tree_html(job_role: str, match_results: dict, is_fullscreen: boo
         key=lambda c: (preferred_order.index(c) if c in preferred_order else 999, c),
     )
 
-    cards_html = []
-    for cat in sorted_cats:
-        cat_skills = categories[cat]
-        safe_cat = html.escape(cat)
-        skill_rows = []
-        for sk in cat_skills:
-            safe_name = html.escape(sk["name"])
-            symbol = sk["symbol"]
-            cls = sk["cls"]
-            skill_rows.append(
-                f'<div class="sg-tree-node {cls}" title="{safe_name}">'
-                f'{symbol} {safe_name}'
+    max_per_row = 5 if is_fullscreen else 4
+    category_rows = [
+        sorted_cats[i : i + max_per_row]
+        for i in range(0, len(sorted_cats), max_per_row)
+    ]
+    num_rows = len(category_rows)
+
+    rows_html = []
+    for row_cats in category_rows:
+        cards_html = []
+        for cat in row_cats:
+            cat_skills = categories[cat]
+            safe_cat = html.escape(cat)
+            skill_rows = []
+            for sk in cat_skills:
+                safe_name = html.escape(sk["name"])
+                symbol = sk["symbol"]
+                cls = sk["cls"]
+                skill_rows.append(
+                    f'<div class="sg-tree-node {cls}" title="{safe_name}">'
+                    f'{symbol} {safe_name}'
+                    f'</div>'
+                )
+            rows_str = "".join(skill_rows)
+            cards_html.append(
+                f'<div class="sg-tree-card-col">'
+                f'  <div class="sg-tree-card">'
+                f'    <div class="sg-tree-card-header">{safe_cat}</div>'
+                f'    <div class="sg-tree-card-body">{rows_str}</div>'
+                f'  </div>'
                 f'</div>'
             )
-        rows_str = "".join(skill_rows)
-        cards_html.append(
-            f'<div class="sg-tree-card-col">'
-            f'  <div class="sg-tree-card">'
-            f'    <div class="sg-tree-card-header">{safe_cat}</div>'
-            f'    <div class="sg-tree-card-body">{rows_str}</div>'
-            f'  </div>'
-            f'</div>'
-        )
+        row_content = "".join(cards_html)
+        rows_html.append(f'<div class="sg-tree-row">{row_content}</div>')
 
-    branches_str = "".join(cards_html)
+    rows_str = "".join(rows_html)
 
     legend_html = (
         '<div class="sg-tree-legend">'
@@ -1076,13 +1087,15 @@ def build_skill_tree_html(job_role: str, match_results: dict, is_fullscreen: boo
     )
 
     return clean(f"""
-        <div class="sg-tree-wrapper{fs_class}">
-            <div class="sg-tree-root-container">
-                <div class="sg-tree-root-pill">{safe_role}</div>
-                <div class="sg-tree-root-stem"></div>
-            </div>
-            <div class="sg-tree-branches">
-                {branches_str}
+        <div class="sg-tree-wrapper{fs_class}" data-rows="{num_rows}">
+            <div class="sg-tree-graph-area">
+                <div class="sg-tree-root-container">
+                    <div class="sg-tree-root-pill">{safe_role}</div>
+                    <div class="sg-tree-root-stem"></div>
+                </div>
+                <div class="sg-tree-rows">
+                    {rows_str}
+                </div>
             </div>
             {legend_html}
         </div>
