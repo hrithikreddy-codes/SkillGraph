@@ -757,6 +757,150 @@ div[role="dialog"] button[aria-label="Close"]:hover {
   .hero, .hero-nodes, .hero-slim, .result-head { animation:none !important; }
   .rotator span { animation:none; } .rotator span:first-child { opacity:1; }
 }
+
+/* ============================================================
+   CURSOR STYLES: Default cursor for non-editable text & content
+   ============================================================ */
+html,
+body,
+.stApp,
+h1, h2, h3, h4, h5, h6,
+p, span, div, li, ul, ol,
+table, th, td, caption,
+[data-testid="stMarkdownContainer"],
+[data-testid="stCaptionContainer"],
+.tag, .tag *, .badge, .badge *,
+.career, .summary, .note, .note *, .tips, .tips *, .goal, .goal *, .result-head, .pcount,
+.sg-tree-wrapper, .sg-tree-wrapper *,
+.sg-tree-card, .sg-tree-card *,
+.sg-tree-card-header, .sg-tree-card-body,
+.sg-tree-node, .sg-tree-node *,
+.sg-tree-legend, .sg-tree-legend *,
+.sg-tree-root-pill, .sg-tree-root-pill *,
+[data-testid="stVegaLiteChart"], [data-testid="stVegaLiteChart"] * {
+  cursor: default;
+}
+
+/* ============================================================
+   CURSOR STYLES: Clickable interactive elements
+   ============================================================ */
+button,
+button *,
+button[role="tab"],
+button[role="tab"] *,
+[data-testid="stTabs"] button,
+[data-testid="stTabs"] button *,
+[data-baseweb="tab"],
+[data-baseweb="tab"] *,
+div[data-baseweb="tab-list"] button,
+div[data-baseweb="tab-list"] button *,
+div[data-testid="stButton"] button,
+div[data-testid="stButton"] button *,
+div[data-testid="stFormSubmitButton"] button,
+div[data-testid="stFormSubmitButton"] button *,
+div[data-testid="stDownloadButton"] button,
+div[data-testid="stDownloadButton"] button *,
+[data-testid="stBaseButton-secondary"],
+[data-testid="stBaseButton-secondary"] *,
+[data-testid="stBaseButton-primary"],
+[data-testid="stBaseButton-primary"] *,
+[data-testid="stExpander"] summary,
+[data-testid="stExpander"] summary *,
+details summary,
+details summary *,
+summary,
+summary *,
+.st-key-theme_btn,
+.st-key-theme_btn *,
+.stButton.st-key-theme_btn,
+.stButton.st-key-theme_btn *,
+.theme-toggle-icon,
+.theme-toggle-icon *,
+.theme-toggle-svg,
+div[data-testid="stDialog"] button[aria-label="Close"],
+div[data-testid="stDialog"] button[aria-label="Close"] *,
+div[role="dialog"] button[aria-label="Close"],
+div[role="dialog"] button[aria-label="Close"] *,
+[data-testid="stDialogCloseButton"],
+[data-testid="stDialogCloseButton"] *,
+[data-testid="stCheckbox"],
+[data-testid="stCheckbox"] *,
+label[data-baseweb="checkbox"],
+label[data-baseweb="checkbox"] *,
+div[data-baseweb="select"],
+div[data-baseweb="select"] *:not(input),
+[data-testid="stSelectbox"] div[data-baseweb="select"],
+[data-testid="stSelectbox"] div[data-baseweb="select"] *:not(input),
+[data-testid="stMultiSelect"] div[data-baseweb="select"],
+[data-testid="stMultiSelect"] div[data-baseweb="select"] *:not(input),
+[role="listbox"],
+[role="listbox"] *,
+[role="option"],
+[role="option"] *,
+li[role="option"],
+li[role="option"] *,
+[data-baseweb="menu"],
+[data-baseweb="menu"] *,
+[data-baseweb="popover"] li,
+[data-baseweb="popover"] li *,
+[data-baseweb="tag"],
+[data-baseweb="tag"] *,
+[data-testid="stFileUploaderDropzone"],
+[data-testid="stFileUploaderDropzone"] *,
+[data-testid="stFileUploader"] section,
+[data-testid="stFileUploader"] section *,
+[data-testid="stFileUploader"] button,
+[data-testid="stFileUploader"] button *,
+a,
+a * {
+  cursor: pointer !important;
+}
+
+/* ============================================================
+   CURSOR STYLES: Text inputs & editable typing areas
+   ============================================================ */
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input:not([type]),
+textarea,
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea,
+[data-testid="stNumberInput"] input,
+div[data-baseweb="input"] input,
+div[data-baseweb="textarea"] textarea,
+div[data-baseweb="base-input"] input,
+div[data-baseweb="base-input"] textarea,
+div[data-baseweb="select"] input,
+[data-testid="stSelectbox"] input,
+[data-testid="stMultiSelect"] input {
+  cursor: text !important;
+}
+
+/* ============================================================
+   CURSOR STYLES: Disabled controls
+   ============================================================ */
+:disabled,
+:disabled *,
+[disabled],
+[disabled] *,
+button:disabled,
+button:disabled *,
+button[disabled],
+button[disabled] *,
+button[aria-disabled="true"],
+button[aria-disabled="true"] *,
+input:disabled,
+textarea:disabled,
+select:disabled,
+[aria-disabled="true"],
+[aria-disabled="true"] *,
+[data-disabled="true"],
+[data-disabled="true"] * {
+  cursor: not-allowed !important;
+}
 </style>
 """
 
@@ -1753,6 +1897,150 @@ div.sg-tree-node.sg-node-missing,
   color: #e5ecf8 !important;
   -webkit-text-fill-color: #e5ecf8 !important;
   border-color: rgba(148, 163, 184, 0.45) !important;
+}
+
+/* ============================================================
+   CURSOR STYLES: Default cursor for non-editable text & content
+   ============================================================ */
+html,
+body,
+.stApp,
+h1, h2, h3, h4, h5, h6,
+p, span, div, li, ul, ol,
+table, th, td, caption,
+[data-testid="stMarkdownContainer"],
+[data-testid="stCaptionContainer"],
+.tag, .tag *, .badge, .badge *,
+.career, .summary, .note, .note *, .tips, .tips *, .goal, .goal *, .result-head, .pcount,
+.sg-tree-wrapper, .sg-tree-wrapper *,
+.sg-tree-card, .sg-tree-card *,
+.sg-tree-card-header, .sg-tree-card-body,
+.sg-tree-node, .sg-tree-node *,
+.sg-tree-legend, .sg-tree-legend *,
+.sg-tree-root-pill, .sg-tree-root-pill *,
+[data-testid="stVegaLiteChart"], [data-testid="stVegaLiteChart"] * {
+  cursor: default;
+}
+
+/* ============================================================
+   CURSOR STYLES: Clickable interactive elements
+   ============================================================ */
+button,
+button *,
+button[role="tab"],
+button[role="tab"] *,
+[data-testid="stTabs"] button,
+[data-testid="stTabs"] button *,
+[data-baseweb="tab"],
+[data-baseweb="tab"] *,
+div[data-baseweb="tab-list"] button,
+div[data-baseweb="tab-list"] button *,
+div[data-testid="stButton"] button,
+div[data-testid="stButton"] button *,
+div[data-testid="stFormSubmitButton"] button,
+div[data-testid="stFormSubmitButton"] button *,
+div[data-testid="stDownloadButton"] button,
+div[data-testid="stDownloadButton"] button *,
+[data-testid="stBaseButton-secondary"],
+[data-testid="stBaseButton-secondary"] *,
+[data-testid="stBaseButton-primary"],
+[data-testid="stBaseButton-primary"] *,
+[data-testid="stExpander"] summary,
+[data-testid="stExpander"] summary *,
+details summary,
+details summary *,
+summary,
+summary *,
+.st-key-theme_btn,
+.st-key-theme_btn *,
+.stButton.st-key-theme_btn,
+.stButton.st-key-theme_btn *,
+.theme-toggle-icon,
+.theme-toggle-icon *,
+.theme-toggle-svg,
+div[data-testid="stDialog"] button[aria-label="Close"],
+div[data-testid="stDialog"] button[aria-label="Close"] *,
+div[role="dialog"] button[aria-label="Close"],
+div[role="dialog"] button[aria-label="Close"] *,
+[data-testid="stDialogCloseButton"],
+[data-testid="stDialogCloseButton"] *,
+[data-testid="stCheckbox"],
+[data-testid="stCheckbox"] *,
+label[data-baseweb="checkbox"],
+label[data-baseweb="checkbox"] *,
+div[data-baseweb="select"],
+div[data-baseweb="select"] *:not(input),
+[data-testid="stSelectbox"] div[data-baseweb="select"],
+[data-testid="stSelectbox"] div[data-baseweb="select"] *:not(input),
+[data-testid="stMultiSelect"] div[data-baseweb="select"],
+[data-testid="stMultiSelect"] div[data-baseweb="select"] *:not(input),
+[role="listbox"],
+[role="listbox"] *,
+[role="option"],
+[role="option"] *,
+li[role="option"],
+li[role="option"] *,
+[data-baseweb="menu"],
+[data-baseweb="menu"] *,
+[data-baseweb="popover"] li,
+[data-baseweb="popover"] li *,
+[data-baseweb="tag"],
+[data-baseweb="tag"] *,
+[data-testid="stFileUploaderDropzone"],
+[data-testid="stFileUploaderDropzone"] *,
+[data-testid="stFileUploader"] section,
+[data-testid="stFileUploader"] section *,
+[data-testid="stFileUploader"] button,
+[data-testid="stFileUploader"] button *,
+a,
+a * {
+  cursor: pointer !important;
+}
+
+/* ============================================================
+   CURSOR STYLES: Text inputs & editable typing areas
+   ============================================================ */
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input:not([type]),
+textarea,
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea,
+[data-testid="stNumberInput"] input,
+div[data-baseweb="input"] input,
+div[data-baseweb="textarea"] textarea,
+div[data-baseweb="base-input"] input,
+div[data-baseweb="base-input"] textarea,
+div[data-baseweb="select"] input,
+[data-testid="stSelectbox"] input,
+[data-testid="stMultiSelect"] input {
+  cursor: text !important;
+}
+
+/* ============================================================
+   CURSOR STYLES: Disabled controls
+   ============================================================ */
+:disabled,
+:disabled *,
+[disabled],
+[disabled] *,
+button:disabled,
+button:disabled *,
+button[disabled],
+button[disabled] *,
+button[aria-disabled="true"],
+button[aria-disabled="true"] *,
+input:disabled,
+textarea:disabled,
+select:disabled,
+[aria-disabled="true"],
+[aria-disabled="true"] *,
+[data-disabled="true"],
+[data-disabled="true"] * {
+  cursor: not-allowed !important;
 }
 </style>
 """
