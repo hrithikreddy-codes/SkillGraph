@@ -547,14 +547,14 @@ div[data-testid="stDialog"] > div,
 div[role="dialog"] {
   width: 95vw !important;
   max-width: 95vw !important;
-  height: 92vh !important;
-  max-height: 92vh !important;
+  height: calc(100vh - 32px) !important;
+  max-height: calc(100vh - 32px) !important;
   margin: auto !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
   box-sizing: border-box !important;
-  padding: 1.25rem 1.5rem !important;
+  padding: 1rem 1.5rem !important;
 }
 
 div[data-testid="stDialog"] *,
@@ -569,14 +569,28 @@ div[role="dialog"] *::-webkit-scrollbar {
   height: 0 !important;
 }
 
+div[data-testid="stDialog"] [data-testid="stDialogBody"],
+div[role="dialog"] [data-testid="stDialogBody"],
 div[data-testid="stDialog"] [data-testid="stVerticalBlock"],
+div[role="dialog"] [data-testid="stVerticalBlock"],
 div[data-testid="stDialog"] [data-testid="stVerticalBlock"] > div,
-div[role="dialog"] [data-testid="stVerticalBlock"] {
-  overflow: hidden !important;
+div[role="dialog"] [data-testid="stVerticalBlock"] > div,
+div[data-testid="stDialog"] .stElementContainer,
+div[role="dialog"] .stElementContainer,
+div[data-testid="stDialog"] .stMarkdown,
+div[role="dialog"] .stMarkdown,
+div[data-testid="stDialog"] [data-testid="stMarkdownContainer"],
+div[role="dialog"] [data-testid="stMarkdownContainer"] {
+  height: 100% !important;
   max-height: 100% !important;
+  flex: 1 1 auto !important;
   display: flex !important;
   flex-direction: column !important;
-  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 div[data-testid="stDialog"] h2,
@@ -612,7 +626,7 @@ div[role="dialog"] button[aria-label="Close"]:hover {
   border-radius: 50% !important;
 }
 
-/* Fullscreen Tree rules: em-based sizing derived from min(vw, vh) */
+/* Fullscreen Tree rules: CSS flex column filling dialog body with em-based sizing derived from min(vw, vh) */
 .sg-tree-fullscreen {
   display: flex !important;
   flex-direction: column !important;
@@ -620,7 +634,9 @@ div[role="dialog"] button[aria-label="Close"]:hover {
   align-items: center !important;
   width: 100% !important;
   height: 100% !important;
-  max-height: calc(92vh - 65px) !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
@@ -634,48 +650,68 @@ div[role="dialog"] button[aria-label="Close"]:hover {
   align-items: center !important;
   width: 100% !important;
   flex: 1 1 auto !important;
+  min-height: 0 !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
   padding: 0 !important;
   margin: 0 auto !important;
+  font-size: clamp(10px, min(1.4vw, 1.8vh), 18px);
+  --tree-row-gap: 1.2em;
+  --tree-stub-height: 1.0em;
+  --tree-stem-height: 1.0em;
+  --tree-col-pad: 0.35em;
+  --tree-card-max-width: 16em;
+}
+
+.sg-tree-fullscreen .sg-tree-root-container {
+  flex-shrink: 0 !important;
+}
+
+.sg-tree-fullscreen .sg-tree-rows {
+  width: 100% !important;
 }
 
 .sg-tree-fullscreen .sg-tree-legend {
+  flex: none !important;
   flex-shrink: 0 !important;
   margin-top: auto !important;
   padding-top: 8px !important;
   padding-bottom: 2px !important;
   font-size: 12px !important;
   z-index: 10 !important;
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
 }
 
 /* Sizing derived from min(vw, vh) based on number of rows */
 .sg-tree-fullscreen[data-rows="1"] .sg-tree-graph-area {
-  font-size: clamp(10px, min(1.3vw, 2.1vh), 15px);
+  font-size: clamp(11px, min(1.5vw, 2.2vh), 20px);
   --tree-row-gap: 1.5em;
   --tree-stub-height: 1.1em;
   --tree-stem-height: 1.1em;
   --tree-col-pad: 0.4em;
-  --tree-card-max-width: 16em;
+  --tree-card-max-width: 18em;
 }
 
 .sg-tree-fullscreen[data-rows="2"] .sg-tree-graph-area {
-  font-size: clamp(8.5px, min(1.05vw, 1.35vh), 12.5px);
-  --tree-row-gap: 1.15em;
+  font-size: clamp(9.5px, min(1.25vw, 1.55vh), 14.5px);
+  --tree-row-gap: 1.1em;
   --tree-stub-height: 0.9em;
   --tree-stem-height: 0.9em;
   --tree-col-pad: 0.35em;
-  --tree-card-max-width: 14em;
+  --tree-card-max-width: 15em;
 }
 
 .sg-tree-fullscreen[data-rows="3"] .sg-tree-graph-area,
 .sg-tree-fullscreen[data-rows="4"] .sg-tree-graph-area {
-  font-size: clamp(7.5px, min(0.92vw, 0.95vh), 10.5px);
+  font-size: clamp(8px, min(1.0vw, 1.15vh), 12px);
   --tree-row-gap: 0.85em;
   --tree-stub-height: 0.75em;
   --tree-stem-height: 0.75em;
   --tree-col-pad: 0.3em;
-  --tree-card-max-width: 12.5em;
+  --tree-card-max-width: 13.5em;
 }
 
 

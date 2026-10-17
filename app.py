@@ -12,6 +12,7 @@ File layout (top to bottom):
 
 import html
 import inspect
+import math
 from pathlib import Path
 
 import altair as alt
@@ -1041,12 +1042,18 @@ def build_skill_tree_html(job_role: str, match_results: dict, is_fullscreen: boo
         key=lambda c: (preferred_order.index(c) if c in preferred_order else 999, c),
     )
 
-    max_per_row = 5 if is_fullscreen else 4
-    category_rows = [
-        sorted_cats[i : i + max_per_row]
-        for i in range(0, len(sorted_cats), max_per_row)
-    ]
-    num_rows = len(category_rows)
+    max_per_row = 4
+    n = len(sorted_cats)
+    if n > 0:
+        num_rows = math.ceil(n / max_per_row)
+        per_row = math.ceil(n / num_rows)
+        category_rows = [
+            sorted_cats[i : i + per_row]
+            for i in range(0, n, per_row)
+        ]
+    else:
+        num_rows = 0
+        category_rows = []
 
     rows_html = []
     for row_cats in category_rows:
