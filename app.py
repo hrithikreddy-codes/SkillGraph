@@ -14,6 +14,8 @@ import html
 import inspect
 import math
 from pathlib import Path
+import re
+from typing import Optional
 
 import altair as alt
 import pandas as pd
@@ -129,6 +131,268 @@ NODES_SVG = (
     '</g>'
     '</svg>'
 )
+
+# ============================================================
+# INTEREST SVG ICONS & KEYWORD MATCHING
+# ============================================================
+INTEREST_SVGS: dict[str, str] = {
+    # software/web/programming (code brackets)
+    "software": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<path d="M5 4.5L1.5 8l3.5 3.5M11 4.5L14.5 8 11 11.5M9.5 3l-3 10"/>'
+        '</svg>'
+    ),
+    # data/analytics (bar chart)
+    "data": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<path d="M2 13.5h12M4.5 13.5V9M8 13.5V6M11.5 13.5V2.5"/>'
+        '</svg>'
+    ),
+    # AI/machine learning (brain or chip)
+    "ai": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<rect x="4.5" y="4.5" width="7" height="7" rx="1.5"/>'
+        '<path d="M6 1.5v3M10 1.5v3M6 11.5v3M10 11.5v3M1.5 6h3M1.5 10h3M11.5 6h3M11.5 10h3M7 7h2v2H7z"/>'
+        '</svg>'
+    ),
+    # design/UI/UX (pen tool)
+    "design": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<path d="M12 8.5l-1-4.5L2 2l2 9 4.5 1 3.5-3.5zM2 2l5 5M9.5 9.5l4.5 4.5"/>'
+        '</svg>'
+    ),
+    # cybersecurity (shield)
+    "cyber": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<path d="M8 1.5l5.5 2.2v4c0 3.6-2.5 6.3-5.5 7.3-3-1-5.5-3.7-5.5-7.3v-4L8 1.5zM8 5.5v5"/>'
+        '</svg>'
+    ),
+    # cloud/DevOps (cloud)
+    "cloud": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<path d="M4.5 13h7a3 3 0 0 0 1.2-5.7A4 4 0 0 0 5.2 5.5 3.2 3.2 0 0 0 4.5 13z"/>'
+        '</svg>'
+    ),
+    # mobile (phone)
+    "mobile": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<rect x="4" y="1.5" width="8" height="13" rx="2"/>'
+        '<path d="M7 11.5h2M7 3.5h2"/>'
+        '</svg>'
+    ),
+    # games (controller)
+    "games": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<path d="M4 4.5h8a3 3 0 0 1 3 3v2.5a2 2 0 0 1-3.5 1.4L10 10H6l-1.5 1.4A2 2 0 0 1 1 10V7.5a3 3 0 0 1 3-3zM4 7.5h2.5M5.25 6.25v2.5M10.75 7.5h.01M12.5 8.5h.01"/>'
+        '</svg>'
+    ),
+    # robotics/electronics/embedded (gear)
+    "robotics": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<circle cx="8" cy="8" r="2.6"/>'
+        '<path d="M8 1.5v2.2M8 12.3v2.2M1.5 8h2.2M12.3 8h2.2M3.4 3.4l1.6 1.6M11 11l1.6 1.6M3.4 12.6l1.6-1.6M11 5l1.6-1.6"/>'
+        '</svg>'
+    ),
+    # business/finance/marketing (briefcase)
+    "business": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<rect x="2" y="5" width="12" height="9" rx="1.5"/>'
+        '<path d="M5.5 5V3.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V5M2 8.5h12M7 8.5v2h2v-2"/>'
+        '</svg>'
+    ),
+    # healthcare/medicine (heart-pulse or cross)
+    "healthcare": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<path d="M1.5 8.5h2.5l1.5-4 2.5 7.5 2-5 1.5 1.5h3"/>'
+        '</svg>'
+    ),
+    # education/teaching (book)
+    "education": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<path d="M2 3.5a2 2 0 0 1 2-2h3.5v11H4a2 2 0 0 0-2 2V3.5zM14 3.5a2 2 0 0 0-2-2H8.5v11H12a2 2 0 0 1 2 2V3.5z"/>'
+        '</svg>'
+    ),
+    # neutral fallback (a small node-graph icon in the style of the SkillGraph logo)
+    "fallback": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="15" height="15" fill="none" '
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+        'class="sg-interest-icon">'
+        '<path d="M3 11.5L6.5 6l3.5 3 3-5.5"/>'
+        '<circle cx="3" cy="11.5" r="1.4" fill="currentColor"/>'
+        '<circle cx="6.5" cy="6" r="1.4" fill="currentColor"/>'
+        '<circle cx="10" cy="9" r="1.4" fill="currentColor"/>'
+        '<circle cx="13" cy="3.5" r="1.4" fill="currentColor"/>'
+        '</svg>'
+    ),
+}
+
+INTEREST_KEYWORD_GROUPS: list[tuple[str, list[str], Optional[re.Pattern]]] = [
+    # 1. AI / Machine Learning (brain or chip)
+    (
+        "ai",
+        [
+            "machine learning", "deep learning", "artificial intelligence", "neural",
+            "nlp", "natural language", "computer vision", "generative ai", "genai",
+            "reinforcement learning", "data science with ai", "llm", "large language model"
+        ],
+        re.compile(r"\b(ai|ml|llm)\b", re.IGNORECASE),
+    ),
+    # 2. Cybersecurity (shield)
+    (
+        "cyber",
+        [
+            "cyber", "security", "infosec", "pentest", "pen test", "penetration",
+            "ethical hack", "soc", "cryptograph", "crypto", "forensic",
+            "vulnerability", "network security", "threat"
+        ],
+        None,
+    ),
+    # 3. Cloud / DevOps (cloud)
+    (
+        "cloud",
+        [
+            "cloud", "devops", "sre", "infrastructure", "kubernetes", "k8s",
+            "docker", "aws", "azure", "gcp", "terraform", "ci/cd", "cicd",
+            "sysadmin", "site reliability"
+        ],
+        None,
+    ),
+    # 4. Games (controller)
+    (
+        "games",
+        [
+            "game", "gaming", "gamedev", "unity", "unreal", "godot", "gameplay"
+        ],
+        None,
+    ),
+    # 5. Mobile (phone)
+    (
+        "mobile",
+        [
+            "mobile", "ios", "android", "flutter", "react native", "swift",
+            "kotlin", "mobile app"
+        ],
+        None,
+    ),
+    # 6. Robotics / Electronics / Embedded (gear)
+    (
+        "robotics",
+        [
+            "robot", "embedded", "hardware", "electronic", "circuit", "arduino",
+            "raspberry", "mechatronic", "microcontroller", "iot", "firmware"
+        ],
+        None,
+    ),
+    # 7. Healthcare / Medicine (heart-pulse or cross)
+    (
+        "healthcare",
+        [
+            "health", "medic", "clinical", "hospital", "pharma", "biotech",
+            "biomed", "nurs", "doctor", "patient", "therap", "dental"
+        ],
+        None,
+    ),
+    # 8. Education / Teaching (book)
+    (
+        "education",
+        [
+            "educat", "teach", "tutor", "instruct", "academic", "school",
+            "pedagog", "professor", "curriculum", "training"
+        ],
+        None,
+    ),
+    # 9. Design / UI / UX (pen tool)
+    (
+        "design",
+        [
+            "design", "ui/ux", "figma", "wireframe", "user experience",
+            "user interface", "graphic", "creative", "prototyp", "typography"
+        ],
+        re.compile(r"\b(ui|ux)\b", re.IGNORECASE),
+    ),
+    # 10. Data / Analytics (bar chart)
+    (
+        "data",
+        [
+            "data", "analy", "business intelligence", "statistics", "statistic",
+            "visualization", "tableau", "power bi", "big data", "databricks"
+        ],
+        re.compile(r"\bbi\b", re.IGNORECASE),
+    ),
+    # 11. Business / Finance / Marketing (briefcase)
+    (
+        "business",
+        [
+            "business", "entrepreneur", "startup", "finance", "financial",
+            "market", "marketing", "sales", "accounting", "venture",
+            "founder", "product manage", "product manager", "consult",
+            "management", "commerce", "fintech", "strategy", "human resources"
+        ],
+        re.compile(r"\bhr\b", re.IGNORECASE),
+    ),
+    # 12. Software / Web / Programming (code brackets)
+    (
+        "software",
+        [
+            "software", "web", "program", "code", "coding", "developer",
+            "development", "frontend", "front-end", "backend", "back-end",
+            "fullstack", "full-stack", "full stack", "api", "dev", "engineer"
+        ],
+        None,
+    ),
+]
+
+
+def get_interest_icon_svg(target) -> str:
+    """Map user interest to a matching 16x16 line SVG icon with stroke="currentColor".
+    Checks specific categories first, falling back to a neutral node-graph icon.
+    """
+    if isinstance(target, dict):
+        raw_interest = target.get("interest", "")
+        if raw_interest == "other":
+            search_text = target.get("other_interest", "").strip() or target.get("career", "").strip() or ""
+        else:
+            topic_info = INTERESTS.get(raw_interest, {})
+            label = topic_info.get("label", "")
+            search_text = f"{raw_interest} {label}"
+    else:
+        search_text = str(target or "")
+
+    cleaned = search_text.lower().strip()
+    if cleaned:
+        for cat, kws, regex in INTEREST_KEYWORD_GROUPS:
+            for kw in kws:
+                if kw in cleaned:
+                    return INTEREST_SVGS[cat]
+            if regex and regex.search(cleaned):
+                return INTEREST_SVGS[cat]
+
+    return INTEREST_SVGS["fallback"]
+
 
 st.set_page_config(page_title="SkillGraph - Your Career Roadmap", page_icon=FAVICON_PATH, layout="centered")
 
@@ -845,13 +1109,13 @@ def render_results(profile: dict):
     level = LEVELS[profile["education"]]
     if profile.get("interest") == "other":
         topic_label = profile.get("other_interest", "").strip() or profile.get("career", "").strip() or "Other"
-        topic_emoji = "✨"
         topic_resources = []
     else:
         topic_data = INTERESTS[profile["interest"]]
         topic_label = topic_data["label"]
-        topic_emoji = topic_data["emoji"]
         topic_resources = topic_data.get("resources", [])
+
+    interest_icon = get_interest_icon_svg(profile)
 
     phases = st.session_state.get("roadmap_phases")
     if not phases:
@@ -871,7 +1135,7 @@ def render_results(profile: dict):
     done = sum(bool(st.session_state.get(k)) for phase_keys in keys for grp_keys in phase_keys for k in grp_keys)
     pct = round(done / total * 100) if total > 0 else 0
 
-    chips = f'<span class="tag">{html.escape(profile["education"])}</span><span class="tag">{topic_emoji} {html.escape(topic_label)}</span>'
+    chips = f'<span class="tag">{html.escape(profile["education"])}</span><span class="tag sg-chip-interest">{interest_icon}{html.escape(topic_label)}</span>'
     chips += "".join(f'<span class="tag">{html.escape(s)}</span>' for s in profile.get("strengths", []))
     user_skills = profile.get("skills", [])
     if user_skills:

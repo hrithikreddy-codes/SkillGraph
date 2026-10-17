@@ -243,11 +243,13 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   box-shadow: var(--shadow); animation: rise .6s ease both; }
 .career { font-family: 'Sora', sans-serif; font-size: clamp(26px, 5vw, 36px); font-weight: 800; color: var(--deep); margin: 0 0 8px; }
 .summary { color: var(--muted); line-height: 1.65; margin: 0 0 14px; }
-.tag { display: inline-block; padding: 6px 12px; background: var(--tag-bg); color: var(--tag-text); border-radius: 999px; margin: 4px 6px 4px 0; font-size: 13px; font-weight: 600; }
-.tag.sg-chip-skill, .sg-chip-skill { background: #dbeafe; color: #1e40af; border: none; }
-.tag.sg-chip-matched, .sg-chip-matched { background: #dcfce7; color: #15803d; border: none; }
-.tag.sg-chip-partial, .sg-chip-partial { background: #fef3c7; color: #b45309; border: none; }
-.tag.sg-chip-missing, .sg-chip-missing { background: #fee2e2; color: #b91c1c; border: none; }
+.tag { display: inline-block; padding: 6px 12px; background: var(--tag-bg); color: var(--tag-text); border-radius: 999px; margin: 4px 6px 4px 0; font-size: 13px; font-weight: 600; vertical-align: middle; }
+.tag.sg-chip-interest, .sg-chip-interest { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
+.tag.sg-chip-interest svg, .sg-chip-interest svg, svg.sg-interest-icon { width: 15px; height: 15px; flex-shrink: 0; display: inline-block; vertical-align: middle; stroke: currentColor; }
+.tag.sg-chip-skill, .sg-chip-skill { background: #dbeafe; color: #1e40af; border: none; vertical-align: middle; }
+.tag.sg-chip-matched, .sg-chip-matched { background: #dcfce7; color: #15803d; border: none; vertical-align: middle; }
+.tag.sg-chip-partial, .sg-chip-partial { background: #fef3c7; color: #b45309; border: none; vertical-align: middle; }
+.tag.sg-chip-missing, .sg-chip-missing { background: #fee2e2; color: #b91c1c; border: none; vertical-align: middle; }
 .note { background: var(--note-bg); border-left: 4px solid var(--blue); padding: 14px 16px; border-radius: 0 12px 12px 0; margin-top: 14px; line-height: 1.6; }
 .tips { margin: 12px 0 0 18px; color: var(--text); line-height: 1.7; }
 
@@ -1511,7 +1513,33 @@ input::placeholder {
    DARK MODE OVERRIDES: CHIPS & SPINNERS
    ------------------------------------------------------------ */
 
-/* 1. Career Roadmap learner skill chips (⚡ ...) in dark mode */
+/* 1. Career Roadmap chips in dark mode */
+.tag.sg-chip-interest,
+span.tag.sg-chip-interest,
+.result-head .tag.sg-chip-interest,
+.result-head span.tag.sg-chip-interest {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  vertical-align: middle !important;
+  color: var(--tag-text) !important;
+  -webkit-text-fill-color: var(--tag-text) !important;
+  background: var(--tag-bg) !important;
+}
+
+.tag.sg-chip-interest svg,
+span.tag.sg-chip-interest svg,
+.result-head .tag.sg-chip-interest svg,
+svg.sg-interest-icon {
+  width: 15px !important;
+  height: 15px !important;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  stroke: currentColor !important;
+  color: currentColor !important;
+}
+
 .tag.sg-chip-skill,
 span.tag.sg-chip-skill,
 .sg-chip-skill,
@@ -1532,6 +1560,7 @@ span.sg-chip-skill,
   font-weight: 600 !important;
   margin: 4px 6px 4px 0 !important;
   display: inline-block !important;
+  vertical-align: middle !important;
 }
 
 /* 2. Spinner and status text in dark mode */
