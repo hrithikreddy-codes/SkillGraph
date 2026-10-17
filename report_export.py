@@ -392,6 +392,24 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
       padding-left: 44px;
     }}
 
+    .phase-goal {{
+      margin-left: 44px;
+      margin-top: -6px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--item-bg);
+      border-left: 3px solid var(--primary);
+      padding: 8px 12px;
+      border-radius: 0 8px 8px 0;
+    }}
+
+    .phase-goal strong {{
+      color: var(--deep);
+      margin-right: 4px;
+    }}
+
     .phase-tags {{
       padding-left: 44px;
       margin-bottom: 16px;
@@ -402,6 +420,19 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
 
     .tasks-list {{
       padding-left: 44px;
+    }}
+
+    .phase-resources {{
+      padding-left: 44px;
+      margin-top: 14px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.5;
+    }}
+
+    .phase-resources strong {{
+      color: var(--deep);
+      margin-right: 4px;
     }}
 
     .group-title {{
@@ -667,10 +698,13 @@ def roadmap_to_html(profile: dict, phases: list[dict], checked_state=None) -> st
         hours_val = ph.get("hours")
         if hours_val:
             safe_hours = html.escape(str(hours_val))
-            when_display = f"{when} &bull; about {safe_hours} hours" if when else f"about {safe_hours} hours"
+            when_display = f"{when} &bull; up to {safe_hours} hours" if when else f"up to {safe_hours} hours"
         else:
             when_display = when
         blurb = html.escape(ph.get("blurb", ""))
+
+        goal_val = str(ph.get("goal") or "").strip()
+        goal_html = f'<div class="phase-goal"><strong>Goal:</strong> {html.escape(goal_val)}</div>' if goal_val else ""
 
         tags_html = ""
         phase_tags = ph.get("tags", [])
@@ -708,6 +742,20 @@ def roadmap_to_html(profile: dict, phases: list[dict], checked_state=None) -> st
 
         tasks_rendered = "".join(tasks_html)
 
+        ph_resources = ph.get("resources")
+        if isinstance(ph_resources, list):
+            res_names = [str(r).strip() for r in ph_resources if str(r).strip()]
+        elif isinstance(ph_resources, str) and ph_resources.strip():
+            res_names = [str(r).strip() for r in ph_resources.split(",") if str(r).strip()]
+        else:
+            res_names = []
+
+        if res_names:
+            safe_resources = html.escape(", ".join(res_names))
+            resources_html = f'<div class="phase-resources"><strong>Free places to learn:</strong> {safe_resources}</div>'
+        else:
+            resources_html = ""
+
         phases_html.append(f"""
         <div class="card">
           <div class="phase-top">
@@ -716,10 +764,12 @@ def roadmap_to_html(profile: dict, phases: list[dict], checked_state=None) -> st
             <span class="phase-when">{when_display}</span>
           </div>
           <p class="phase-blurb">{blurb}</p>
+          {goal_html}
           {tags_html}
           <div class="tasks-list">
             {tasks_rendered}
           </div>
+          {resources_html}
         </div>
         """)
 
@@ -850,7 +900,235 @@ def _markdown_report_to_html(md_text: str) -> str:
         </div>
         """)
 
-    return base_html_template(doc_title, "\n".join(content_cards), "Resume Analysis Report")
+
+# ---------------------------------------------------------------------------
+# Core Role & Roadmap Step Generation Helpers
+# ---------------------------------------------------------------------------
+
+ROLE_DOMAIN_SKILLS = [
+    # AI / ML / NLP / Computer Vision / Data Science
+    (
+        {"ai", "artificial intelligence", "ml", "machine learning", "deep learning", "nlp", "computer vision", "data scientist", "data science", "llm", "generative ai", "prompt engineer"},
+        {
+            "llm", "llms", "large language model", "large language models", "langchain", "llamaindex", "transformer", "transformers",
+            "pytorch", "tensorflow", "keras", "vector database", "vector databases", "vector db", "pinecone", "chroma", "weaviate", "qdrant",
+            "hugging face", "huggingface", "rag", "retrieval augmented generation", "fine-tuning", "fine tuning", "prompt engineering",
+            "openai", "gemini", "claude", "deep learning", "neural networks", "nlp", "natural language processing", "computer vision", "opencv",
+            "scikit-learn", "sklearn", "generative ai", "genai", "diffusion", "reinforcement learning", "mlops", "data science", "machine learning"
+        }
+    ),
+    # Frontend / Web / UI / UX
+    (
+        {"frontend", "front-end", "web developer", "web development", "ui", "ux", "react developer", "javascript developer"},
+        {
+            "react", "react.js", "next.js", "nextjs", "vue", "vue.js", "angular", "typescript", "tailwind", "tailwind css",
+            "css", "html", "javascript", "redux", "graphql", "web performance", "responsive design", "webpack", "vite", "frontend"
+        }
+    ),
+    # Backend / Software Engineering / Systems
+    (
+        {"backend", "back-end", "software engineer", "software engineering", "software developer", "fullstack", "full stack", "full-stack", "api developer", "systems engineer"},
+        {
+            "docker", "kubernetes", "microservices", "redis", "postgresql", "sql", "graphql", "kafka", "rabbitmq", "aws", "gcp", "azure",
+            "ci/cd", "rest", "rest api", "grpc", "system design", "django", "fastapi", "spring boot", "node.js", "express", "go", "golang", "backend"
+        }
+    ),
+    # Cloud / DevOps / SRE / Platform
+    (
+        {"devops", "cloud", "sre", "site reliability", "infrastructure", "platform engineer"},
+        {
+            "kubernetes", "docker", "terraform", "ci/cd", "aws", "gcp", "azure", "ansible", "linux", "prometheus", "grafana",
+            "helm", "cloudformation", "jenkins", "argocd", "iac"
+        }
+    ),
+    # Data Engineering / Big Data
+    (
+        {"data engineer", "data engineering", "etl", "big data", "analytics engineer"},
+        {
+            "spark", "pyspark", "kafka", "airflow", "sql", "dbt", "snowflake", "databricks", "hadoop", "etl", "data pipeline",
+            "data warehouse", "bigquery"
+        }
+    ),
+    # Cybersecurity / InfoSec
+    (
+        {"security", "cyber", "infosec", "soc", "penetration tester", "security engineer"},
+        {
+            "penetration testing", "siem", "owasp", "cryptography", "firewalls", "incident response", "network security",
+            "vulnerability management", "wireshark", "burp suite"
+        }
+    ),
+    # Mobile
+    (
+        {"mobile", "ios", "android", "flutter", "react native"},
+        {
+            "swift", "swiftui", "kotlin", "flutter", "react native", "ios", "android", "jetpack compose"
+        }
+    )
+]
+
+
+def _normalize_tokens(text: str) -> set[str]:
+    words = re.findall(r'[a-zA-Z0-9]+', text.lower())
+    stop = {
+        "with", "using", "and", "for", "the", "years", "year", "plus",
+        "experience", "required", "knowledge", "skills", "skill",
+        "demonstrated", "strong", "proficient", "proficiency", "in", "of", "to"
+    }
+    return {w for w in words if w not in stop and len(w) >= 2}
+
+
+def _is_covered(target: str, steps: list) -> bool:
+    t_clean = target.strip().lower()
+    t_tokens = _normalize_tokens(t_clean)
+
+    for st in steps:
+        sk_clean = str(st.get("skill", "")).strip().lower()
+        if not sk_clean:
+            continue
+
+        if t_clean == sk_clean or t_clean in sk_clean or sk_clean in t_clean:
+            return True
+
+        sk_tokens = _normalize_tokens(sk_clean)
+        if t_tokens and t_tokens.issubset(sk_tokens):
+            return True
+        if sk_tokens and sk_tokens.issubset(t_tokens):
+            return True
+
+        step_text = f"{sk_clean} {str(st.get('learn', '')).lower()} {str(st.get('apply', '')).lower()} {str(st.get('why_gap', '')).lower()} {str(st.get('prove', '')).lower()}"
+        if t_clean in step_text:
+            return True
+        step_tokens = _normalize_tokens(step_text)
+        if t_tokens and t_tokens.issubset(step_tokens):
+            return True
+
+    return False
+
+
+def _generate_step_for_item(item: str, job_role: str, is_missing_skill: bool, gaps: dict, reasons: dict) -> dict:
+    it_lower = item.lower()
+
+    why_gap = ""
+    if item in gaps and gaps[item]:
+        why_gap = str(gaps[item]).strip()
+    elif item in reasons and reasons[item]:
+        why_gap = str(reasons[item]).strip()
+    else:
+        for k, v in gaps.items():
+            if k.lower() == it_lower and v:
+                why_gap = str(v).strip()
+                break
+        if not why_gap:
+            for k, v in reasons.items():
+                if k.lower() == it_lower and v:
+                    why_gap = str(v).strip()
+                    break
+    if not why_gap:
+        why_gap = f"Required for {job_role} but not demonstrated in the resume."
+
+    clean_name = re.sub(r'^(experience with|knowledge of|proven track record in)\s+', '', item, flags=re.IGNORECASE).strip()
+
+    if "jest" in it_lower or "testing" in it_lower:
+        learn = f"Study test-driven development, unit testing patterns, and mocking with {clean_name}."
+        apply = f"Write unit and integration test suites using {clean_name} for core application modules."
+        prove = f"A working {clean_name} test suite covering core application logic with automated runs."
+        example_bullet = f"Wrote comprehensive unit and integration test suites using {clean_name} to validate application logic [add your real result here if you have one]"
+    elif "docker" in it_lower or "container" in it_lower:
+        learn = f"Study containerization fundamentals, multi-stage builds, and container orchestration with {clean_name}."
+        apply = f"Containerize an existing application and configure multi-container setups using {clean_name}."
+        prove = f"A working Dockerfile and container configuration successfully building and serving the service."
+        example_bullet = f"Containerized application services using {clean_name} to standardize development and deployment environments [add your real result here if you have one]"
+    elif "ci/cd" in it_lower or "github action" in it_lower or "pipeline" in it_lower:
+        learn = f"Study automated integration and deployment workflows using {clean_name}."
+        apply = f"Set up an automated pipeline using {clean_name} to test, lint, and build on code commits."
+        prove = f"An active {clean_name} workflow passing automated test and build steps on code updates."
+        example_bullet = f"Configured automated CI/CD pipeline using {clean_name} to execute test suites and build checks [add your real result here if you have one]"
+    elif any(k in it_lower for k in ["aws", "cloud", "azure", "gcp", "ec2"]):
+        learn = f"Learn cloud deployment fundamentals, virtual instances, and access management with {clean_name}."
+        apply = f"Deploy an application service to a single cloud instance using {clean_name}."
+        prove = f"A live deployment accessible via public URL hosted on {clean_name}."
+        example_bullet = f"Deployed full-stack application to {clean_name} with configured security groups and live monitoring [add your real result here if you have one]"
+    elif any(k in it_lower for k in ["agile", "scrum", "kanban"]):
+        learn = f"Study Agile sprint cycles, backlog management, and milestone estimation practices."
+        apply = f"Organize personal or team project development using an Agile board and sprint milestones."
+        prove = f"A board and sprint notes for a personal project."
+        example_bullet = f"Applied Agile practices to plan and execute milestones for a personal project [add your real result here if you have one]"
+    elif any(k in it_lower for k in ["git", "version control"]):
+        learn = f"Learn branch management, pull request workflows, and merge conflict resolution with Git."
+        apply = f"Use feature branches, semantic commits, and pull requests for project development."
+        prove = f"A public GitHub repository displaying structured branch merges and pull request histories."
+        example_bullet = f"Managed project version control and collaborative workflows using Git feature branches [add your real result here if you have one]"
+    elif any(k in it_lower for k in ["communication", "teamwork", "collaboration", "stakeholder"]):
+        learn = f"Study technical documentation standards, API documentation, and cross-functional handoff practices."
+        apply = f"Author comprehensive architecture documentation and technical guides for an active project."
+        prove = f"Detailed technical documentation and architecture decisions recorded in repository documentation."
+        example_bullet = f"Authored technical specifications and architecture documentation to align cross-functional requirements [add your real result here if you have one]"
+    elif any(k in it_lower for k in ["years", "experience"]):
+        learn = f"Deepen production-level practices and architectural patterns related to {clean_name}."
+        apply = f"Build and document end-to-end features reflecting industry standards for {clean_name}."
+        prove = f"Documented architecture and public code repository demonstrating deep competency in {clean_name}."
+        example_bullet = f"Designed and delivered features demonstrating practical competency in {clean_name} [add your real result here if you have one]"
+    else:
+        learn = f"Study core fundamentals, best practices, and practical implementation patterns for {clean_name}."
+        apply = f"Implement {clean_name} into a functional feature within an existing or new project codebase."
+        prove = f"A working codebase and documentation demonstrating hands-on proficiency with {clean_name}."
+        example_bullet = f"Implemented {clean_name} following industry best practices [add your real result here if you have one]"
+
+    priority = "High" if is_missing_skill else "Medium"
+
+    return {
+        "skill": item,
+        "priority": priority,
+        "why_gap": why_gap,
+        "learn": learn,
+        "apply": apply,
+        "prove": prove,
+        "example_bullet": example_bullet,
+        "suggested_effort": "Estimated effort for foundational experience: 1-2 weeks"
+    }
+
+
+def _is_core_to_role(skill: str, role: str) -> bool:
+    if not skill or not role:
+        return False
+    s_lower = skill.strip().lower()
+    r_lower = role.strip().lower()
+
+    for role_keywords, core_skills in ROLE_DOMAIN_SKILLS:
+        role_matches = any(rk in r_lower for rk in role_keywords)
+        if role_matches:
+            if any(cs == s_lower or cs in s_lower or s_lower in cs for cs in core_skills):
+                return True
+
+    r_words = set(re.findall(r'[a-zA-Z]{3,}', r_lower)) - {"engineer", "developer", "senior", "junior", "lead", "specialist", "staff", "associate"}
+    s_words = set(re.findall(r'[a-zA-Z]{3,}', s_lower))
+    if r_words.intersection(s_words):
+        return True
+
+    return False
+
+
+def _generate_core_reason(skill: str, role: str) -> str:
+    sk_lower = skill.lower()
+
+    if any(k in sk_lower for k in ["llm", "large language model", "langchain", "llamaindex", "rag", "transformer", "prompt engineering"]):
+        return f"Core modern capability for {role} to build and evaluate production generative AI and LLM applications."
+    elif any(k in sk_lower for k in ["pytorch", "tensorflow", "keras", "deep learning"]):
+        return f"Fundamental framework for {role} to train, fine-tune, and deploy deep learning models."
+    elif any(k in sk_lower for k in ["docker", "container", "kubernetes"]):
+        return f"Essential industry standard for {role} to containerize, orchestrate, and scale services reliably."
+    elif any(k in sk_lower for k in ["aws", "cloud", "azure", "gcp"]):
+        return f"High-demand cloud infrastructure competency for {role} to host, scale, and secure production systems."
+    elif any(k in sk_lower for k in ["ci/cd", "github action", "pipeline"]):
+        return f"Crucial engineering practice for {role} to automate testing, build verification, and deployment pipelines."
+    elif any(k in sk_lower for k in ["redis", "kafka", "rabbitmq"]):
+        return f"Key messaging and caching technology for {role} to handle high-throughput, distributed workflows."
+    elif any(k in sk_lower for k in ["graphql", "rest", "grpc", "api"]):
+        return f"Modern communication protocol for {role} to architect flexible, resilient service interfaces."
+    elif any(k in sk_lower for k in ["react", "typescript", "next"]):
+        return f"Premier frontend standard for {role} to build responsive, type-safe web applications."
+    else:
+        return f"High-impact core competency for {role} that strengthens competitive positioning and demonstrates practical expertise."
 
 
 def analysis_to_html(result: Union[Dict[str, Any], str]) -> str:
@@ -929,14 +1207,45 @@ def analysis_to_html(result: Union[Dict[str, Any], str]) -> str:
     roadmap = result.get("roadmap") or {}
     if not isinstance(roadmap, dict):
         roadmap = {}
-    steps = roadmap.get("steps", []) or []
-    optional_items = roadmap.get("optional", []) or []
+    steps = [dict(s) for s in (roadmap.get("steps", []) or [])]
+    optional_items = [dict(it) for it in (roadmap.get("optional", []) or [])]
 
     # Other requirements
     other_res = result.get("other_res") or {}
     if not isinstance(other_res, dict):
         other_res = {}
     other_items = other_res.get("results", []) or []
+
+    # Ensure every required skill marked missing gets a step in the Actionable Roadmap
+    for sk in missing:
+        if not _is_covered(sk, steps):
+            steps.append(_generate_step_for_item(sk, job_role, is_missing_skill=True, gaps=gaps, reasons=reasons))
+
+    # Ensure every requirement marked "Not shown" gets a step in the Actionable Roadmap
+    for it in other_items:
+        it_name = str(it.get("item", "")).strip()
+        st_stat = str(it.get("status", "")).strip().lower()
+        if st_stat != "supported" and it_name:
+            if not _is_covered(it_name, steps):
+                steps.append(_generate_step_for_item(it_name, job_role, is_missing_skill=False, gaps=gaps, reasons=reasons))
+
+    # Cleanly sort and assign sequential orders
+    if steps:
+        pri_rank = {"High": 0, "Medium": 1, "Low": 2}
+        steps.sort(key=lambda s: (pri_rank.get(s.get("priority", "Medium"), 1), s.get("order", 999)))
+        for idx, s in enumerate(steps, start=1):
+            s["order"] = idx
+
+    # Ensure nice-to-have skills core to the role appear in Extra Suggestions, not just as chips
+    existing_opt_skills = {str(it.get("skill", "")).strip().lower() for it in optional_items}
+    for b_sk in bonus_missing:
+        if _is_core_to_role(b_sk, job_role):
+            if not any(b_sk.lower() in esk or esk in b_sk.lower() for esk in existing_opt_skills):
+                optional_items.append({
+                    "skill": b_sk,
+                    "reason": _generate_core_reason(b_sk, job_role)
+                })
+                existing_opt_skills.add(b_sk.lower())
 
     # Suggestions
     suggestions = result.get("suggestions") or result.get("recommendations") or result.get("notes") or []
@@ -948,7 +1257,7 @@ def analysis_to_html(result: Union[Dict[str, Any], str]) -> str:
     # 1. Header Card
     safe_role = html.escape(job_role)
     tags_html = [
-        f'<span class="tag">🎯 Target Role</span>',
+        f'<span class="tag">🎯 Target Role: {safe_role}</span>',
         f'<span class="tag tag-blue">⚡ {total_required} Required Skills</span>',
         f'<span class="tag">✓ {matched_count} Matched</span>',
     ]
@@ -1210,7 +1519,7 @@ def analysis_to_html(result: Union[Dict[str, Any], str]) -> str:
           </div>
         </div>
         """)
-    elif not missing and not partial:
+    elif not missing and not partial and not any(it.get("status") != "supported" for it in other_items):
         cards.append("""
         <div class="card">
           <div class="phase-top">

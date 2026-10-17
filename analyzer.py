@@ -923,7 +923,7 @@ Return this exact shape:
 }}
 
 Rules you MUST follow:
-1. Merge closely related skills into one step (for example Unit Testing + Jest becomes "Unit Testing with Jest", CI/CD + GitHub Actions becomes one step).
+1. Merge closely related skills into one step (for example Unit Testing + Jest becomes "Unit Testing with Jest", CI/CD + GitHub Actions becomes one step). Every required skill or requirement marked "Not shown" or missing (for example Jest testing) must also get a step in the Actionable Roadmap — do not omit any.
 2. Use 3 to 5 High, 3 to 5 Medium, and the rest Low. Never mark more than 5 steps High.
 3. "why_gap" must be built only from the job requirement plus the evidence and gaps provided. Do not say things like "only partial exposure". For partial skills, state what related skills were found and what direct experience was not shown. If no evidence is provided for a skill, say "not demonstrated in the resume". Do not make claims about what the industry "standard" is.
 4. "learn" is what to study, "apply" is a concrete change to one of the candidate's existing projects (by name), "prove" is what real evidence should exist afterwards (for example "a repo with tests that run on every push").
@@ -935,7 +935,7 @@ Rules you MUST follow:
 10. Never claim an outcome the candidate has not achieved.
 11. "suggested_effort" must be phrased like "Estimated effort for foundational experience: 1-2 weeks".
 12. If a skill is "partial", recommend fundamentals first. Never use "Advanced" in a step name unless the job description itself asks for advanced level.
-13. Steps are only for skills in the missing or partial lists. Anything else useful (for example performance monitoring) goes in "optional" with a one-line reason, maximum 2 items.
+13. Steps are only for skills in the missing or partial lists. Nice-to-have skills that are core to the role (for example LLMs for an AI engineer role) and other high-value additions should appear in "optional" (Extra Suggestions) with a one-line reason, not just left as chips.
 14. Decide priority using (a) skills listed under requirements or mentioned several times in the job description rank higher, (b) skills the job only prefers rank lower, (c) a partial skill that the job clearly centers on can outrank a missing minor skill such as Agile/Scrum.
 15. Choose ONE simple route per skill and do not list several tools or architectures. For AWS, recommend deploying one existing application to a single EC2 instance, and mention only EC2, security groups, SSH and basic IAM unless the job description names other services.
 16. If a skill name contains " / " (the job accepts any one option), recommend exactly one option and say why it is a good choice.

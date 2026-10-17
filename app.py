@@ -746,11 +746,14 @@ def render_results(profile: dict):
 
     for p, ph in enumerate(phases):
         with st.container(border=True):
-            when_label = f"{ph['when']} &bull; about {ph['hours']} hours" if ph.get("hours") else ph["when"]
+            when_label = f"{ph['when']} &bull; up to {ph['hours']} hours" if ph.get("hours") else ph["when"]
+            goal_val = str(ph.get("goal") or "").strip()
+            goal_html = f'<p class="phase-goal" style="font-size: 14px; color: var(--text); margin: 0 0 10px; line-height: 1.5;"><strong>Goal:</strong> {html.escape(goal_val)}</p>' if goal_val else ""
             st.markdown(clean(f"""
                 <div class="phase-top"><div class="badge">{p + 1}</div>
                 <p class="phase-title">{ph["title"]}</p><span class="when">{when_label}</span></div>
-                <p class="phase-blurb">{ph["blurb"]}</p>"""), unsafe_allow_html=True)
+                <p class="phase-blurb">{ph["blurb"]}</p>
+                {goal_html}"""), unsafe_allow_html=True)
             if ph["tags"]:
                 st.markdown("".join(f'<span class="tag">{t}</span>' for t in ph["tags"]), unsafe_allow_html=True)
             groups = ph.get("groups") or [{"name": "", "tasks": ph.get("tasks", [])}]
@@ -760,7 +763,17 @@ def render_results(profile: dict):
                     st.markdown(f"**{grp_name}**")
                 for t, task in enumerate(grp.get("tasks", [])):
                     st.checkbox(task, key=keys[p][g][t])
-            if p == 1 and topic_resources:
+            ph_resources = ph.get("resources")
+            if isinstance(ph_resources, list):
+                res_names = [str(r).strip() for r in ph_resources if str(r).strip()]
+            elif isinstance(ph_resources, str) and ph_resources.strip():
+                res_names = [str(r).strip() for r in ph_resources.split(",") if str(r).strip()]
+            else:
+                res_names = []
+
+            if res_names:
+                st.markdown(f"**Free places to learn:** {', '.join(res_names)}")
+            elif p == 1 and topic_resources:
                 links = " &nbsp;|&nbsp; ".join(f"[{name}]({url})" for name, url in topic_resources)
                 st.markdown(f"**Free places to learn:** {links}")
 

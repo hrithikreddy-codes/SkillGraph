@@ -147,6 +147,15 @@ def _parse_and_validate(raw_response, hpw):
     if len(raw_phases) != 5:
         return None, f"validation: expected 5 phases, got {len(raw_phases)}"
 
+    if total_months == 6:
+        default_weeks = [4, 4, 8, 4, 4]
+    elif total_months == 9:
+        default_weeks = [8, 8, 8, 4, 8]
+    elif total_months == 18:
+        default_weeks = [12, 12, 16, 16, 16]
+    else:
+        default_weeks = [8, 8, 8, 12, 12]
+
     validated_phases = []
     for i, phase in enumerate(raw_phases):
         if not isinstance(phase, dict):
@@ -156,6 +165,7 @@ def _parse_and_validate(raw_response, hpw):
         when = phase.get("when")
         blurb = phase.get("blurb")
         goal = phase.get("goal")
+        resources = phase.get("resources")
         tags = phase.get("tags")
 
         if not (isinstance(title, str) and title.strip()):
@@ -165,7 +175,13 @@ def _parse_and_validate(raw_response, hpw):
         if not (isinstance(blurb, str) and blurb.strip()):
             return None, f"validation: phase {i+1} missing blurb"
 
-        clean_goal = goal.strip() if isinstance(goal, str) and goal.strip() else f"Achieve key milestone for {title.strip()}."
+        clean_goal = goal.strip() if isinstance(goal, str) and goal.strip() else ""
+
+        clean_resources = []
+        if isinstance(resources, list):
+            clean_resources = [str(r).strip() for r in resources if str(r).strip()]
+        elif isinstance(resources, str) and resources.strip():
+            clean_resources = [str(r).strip() for r in resources.split(",") if str(r).strip()]
 
         hours_val = phase.get("hours")
         clean_hours = None
@@ -174,7 +190,7 @@ def _parse_and_validate(raw_response, hpw):
         elif isinstance(hours_val, str) and hours_val.strip().isdigit():
             clean_hours = int(hours_val.strip())
         if clean_hours is None or clean_hours <= 0:
-            clean_hours = int(hpw * 8)
+            clean_hours = int(round(hpw * default_weeks[i]))
 
         raw_groups = phase.get("groups")
         clean_groups = []
@@ -221,6 +237,7 @@ def _parse_and_validate(raw_response, hpw):
             "when": when.strip(),
             "blurb": blurb.strip(),
             "goal": clean_goal,
+            "resources": clean_resources,
             "hours": clean_hours,
             "total_months": total_months,
             "groups": clean_groups,
@@ -249,6 +266,7 @@ def generate_roadmap(education, interest_label, career, skills, strengths, hours
             - when (str)
             - blurb (str)
             - goal (str)
+            - resources (list of strings)
             - hours (int)
             - total_months (int)
             - groups (list of dicts with 'name' and 'tasks')
@@ -274,16 +292,22 @@ def generate_roadmap(education, interest_label, career, skills, strengths, hours
 
         if hpw >= 25:
             target_months = 6
-            when_guide = 'Phase 1: "Weeks 1-4" (or "Month 1"), Phase 2: "Month 2", Phase 3: "Months 3-4", Phase 4: "Month 5", Phase 5: "Month 6"'
+            phase_weeks = [4, 4, 8, 4, 4]
+            phase_whens = ["Month 1", "Month 2", "Months 3-4", "Month 5", "Month 6"]
         elif hpw >= 10:
             target_months = 9
-            when_guide = 'Phase 1: "Weeks 1-6" (or "Months 1-2"), Phase 2: "Months 2-4", Phase 3: "Months 4-6", Phase 4: "Months 6-7", Phase 5: "Months 8-9"'
+            phase_weeks = [8, 8, 8, 4, 8]
+            phase_whens = ["Months 1-2", "Months 3-4", "Months 5-6", "Month 7", "Months 8-9"]
         elif hpw >= 5:
             target_months = 12
-            when_guide = 'Phase 1: "Weeks 1-6", Phase 2: "Months 2-4", Phase 3: "Months 4-6", Phase 4: "Months 6-9", Phase 5: "Months 9-12"'
+            phase_weeks = [8, 8, 8, 12, 12]
+            phase_whens = ["Months 1-2", "Months 3-4", "Months 5-6", "Months 7-9", "Months 10-12"]
         else:
             target_months = 18
-            when_guide = 'Phase 1: "Months 1-3", Phase 2: "Months 3-6", Phase 3: "Months 6-10", Phase 4: "Months 10-14", Phase 5: "Months 14-18"'
+            phase_weeks = [12, 12, 16, 16, 16]
+            phase_whens = ["Months 1-3", "Months 4-6", "Months 7-10", "Months 11-14", "Months 15-18"]
+
+        phase_hours = [int(round(hpw * w)) for w in phase_weeks]
 
         if isinstance(skills, list):
             clean_skills = [str(s).strip() for s in skills if str(s).strip()]
@@ -307,15 +331,25 @@ Candidate Profile:
 
 Rules:
 1. Timeline & Study Budget:
-   - Total study budget = hours_per_week x weeks in each phase. Size each phase's tasks to fit that budget.
    - Choose total plan length strictly from weekly study hours:
      * 25+ hrs/week -> 6 months
      * 10-24 hrs/week -> 9 months
      * 5-9 hrs/week -> 12 months
      * under 5 hrs/week -> 18 months
      For this candidate ({hpw:g} hrs/week), set "total_months" to {target_months}.
-   - Split the total plan length across the same 5 phases and write the "when" labels to match (e.g. {when_guide}).
-   - Add a phase-level "hours" integer: a rough total effort that must not exceed hours_per_week x weeks in that phase.
+   - Phase "when" labels must start where the previous one ended, never overlap, and add up to total_months ({target_months}).
+     Use these exact non-overlapping "when" labels for the 5 phases:
+     * Phase 1: "{phase_whens[0]}" ({phase_weeks[0]} weeks)
+     * Phase 2: "{phase_whens[1]}" ({phase_weeks[1]} weeks)
+     * Phase 3: "{phase_whens[2]}" ({phase_weeks[2]} weeks)
+     * Phase 4: "{phase_whens[3]}" ({phase_weeks[3]} weeks)
+     * Phase 5: "{phase_whens[4]}" ({phase_weeks[4]} weeks)
+   - Phase-level "hours" integer: each phase's hours = hours_per_week x weeks in that phase:
+     * Phase 1: {phase_hours[0]} hours ({hpw:g} hrs/wk x {phase_weeks[0]} weeks)
+     * Phase 2: {phase_hours[1]} hours ({hpw:g} hrs/wk x {phase_weeks[1]} weeks)
+     * Phase 3: {phase_hours[2]} hours ({hpw:g} hrs/wk x {phase_weeks[2]} weeks)
+     * Phase 4: {phase_hours[3]} hours ({hpw:g} hrs/wk x {phase_weeks[3]} weeks)
+     * Phase 5: {phase_hours[4]} hours ({hpw:g} hrs/wk x {phase_weeks[4]} weeks)
 
 2. Sizing & Task Counts:
    - Sizing effort: assume about 8-10 hours of effort per task for beginners (no listed skills) and 4-8 hours for experienced learners.
@@ -334,9 +368,11 @@ Rules:
    - NEVER use generic group names like "Other", "Skills", "Tasks", "General", or "Misc".
    - Total tasks across the groups in a phase must sum to between 4 and 8 tasks.
 
-5. Task Prefixes & Build Limits:
-   - Every single task MUST start with "Learn:", "Practice:", or "Build:" (e.g., "Learn: relational schema design", "Practice: write integration tests", "Build: a REST API with FastAPI"). Tasks must be short, concrete, and actionable.
+5. Task Prefixes, Awareness & Build Limits:
+   - Every single task MUST start with "Learn:", "Practice:", "Build:", or "Awareness:" (e.g., "Learn: relational schema design", "Practice: write integration tests", "Build: a REST API with FastAPI", "Awareness: database sharding concepts"). Tasks must be short, concrete, and actionable.
    - At most ONE "Build:" task per phase across all phases.
+   - Prefix topics beyond the core of the stated career with "Awareness:" and keep them small. Never make them Build tasks.
+   - Heavy items (fixing a bug in a popular library, ML system design questions, sharding) are Awareness-only unless the phase is 100+ hours.
 
 6. Use the exact 5 phase titles in this order:
    - Phase 1: "Build your foundation"
@@ -355,24 +391,36 @@ Rules:
      * Job applications, internships, technical interview preparation, and production-grade tools are fine.
    - The "Gain experience" phase (Phase 4) needs at least one real-world task suited to the level (freelance, volunteer, team project or internship). For School and Intermediate learners, use student-friendly real-world steps such as school tech/science clubs, student hackathons/contests, volunteer websites, or collaborative projects.
 
-8. Handling Existing Skills:
-   - If the user's skills list is empty or "None", assume a beginner.
-   - If the user has existing skills, build on them and say in the Phase 1 blurb which known skills the plan builds on.
+8. Last Phase Job Market Research & Skill Gap Closing:
+   - In Phase 5 ("Prepare for your career"), you MUST include:
+     1. One task that researches 3-5 real job postings for the stated career ({career}) and lists the skills they require (e.g., "Practice: research 3-5 real job postings for {career} and list the required skills").
+     2. One task that closes the gap with the learner's current skills (e.g., "Practice: identify skill gaps between target job requirements and current skills, and complete targeted projects to close them").
 
-9. Meaningful Differentiation:
-   - Make tasks differ meaningfully by interest ({interest_label}) and target career ({career}). Do NOT reuse generic tasks across fields.
+9. Hosting and Tools:
+   - Only name hosting platforms and tools with a current free tier (Render, Vercel, Netlify).
+   - NEVER mention Heroku.
 
 10. Goal Field:
-    - Add one short "goal" field per phase: a one-line outcome the learner can check (e.g., "You can build and deploy a small API", "You can conduct exploratory data analysis on a real-world dataset").
+    - Add one short "goal" field per phase: a one-line outcome saying what the learner can do at the end (e.g., "You can build and deploy a small API", "You can conduct exploratory data analysis on a real-world dataset"). If omitted, it will default to empty.
 
-11. Controllable Actions (No Outcome Promises):
+11. Resources Field:
+    - Add a "resources" list per phase containing 1-2 well-known free resources, names only, no URLs (e.g., ["MDN Web Docs", "freeCodeCamp"] or ["Kaggle Learn", "Fast.ai"]).
+
+12. Handling Existing Skills:
+    - If the user's skills list is empty or "None", assume a beginner.
+    - If the user has existing skills, build on them and say in the Phase 1 blurb which known skills the plan builds on.
+
+13. Meaningful Differentiation:
+    - Make tasks differ meaningfully by interest ({interest_label}) and target career ({career}). Do NOT reuse generic tasks across fields.
+
+14. Controllable Actions (No Outcome Promises):
     - Do NOT promise outcomes like getting an internship or job. Phrase career tasks strictly as actions the learner controls (e.g., "Practice: apply to 10 internships with tailored resumes", NOT "Get an internship" or "Land a job").
 
-12. Tags:
+15. Tags:
     - Phase 1 must include a "tags" list with 3-5 key tools, languages, or foundational concepts (e.g., ["Python", "Git", "VS Code"]).
     - Phases 2, 3, 4, and 5 must have an empty "tags" list ([]).
 
-13. Return JSON only with "total_months" integer and "phases" list. No markdown formatting, no code fences (```json ... ```), no introductory or concluding text.
+16. Return JSON only with "total_months" integer and "phases" list. No markdown formatting, no code fences (```json ... ```), no introductory or concluding text.
 
 Output format:
 {{
@@ -380,10 +428,11 @@ Output format:
   "phases": [
     {{
       "title": "Build your foundation",
-      "when": "...",
-      "hours": {int(hpw * 6)},
+      "when": "{phase_whens[0]}",
+      "hours": {phase_hours[0]},
       "blurb": "Short summary of what to achieve in this phase (if user had skills, explicitly state which known skills the plan builds on).",
       "goal": "You can write basic scripts and use Git for version control.",
+      "resources": ["freeCodeCamp", "MDN Web Docs"],
       "groups": [
         {{
           "name": "Core Programming",
@@ -404,10 +453,11 @@ Output format:
     }},
     {{
       "title": "Learn the core skills",
-      "when": "...",
-      "hours": {int(hpw * 10)},
+      "when": "{phase_whens[1]}",
+      "hours": {phase_hours[1]},
       "blurb": "Short summary of what to achieve in this phase.",
       "goal": "You can build a functional CRUD application with a database.",
+      "resources": ["Official Documentation", "Coursera Free Courses"],
       "groups": [
         {{
           "name": "Databases",
@@ -428,15 +478,17 @@ Output format:
     }},
     {{
       "title": "Build real projects",
-      "when": "...",
-      "hours": {int(hpw * 8)},
+      "when": "{phase_whens[2]}",
+      "hours": {phase_hours[2]},
       "blurb": "Short summary of what to achieve in this phase.",
       "goal": "You have 2 full projects documented and hosted online.",
+      "resources": ["The Odin Project", "Full Stack Open"],
       "groups": [
         {{
-          "name": "Project Architecture",
+          "name": "Project Architecture & Deployment",
           "tasks": [
             "Learn: clean code organization and modular design",
+            "Practice: deploy a full-stack project to Render or Vercel",
             "Practice: write comprehensive README documentation"
           ]
         }},
@@ -452,10 +504,11 @@ Output format:
     }},
     {{
       "title": "Gain experience",
-      "when": "...",
-      "hours": {int(hpw * 12)},
+      "when": "{phase_whens[3]}",
+      "hours": {phase_hours[3]},
       "blurb": "Short summary of what to achieve in this phase.",
       "goal": "You have collaborated with other developers on a shared codebase.",
+      "resources": ["GitHub Skills", "Open Source Guides"],
       "groups": [
         {{
           "name": "Testing & Code Quality",
@@ -467,7 +520,8 @@ Output format:
         {{
           "name": "Real-World Collaboration",
           "tasks": [
-            "Practice: contribute a bug fix to an open repo or student volunteer project",
+            "Awareness: large codebase navigation and open source triage",
+            "Practice: contribute documentation or a small fix to an open repo or student project",
             "Build: collaborate on a feature using pull requests"
           ]
         }}
@@ -476,23 +530,25 @@ Output format:
     }},
     {{
       "title": "Prepare for your career",
-      "when": "...",
-      "hours": {int(hpw * 12)},
+      "when": "{phase_whens[4]}",
+      "hours": {phase_hours[4]},
       "blurb": "Short summary of what to achieve in this phase.",
       "goal": "You have an active portfolio and readiness pipeline prepared.",
+      "resources": ["Tech Interview Handbook", "LeetCode"],
       "groups": [
         {{
-          "name": "Portfolio & Case Studies",
+          "name": "Job Market Research & Gap Closing",
           "tasks": [
-            "Practice: write concise project case studies",
-            "Build: a clean 1-page portfolio website"
+            "Practice: research 3-5 real job postings for {career} and list the skills they require",
+            "Practice: identify skill gaps against target job requirements and complete targeted projects to close them"
           ]
         }},
         {{
-          "name": "Career & College Readiness",
+          "name": "Portfolio & Career Readiness",
           "tasks": [
-            "Practice: entrance exam prep or technical interview questions suited to your level",
-            "Practice: shortlist target degree programs or apply to 10 tailored junior roles/internships"
+            "Practice: write concise project case studies",
+            "Build: a clean 1-page portfolio website",
+            "Practice: entrance exam prep or technical interview questions suited to your level"
           ]
         }}
       ],
