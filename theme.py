@@ -784,16 +784,50 @@ table, th, td, caption,
 /* ============================================================
    CURSOR STYLES: Clickable interactive elements
    ============================================================ */
-button,
-button *,
+/* Tabs and all their inner elements */
+[role="tab"],
+[role="tab"] *,
+[role="tab"] p,
+[role="tab"] div,
+[role="tab"] span,
 button[role="tab"],
 button[role="tab"] *,
-[data-testid="stTabs"] button,
-[data-testid="stTabs"] button *,
+button[role="tab"] p,
+button[role="tab"] div,
+div[role="tab"],
+div[role="tab"] *,
+div[role="tab"] p,
+div[role="tab"] div,
 [data-baseweb="tab"],
 [data-baseweb="tab"] *,
+[data-baseweb="tab"] p,
+[data-baseweb="tab"] div,
+[data-testid="stTab"],
+[data-testid="stTab"] *,
+[data-testid="stTab"] p,
+[data-testid="stTab"] div,
+[data-testid="stTabs"] [role="tab"],
+[data-testid="stTabs"] [role="tab"] *,
+[data-testid="stTabs"] [role="tab"] p,
+[data-testid="stTabs"] [role="tab"] div,
+[data-testid="stTabs"] button,
+[data-testid="stTabs"] button *,
 div[data-baseweb="tab-list"] button,
 div[data-baseweb="tab-list"] button *,
+div[data-baseweb="tab-list"] [role="tab"],
+div[data-baseweb="tab-list"] [role="tab"] *,
+
+/* Expander summaries */
+[data-testid="stExpander"] summary,
+[data-testid="stExpander"] summary *,
+details summary,
+details summary *,
+summary,
+summary *,
+
+/* All buttons and their inner text */
+button,
+button *,
 div[data-testid="stButton"] button,
 div[data-testid="stButton"] button *,
 div[data-testid="stFormSubmitButton"] button,
@@ -804,12 +838,8 @@ div[data-testid="stDownloadButton"] button *,
 [data-testid="stBaseButton-secondary"] *,
 [data-testid="stBaseButton-primary"],
 [data-testid="stBaseButton-primary"] *,
-[data-testid="stExpander"] summary,
-[data-testid="stExpander"] summary *,
-details summary,
-details summary *,
-summary,
-summary *,
+
+/* Theme toggle */
 .st-key-theme_btn,
 .st-key-theme_btn *,
 .stButton.st-key-theme_btn,
@@ -817,43 +847,129 @@ summary *,
 .theme-toggle-icon,
 .theme-toggle-icon *,
 .theme-toggle-svg,
+
+/* Dialog close button */
 div[data-testid="stDialog"] button[aria-label="Close"],
 div[data-testid="stDialog"] button[aria-label="Close"] *,
 div[role="dialog"] button[aria-label="Close"],
 div[role="dialog"] button[aria-label="Close"] *,
 [data-testid="stDialogCloseButton"],
 [data-testid="stDialogCloseButton"] *,
+
+/* Checkboxes and labels */
 [data-testid="stCheckbox"],
 [data-testid="stCheckbox"] *,
 label[data-baseweb="checkbox"],
 label[data-baseweb="checkbox"] *,
+
+/* Selectbox and multiselect containers and options */
 div[data-baseweb="select"],
 div[data-baseweb="select"] *:not(input),
 [data-testid="stSelectbox"] div[data-baseweb="select"],
 [data-testid="stSelectbox"] div[data-baseweb="select"] *:not(input),
 [data-testid="stMultiSelect"] div[data-baseweb="select"],
 [data-testid="stMultiSelect"] div[data-baseweb="select"] *:not(input),
+[data-testid="stSelectbox"] .react-aria-ComboBox,
+[data-testid="stSelectbox"] .react-aria-ComboBox *:not(input),
+[data-testid="stMultiSelect"] .react-aria-ComboBox,
+[data-testid="stMultiSelect"] .react-aria-ComboBox *:not(input),
+[data-testid="stSelectbox"] [role="group"],
+[data-testid="stSelectbox"] [role="group"] *:not(input),
+[data-testid="stMultiSelect"] [role="group"],
+[data-testid="stMultiSelect"] [role="group"] *:not(input),
+[data-testid="stSelectbox"] button,
+[data-testid="stSelectbox"] button *,
+[data-testid="stMultiSelect"] button,
+[data-testid="stMultiSelect"] button *,
 [role="listbox"],
 [role="listbox"] *,
 [role="option"],
 [role="option"] *,
 li[role="option"],
 li[role="option"] *,
+.react-aria-ListBoxItem,
+.react-aria-ListBoxItem *,
 [data-baseweb="menu"],
 [data-baseweb="menu"] *,
 [data-baseweb="popover"] li,
 [data-baseweb="popover"] li *,
 [data-baseweb="tag"],
 [data-baseweb="tag"] *,
+
+/* File uploader dropzone and Browse button */
 [data-testid="stFileUploaderDropzone"],
 [data-testid="stFileUploaderDropzone"] *,
 [data-testid="stFileUploader"] section,
 [data-testid="stFileUploader"] section *,
 [data-testid="stFileUploader"] button,
 [data-testid="stFileUploader"] button *,
+
+/* Links */
 a,
 a * {
   cursor: pointer !important;
+}
+
+/* ============================================================
+   CURSOR STYLES: Slider (track, thumb, value text)
+   ============================================================ */
+/* Slider track */
+[data-testid="stSlider"] [data-baseweb="slider"],
+[data-testid="stSlider"] [data-baseweb="slider"] *,
+[data-testid="stSlider"] [role="group"],
+[data-testid="stSlider"] [role="group"] *,
+[data-testid="stSlider"] div[data-orientation="horizontal"],
+[data-testid="stSlider"] div[data-orientation="horizontal"] *,
+[data-testid="stSlider"] div[style*="touch-action"],
+[data-testid="stSlider"] div[style*="touch-action"] * {
+  cursor: pointer !important;
+}
+
+/* Slider thumb: grab & grabbing */
+[data-testid="stSlider"] [role="slider"],
+[data-testid="stSlider"] [role="slider"] *,
+[data-testid="stSlider"] div[style*="translate(-50%, -50%)"],
+[data-testid="stSlider"] div[style*="translate(-50%, -50%)"] *,
+[data-testid="stSlider"] input[type="range"] {
+  cursor: grab !important;
+}
+
+[data-testid="stSlider"] [role="slider"]:active,
+[data-testid="stSlider"] [role="slider"]:active *,
+[data-testid="stSlider"] div[style*="translate(-50%, -50%)"]:active,
+[data-testid="stSlider"] div[style*="translate(-50%, -50%)"]:active *,
+[data-testid="stSlider"] input[type="range"]:active {
+  cursor: grabbing !important;
+}
+
+/* Value text above the thumb gets default */
+[data-testid="stSlider"] div[data-testid="stSliderThumbValue"],
+[data-testid="stSlider"] div[data-testid="stSliderThumbValue"] *,
+[data-testid="stSlider"] [data-testid="stSliderThumbValue"],
+[data-testid="stSlider"] [data-testid="stSliderThumbValue"] *,
+[data-testid="stSlider"] [data-testid="stSliderThumbValue"] p,
+[data-testid="stSlider"] [data-testid="stSliderThumbValue"] div,
+[data-testid="stSliderThumbValue"],
+[data-testid="stSliderThumbValue"] *,
+[data-testid="stSliderThumbValue"] p,
+[data-testid="stSliderThumbValue"] div {
+  cursor: default !important;
+}
+
+/* Slider label & tick bar */
+[data-testid="stSlider"] label,
+[data-testid="stSlider"] label *,
+[data-testid="stSlider"] div[data-testid="stSliderTickBar"],
+[data-testid="stSlider"] div[data-testid="stSliderTickBar"] *,
+[data-testid="stSlider"] [data-testid="stSliderTickBar"],
+[data-testid="stSlider"] [data-testid="stSliderTickBar"] *,
+[data-testid="stSlider"] [data-testid="stSliderTickBar"] p,
+[data-testid="stSlider"] [data-testid="stSliderTickBar"] div,
+[data-testid="stSliderTickBar"],
+[data-testid="stSliderTickBar"] *,
+[data-testid="stSliderTickBar"] p,
+[data-testid="stSliderTickBar"] div {
+  cursor: default !important;
 }
 
 /* ============================================================
@@ -898,7 +1014,31 @@ select:disabled,
 [aria-disabled="true"],
 [aria-disabled="true"] *,
 [data-disabled="true"],
-[data-disabled="true"] * {
+[data-disabled="true"] *,
+[data-testid="stButton"] button:disabled,
+[data-testid="stButton"] button:disabled *,
+[data-testid="stButton"] button[disabled],
+[data-testid="stButton"] button[disabled] *,
+div[data-testid="stButton"] button:disabled,
+div[data-testid="stButton"] button:disabled *,
+div[data-testid="stButton"] button[disabled],
+div[data-testid="stButton"] button[disabled] *,
+div[data-testid="stFormSubmitButton"] button:disabled,
+div[data-testid="stFormSubmitButton"] button:disabled *,
+div[data-testid="stFormSubmitButton"] button[disabled],
+div[data-testid="stFormSubmitButton"] button[disabled] *,
+div[data-testid="stDownloadButton"] button:disabled,
+div[data-testid="stDownloadButton"] button:disabled *,
+div[data-testid="stDownloadButton"] button[disabled],
+div[data-testid="stDownloadButton"] button[disabled] *,
+[data-testid="stBaseButton-secondary"]:disabled,
+[data-testid="stBaseButton-secondary"]:disabled *,
+[data-testid="stBaseButton-secondary"][disabled],
+[data-testid="stBaseButton-secondary"][disabled] *,
+[data-testid="stBaseButton-primary"]:disabled,
+[data-testid="stBaseButton-primary"]:disabled *,
+[data-testid="stBaseButton-primary"][disabled],
+[data-testid="stBaseButton-primary"][disabled] * {
   cursor: not-allowed !important;
 }
 </style>
@@ -1925,16 +2065,50 @@ table, th, td, caption,
 /* ============================================================
    CURSOR STYLES: Clickable interactive elements
    ============================================================ */
-button,
-button *,
+/* Tabs and all their inner elements */
+[role="tab"],
+[role="tab"] *,
+[role="tab"] p,
+[role="tab"] div,
+[role="tab"] span,
 button[role="tab"],
 button[role="tab"] *,
-[data-testid="stTabs"] button,
-[data-testid="stTabs"] button *,
+button[role="tab"] p,
+button[role="tab"] div,
+div[role="tab"],
+div[role="tab"] *,
+div[role="tab"] p,
+div[role="tab"] div,
 [data-baseweb="tab"],
 [data-baseweb="tab"] *,
+[data-baseweb="tab"] p,
+[data-baseweb="tab"] div,
+[data-testid="stTab"],
+[data-testid="stTab"] *,
+[data-testid="stTab"] p,
+[data-testid="stTab"] div,
+[data-testid="stTabs"] [role="tab"],
+[data-testid="stTabs"] [role="tab"] *,
+[data-testid="stTabs"] [role="tab"] p,
+[data-testid="stTabs"] [role="tab"] div,
+[data-testid="stTabs"] button,
+[data-testid="stTabs"] button *,
 div[data-baseweb="tab-list"] button,
 div[data-baseweb="tab-list"] button *,
+div[data-baseweb="tab-list"] [role="tab"],
+div[data-baseweb="tab-list"] [role="tab"] *,
+
+/* Expander summaries */
+[data-testid="stExpander"] summary,
+[data-testid="stExpander"] summary *,
+details summary,
+details summary *,
+summary,
+summary *,
+
+/* All buttons and their inner text */
+button,
+button *,
 div[data-testid="stButton"] button,
 div[data-testid="stButton"] button *,
 div[data-testid="stFormSubmitButton"] button,
@@ -1945,12 +2119,8 @@ div[data-testid="stDownloadButton"] button *,
 [data-testid="stBaseButton-secondary"] *,
 [data-testid="stBaseButton-primary"],
 [data-testid="stBaseButton-primary"] *,
-[data-testid="stExpander"] summary,
-[data-testid="stExpander"] summary *,
-details summary,
-details summary *,
-summary,
-summary *,
+
+/* Theme toggle */
 .st-key-theme_btn,
 .st-key-theme_btn *,
 .stButton.st-key-theme_btn,
@@ -1958,43 +2128,129 @@ summary *,
 .theme-toggle-icon,
 .theme-toggle-icon *,
 .theme-toggle-svg,
+
+/* Dialog close button */
 div[data-testid="stDialog"] button[aria-label="Close"],
 div[data-testid="stDialog"] button[aria-label="Close"] *,
 div[role="dialog"] button[aria-label="Close"],
 div[role="dialog"] button[aria-label="Close"] *,
 [data-testid="stDialogCloseButton"],
 [data-testid="stDialogCloseButton"] *,
+
+/* Checkboxes and labels */
 [data-testid="stCheckbox"],
 [data-testid="stCheckbox"] *,
 label[data-baseweb="checkbox"],
 label[data-baseweb="checkbox"] *,
+
+/* Selectbox and multiselect containers and options */
 div[data-baseweb="select"],
 div[data-baseweb="select"] *:not(input),
 [data-testid="stSelectbox"] div[data-baseweb="select"],
 [data-testid="stSelectbox"] div[data-baseweb="select"] *:not(input),
 [data-testid="stMultiSelect"] div[data-baseweb="select"],
 [data-testid="stMultiSelect"] div[data-baseweb="select"] *:not(input),
+[data-testid="stSelectbox"] .react-aria-ComboBox,
+[data-testid="stSelectbox"] .react-aria-ComboBox *:not(input),
+[data-testid="stMultiSelect"] .react-aria-ComboBox,
+[data-testid="stMultiSelect"] .react-aria-ComboBox *:not(input),
+[data-testid="stSelectbox"] [role="group"],
+[data-testid="stSelectbox"] [role="group"] *:not(input),
+[data-testid="stMultiSelect"] [role="group"],
+[data-testid="stMultiSelect"] [role="group"] *:not(input),
+[data-testid="stSelectbox"] button,
+[data-testid="stSelectbox"] button *,
+[data-testid="stMultiSelect"] button,
+[data-testid="stMultiSelect"] button *,
 [role="listbox"],
 [role="listbox"] *,
 [role="option"],
 [role="option"] *,
 li[role="option"],
 li[role="option"] *,
+.react-aria-ListBoxItem,
+.react-aria-ListBoxItem *,
 [data-baseweb="menu"],
 [data-baseweb="menu"] *,
 [data-baseweb="popover"] li,
 [data-baseweb="popover"] li *,
 [data-baseweb="tag"],
 [data-baseweb="tag"] *,
+
+/* File uploader dropzone and Browse button */
 [data-testid="stFileUploaderDropzone"],
 [data-testid="stFileUploaderDropzone"] *,
 [data-testid="stFileUploader"] section,
 [data-testid="stFileUploader"] section *,
 [data-testid="stFileUploader"] button,
 [data-testid="stFileUploader"] button *,
+
+/* Links */
 a,
 a * {
   cursor: pointer !important;
+}
+
+/* ============================================================
+   CURSOR STYLES: Slider (track, thumb, value text)
+   ============================================================ */
+/* Slider track */
+[data-testid="stSlider"] [data-baseweb="slider"],
+[data-testid="stSlider"] [data-baseweb="slider"] *,
+[data-testid="stSlider"] [role="group"],
+[data-testid="stSlider"] [role="group"] *,
+[data-testid="stSlider"] div[data-orientation="horizontal"],
+[data-testid="stSlider"] div[data-orientation="horizontal"] *,
+[data-testid="stSlider"] div[style*="touch-action"],
+[data-testid="stSlider"] div[style*="touch-action"] * {
+  cursor: pointer !important;
+}
+
+/* Slider thumb: grab & grabbing */
+[data-testid="stSlider"] [role="slider"],
+[data-testid="stSlider"] [role="slider"] *,
+[data-testid="stSlider"] div[style*="translate(-50%, -50%)"],
+[data-testid="stSlider"] div[style*="translate(-50%, -50%)"] *,
+[data-testid="stSlider"] input[type="range"] {
+  cursor: grab !important;
+}
+
+[data-testid="stSlider"] [role="slider"]:active,
+[data-testid="stSlider"] [role="slider"]:active *,
+[data-testid="stSlider"] div[style*="translate(-50%, -50%)"]:active,
+[data-testid="stSlider"] div[style*="translate(-50%, -50%)"]:active *,
+[data-testid="stSlider"] input[type="range"]:active {
+  cursor: grabbing !important;
+}
+
+/* Value text above the thumb gets default */
+[data-testid="stSlider"] div[data-testid="stSliderThumbValue"],
+[data-testid="stSlider"] div[data-testid="stSliderThumbValue"] *,
+[data-testid="stSlider"] [data-testid="stSliderThumbValue"],
+[data-testid="stSlider"] [data-testid="stSliderThumbValue"] *,
+[data-testid="stSlider"] [data-testid="stSliderThumbValue"] p,
+[data-testid="stSlider"] [data-testid="stSliderThumbValue"] div,
+[data-testid="stSliderThumbValue"],
+[data-testid="stSliderThumbValue"] *,
+[data-testid="stSliderThumbValue"] p,
+[data-testid="stSliderThumbValue"] div {
+  cursor: default !important;
+}
+
+/* Slider label & tick bar */
+[data-testid="stSlider"] label,
+[data-testid="stSlider"] label *,
+[data-testid="stSlider"] div[data-testid="stSliderTickBar"],
+[data-testid="stSlider"] div[data-testid="stSliderTickBar"] *,
+[data-testid="stSlider"] [data-testid="stSliderTickBar"],
+[data-testid="stSlider"] [data-testid="stSliderTickBar"] *,
+[data-testid="stSlider"] [data-testid="stSliderTickBar"] p,
+[data-testid="stSlider"] [data-testid="stSliderTickBar"] div,
+[data-testid="stSliderTickBar"],
+[data-testid="stSliderTickBar"] *,
+[data-testid="stSliderTickBar"] p,
+[data-testid="stSliderTickBar"] div {
+  cursor: default !important;
 }
 
 /* ============================================================
@@ -2039,7 +2295,31 @@ select:disabled,
 [aria-disabled="true"],
 [aria-disabled="true"] *,
 [data-disabled="true"],
-[data-disabled="true"] * {
+[data-disabled="true"] *,
+[data-testid="stButton"] button:disabled,
+[data-testid="stButton"] button:disabled *,
+[data-testid="stButton"] button[disabled],
+[data-testid="stButton"] button[disabled] *,
+div[data-testid="stButton"] button:disabled,
+div[data-testid="stButton"] button:disabled *,
+div[data-testid="stButton"] button[disabled],
+div[data-testid="stButton"] button[disabled] *,
+div[data-testid="stFormSubmitButton"] button:disabled,
+div[data-testid="stFormSubmitButton"] button:disabled *,
+div[data-testid="stFormSubmitButton"] button[disabled],
+div[data-testid="stFormSubmitButton"] button[disabled] *,
+div[data-testid="stDownloadButton"] button:disabled,
+div[data-testid="stDownloadButton"] button:disabled *,
+div[data-testid="stDownloadButton"] button[disabled],
+div[data-testid="stDownloadButton"] button[disabled] *,
+[data-testid="stBaseButton-secondary"]:disabled,
+[data-testid="stBaseButton-secondary"]:disabled *,
+[data-testid="stBaseButton-secondary"][disabled],
+[data-testid="stBaseButton-secondary"][disabled] *,
+[data-testid="stBaseButton-primary"]:disabled,
+[data-testid="stBaseButton-primary"]:disabled *,
+[data-testid="stBaseButton-primary"][disabled],
+[data-testid="stBaseButton-primary"][disabled] * {
   cursor: not-allowed !important;
 }
 </style>
