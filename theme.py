@@ -1116,6 +1116,15 @@ DARK_CSS = r"""
 .goal h4 { color: #ffffff !important; }
 .goal p { color: #dbeafe !important; }
 
+/* Phase description text (muted paragraph under phase title) */
+.phase-blurb,
+p.phase-blurb,
+.stMarkdown p.phase-blurb,
+.stApp p.phase-blurb,
+div[data-testid="stMarkdownContainer"] p.phase-blurb {
+  color: #94a3b8 !important;
+}
+
 /* Placeholder color in all inputs */
 ::placeholder,
 .stTextInput input::placeholder,
@@ -1313,6 +1322,73 @@ li[role="option"] * {
   accent-color: var(--blue) !important;
 }
 
+/* Unchecked Checkbox */
+[data-testid="stCheckbox"] label > div:first-of-type,
+[data-testid="stCheckbox"] label > span + div,
+[data-testid="stCheckbox"] label > div:not([data-testid="stWidgetLabel"]),
+[data-testid="stCheckbox"] [data-baseweb="checkbox"] > span:first-child,
+label[data-baseweb="checkbox"] > span:first-child {
+  background-color: transparent !important;
+  border: 1.5px solid #64748b !important;
+  border-radius: 4px !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+/* Hover Checkbox (Unchecked) */
+[data-testid="stCheckbox"]:hover label > div:first-of-type,
+[data-testid="stCheckbox"]:hover label > span + div,
+[data-testid="stCheckbox"] label:hover > div:first-of-type,
+[data-testid="stCheckbox"] label:hover > span + div,
+[data-testid="stCheckbox"]:hover [data-baseweb="checkbox"] > span:first-child,
+label[data-baseweb="checkbox"]:hover > span:first-child {
+  border-color: #94a3b8 !important;
+}
+
+/* Checked Checkbox */
+[data-testid="stCheckbox"][data-selected="true"] label > div:first-of-type,
+[data-testid="stCheckbox"][data-selected="true"] label > span + div,
+[data-testid="stCheckbox"] label[data-selected="true"] > div:first-of-type,
+[data-testid="stCheckbox"] label[data-selected="true"] > span + div,
+[data-testid="stCheckbox"]:has(input:checked) label > div:first-of-type,
+[data-testid="stCheckbox"]:has(input:checked) label > span + div,
+[data-testid="stCheckbox"] label:has(input:checked) > div:first-of-type,
+[data-testid="stCheckbox"] label:has(input:checked) > span + div,
+[data-testid="stCheckbox"] [data-baseweb="checkbox"][aria-checked="true"] > span:first-child,
+label[data-baseweb="checkbox"][aria-checked="true"] > span:first-child {
+  background-color: #2563eb !important;
+  border: 1.5px solid #2563eb !important;
+}
+
+[data-testid="stCheckbox"][data-selected="true"]:hover label > div:first-of-type,
+[data-testid="stCheckbox"][data-selected="true"]:hover label > span + div,
+[data-testid="stCheckbox"]:has(input:checked):hover label > div:first-of-type,
+[data-testid="stCheckbox"]:has(input:checked):hover label > span + div {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+/* White Checkbox Tick */
+[data-testid="stCheckbox"] svg,
+[data-testid="stCheckbox"] svg polyline,
+[data-testid="stCheckbox"] svg path {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+  fill: none !important;
+}
+
+/* Subtle Focus Ring */
+[data-testid="stCheckbox"]:has(input:focus-visible) label > div:first-of-type,
+[data-testid="stCheckbox"]:has(input:focus-visible) label > span + div,
+[data-testid="stCheckbox"] label:has(input:focus-visible) > div:first-of-type,
+[data-testid="stCheckbox"] label:has(input:focus-visible) > span + div,
+[data-testid="stCheckbox"] [data-focus-visible="true"] > div:first-of-type,
+[data-testid="stCheckbox"] [data-focus-visible="true"] > span + div,
+[data-testid="stCheckbox"]:has([data-focus-visible="true"]) label > div:first-of-type,
+[data-testid="stCheckbox"]:has([data-focus-visible="true"]) label > span + div {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4) !important;
+  outline: none !important;
+}
+
 /* Sliders */
 .stSlider [data-baseweb="slider"] div[role="slider"] {
   background-color: var(--blue) !important;
@@ -1459,7 +1535,20 @@ li[role="option"] * {
 /* Bordered Containers & Forms */
 [data-testid="stVerticalBlockBorderWrapper"], [data-testid="stForm"], .result-head {
   background: var(--surface) !important;
-  border-color: var(--line) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--shadow) !important;
+}
+
+/* Phase Cards on Career Roadmap */
+[data-testid="stVerticalBlockBorderWrapper"]:has(.phase-top),
+[data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .phase-top),
+div[data-testid="stVerticalBlock"]:has(.phase-top):not(:has([data-testid="stVerticalBlock"])) {
+  background: var(--surface) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  border-radius: 18px !important;
   box-shadow: var(--shadow) !important;
 }
 
