@@ -23,6 +23,7 @@ from analyzer import (
     assess_other_requirements,
     build_graph,
     build_html_report,
+    categorize,
     compare,
     extract_job_skills,
     extract_resume_skills,
@@ -43,6 +44,19 @@ LOGO_SVG = (
     '<circle cx="14" cy="12" r="2.6" fill="#fff"/>'
     '<circle cx="21" cy="18" r="2.6" fill="#fff"/>'
     '<circle cx="26" cy="8" r="3" fill="#fbbf24"/>'
+    '</svg>'
+)
+GRAPH_ICON_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" '
+    'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+    'style="vertical-align: -3px; margin-right: 7px; display: inline-block;">'
+    '<circle cx="12" cy="5" r="2.5" fill="#60a5fa" stroke="#3b82f6" stroke-width="1.5"/>'
+    '<circle cx="5" cy="19" r="2.5" fill="#60a5fa" stroke="#3b82f6" stroke-width="1.5"/>'
+    '<circle cx="12" cy="19" r="2.5" fill="#60a5fa" stroke="#3b82f6" stroke-width="1.5"/>'
+    '<circle cx="19" cy="19" r="2.5" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/>'
+    '<path d="M12 7.5v4" stroke="#60a5fa" stroke-width="1.8"/>'
+    '<path d="M5 16.5v-2a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v2" stroke="#60a5fa" stroke-width="1.8"/>'
+    '<path d="M12 11.5v5" stroke="#60a5fa" stroke-width="1.8"/>'
     '</svg>'
 )
 SUN_SVG = (
@@ -971,6 +985,110 @@ def render_results(profile: dict):
         st.rerun()
 
 
+def build_skill_tree_html(job_role: str, match_results: dict, is_fullscreen: bool = False) -> str:
+    """Builds an HTML/CSS tree for the skill breakdown grouped by category."""
+    matched_skills = match_results.get("matched", []) or []
+    partial_skills = match_results.get("partial", []) or []
+    missing_skills = match_results.get("missing", []) or []
+
+    categories: dict[str, list[dict]] = {}
+
+    def add_skills(skill_list, status, symbol, css_cls):
+        for s in skill_list:
+            if not s:
+                continue
+            cat = categorize(s)
+            if cat not in categories:
+                categories[cat] = []
+            categories[cat].append({
+                "name": str(s),
+                "status": status,
+                "symbol": symbol,
+                "cls": css_cls,
+            })
+
+    add_skills(matched_skills, "matched", "✓", "sg-node-matched")
+    add_skills(partial_skills, "partial", "~", "sg-node-partial")
+    add_skills(missing_skills, "missing", "✗", "sg-node-missing")
+
+    safe_role = html.escape(str(job_role) if job_role else "Target Role")
+    fs_class = " sg-tree-fullscreen" if is_fullscreen else ""
+
+    if not categories:
+        return clean(f"""
+            <div class="sg-tree-wrapper{fs_class}">
+                <div class="sg-tree-root-container">
+                    <div class="sg-tree-root-pill">{safe_role}</div>
+                </div>
+                <p style="text-align: center; color: var(--muted); margin: 16px 0;">No required skills found.</p>
+            </div>
+        """)
+
+    preferred_order = [
+        "Languages",
+        "Frontend",
+        "Backend",
+        "Database",
+        "DevOps & Cloud",
+        "Testing",
+        "AI / ML",
+        "Tools & Process",
+        "Other",
+    ]
+
+    sorted_cats = sorted(
+        categories.keys(),
+        key=lambda c: (preferred_order.index(c) if c in preferred_order else 999, c),
+    )
+
+    cards_html = []
+    for cat in sorted_cats:
+        cat_skills = categories[cat]
+        safe_cat = html.escape(cat)
+        skill_rows = []
+        for sk in cat_skills:
+            safe_name = html.escape(sk["name"])
+            symbol = sk["symbol"]
+            cls = sk["cls"]
+            skill_rows.append(
+                f'<div class="sg-tree-node {cls}" title="{safe_name}">'
+                f'{symbol} {safe_name}'
+                f'</div>'
+            )
+        rows_str = "".join(skill_rows)
+        cards_html.append(
+            f'<div class="sg-tree-card-col">'
+            f'  <div class="sg-tree-card">'
+            f'    <div class="sg-tree-card-header">{safe_cat}</div>'
+            f'    <div class="sg-tree-card-body">{rows_str}</div>'
+            f'  </div>'
+            f'</div>'
+        )
+
+    branches_str = "".join(cards_html)
+
+    legend_html = (
+        '<div class="sg-tree-legend">'
+        '  <span class="sg-tree-node sg-node-matched">Matched ✓</span>'
+        '  <span class="sg-tree-node sg-node-partial">Partial ~</span>'
+        '  <span class="sg-tree-node sg-node-missing">Missing ✗</span>'
+        '</div>'
+    )
+
+    return clean(f"""
+        <div class="sg-tree-wrapper{fs_class}">
+            <div class="sg-tree-root-container">
+                <div class="sg-tree-root-pill">{safe_role}</div>
+                <div class="sg-tree-root-stem"></div>
+            </div>
+            <div class="sg-tree-branches">
+                {branches_str}
+            </div>
+            {legend_html}
+        </div>
+    """)
+
+
 def restyle_dot_graph(dot_string: str, is_dark: bool = False) -> str:
     """Restyles the Graphviz DOT graph to the SkillGraph design palette based on theme."""
     if not dot_string:
@@ -1460,18 +1578,15 @@ def render_resume_analyzer(is_dark: bool = False):
             st.altair_chart(dist_chart, width="stretch")
 
         with st.container(border=True):
-            st.markdown("#### 🕸️ Skill Graph")
-            dot_string = res["dot_string"]
-            styled_dot = restyle_dot_graph(dot_string, is_dark=is_dark)
+            st.markdown(f"#### {GRAPH_ICON_SVG}Skill Graph", unsafe_allow_html=True)
             if hasattr(st, "dialog"):
                 @st.dialog("Full Screen Skill Graph", width="large")
                 def show_full_graph():
-                    st.graphviz_chart(styled_dot, width="stretch")
+                    st.markdown(build_skill_tree_html(job_role, match_results, is_fullscreen=True), unsafe_allow_html=True)
 
                 if st.button("🔍 View Full Screen Graph", key="ra_full_graph_btn"):
                     show_full_graph()
-            st.graphviz_chart(styled_dot, width="stretch")
-            st.caption("🔵 Blue ✓ = Matched | 🟡 Amber ~ = Partial | ⚪ White/Bordered ✗ = Missing")
+            st.markdown(build_skill_tree_html(job_role, match_results, is_fullscreen=False), unsafe_allow_html=True)
 
         with st.container(border=True):
             st.markdown("#### 🚀 Your Actionable Roadmap")

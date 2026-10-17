@@ -270,6 +270,362 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
 [data-testid="stGraphvizChart"], [data-testid="stGraphvizChart"] svg { background: transparent !important; }
 [data-testid="stVegaLiteChart"], .vega-embed { background: transparent !important; }
 
+/* ---------- Skill Graph HTML Tree (Light Mode) ---------- */
+.sg-tree-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin: 14px 0 8px 0;
+  box-sizing: border-box;
+}
+
+.sg-tree-root-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.sg-tree-root-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Sans', Arial, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 6px 18px;
+  border-radius: 9999px;
+  text-align: center;
+  background: #1e3a8a;
+  color: #ffffff;
+  border: 1.5px solid #1e3a8a;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+  z-index: 2;
+}
+
+.sg-tree-root-stem {
+  width: 2px;
+  height: 16px;
+  background: #60a5fa;
+  margin: 0 auto;
+}
+
+.sg-tree-branches {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.sg-tree-card-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 16px 8px 12px 8px;
+  flex: 1 1 170px;
+  max-width: 260px;
+  min-width: 155px;
+  box-sizing: border-box;
+}
+
+.sg-tree-card-col::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #60a5fa;
+}
+
+.sg-tree-card-col:first-child::before {
+  left: 50%;
+}
+
+.sg-tree-card-col:last-child::before {
+  right: 50%;
+}
+
+.sg-tree-card-col:only-child::before {
+  display: none;
+}
+
+.sg-tree-card-col::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 16px;
+  background: #60a5fa;
+}
+
+.sg-tree-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  width: 100%;
+}
+
+.sg-tree-card-header {
+  font-family: 'DM Sans', Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 12px;
+  text-align: center;
+  background: #1e3a8a;
+  color: #ffffff;
+  border-bottom: 1px solid #1e3a8a;
+}
+
+.sg-tree-card-body {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 7px;
+  gap: 5px;
+  background: #ffffff;
+}
+
+.sg-tree-node {
+  display: flex;
+  align-items: center;
+  font-family: 'DM Sans', Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1.35;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.sg-node-matched {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border: 1px solid #1d4ed8 !important;
+}
+
+.sg-node-partial {
+  background: #fbbf24 !important;
+  color: #0f172a !important;
+  border: 1px solid #f59e0b !important;
+}
+
+.sg-node-missing {
+  background: transparent !important;
+  color: #1e293b !important;
+  border: 1.5px solid #94a3b8 !important;
+}
+
+.sg-tree-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.sg-tree-legend .sg-tree-node {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Fullscreen Dialog styling & resize handle cleanup */
+[data-testid="stDialogResizeHandle"],
+div[data-testid="stDialog"] [data-testid="stDialogResizeHandle"],
+div.stDialog [data-testid="stDialogResizeHandle"],
+div[role="dialog"] [data-testid="stDialogResizeHandle"],
+.stDialogResizeHandle,
+[class*="stDialogResizeHandle"],
+[class*="resizeHandle"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+div[data-testid="stDialog"] > div,
+div[role="dialog"] {
+  width: 95vw !important;
+  max-width: 95vw !important;
+  height: 92vh !important;
+  max-height: 92vh !important;
+  margin: auto !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+  padding: 1.25rem 1.5rem !important;
+}
+
+div[data-testid="stDialog"] *,
+div[role="dialog"] * {
+  scrollbar-width: none !important;
+}
+
+div[data-testid="stDialog"] *::-webkit-scrollbar,
+div[role="dialog"] *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+div[data-testid="stDialog"] [data-testid="stVerticalBlock"],
+div[data-testid="stDialog"] [data-testid="stVerticalBlock"] > div,
+div[role="dialog"] [data-testid="stVerticalBlock"] {
+  overflow: hidden !important;
+  max-height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+}
+
+div[data-testid="stDialog"] h2,
+div[data-testid="stDialog"] [data-testid="stDialogHeader"] h2,
+div[role="dialog"] h2 {
+  text-align: left !important;
+  margin: 0 0 8px 0 !important;
+  padding: 0 !important;
+  font-size: clamp(16px, 2vh, 20px) !important;
+  font-weight: 700 !important;
+  color: var(--text) !important;
+  flex-shrink: 0 !important;
+}
+
+div[data-testid="stDialog"] button[aria-label="Close"],
+div[role="dialog"] button[aria-label="Close"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: #0f172a !important;
+  transition: background-color 0.15s ease !important;
+}
+
+div[data-testid="stDialog"] button[aria-label="Close"]:hover,
+div[role="dialog"] button[aria-label="Close"]:hover {
+  background-color: rgba(15, 23, 42, 0.08) !important;
+  border-radius: 50% !important;
+}
+
+/* Fullscreen Tree rules */
+.sg-tree-fullscreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  max-height: calc(92vh - 70px);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.sg-tree-fullscreen .sg-tree-branches {
+  flex-wrap: nowrap !important;
+  gap: 0;
+  width: 100%;
+  justify-content: center;
+  align-items: flex-start;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.sg-tree-fullscreen .sg-tree-card-col {
+  flex: 1 1 0;
+  min-width: 110px;
+  max-width: 280px;
+  padding: clamp(6px, 1.2vh, 12px) clamp(3px, 0.5vw, 6px) 0 clamp(3px, 0.5vw, 6px);
+}
+
+.sg-tree-fullscreen .sg-tree-card-col::before {
+  height: 2px;
+}
+
+.sg-tree-fullscreen .sg-tree-card-col::after {
+  height: clamp(6px, 1.2vh, 12px);
+}
+
+.sg-tree-fullscreen .sg-tree-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.sg-tree-fullscreen .sg-tree-card-header {
+  font-size: clamp(11px, 1.35vh, 13.5px);
+  font-weight: 700;
+  padding: clamp(3px, 0.6vh, 6px) clamp(4px, 0.6vw, 8px);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sg-tree-fullscreen .sg-tree-card-body {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(3px, 0.5vh, 6px);
+  gap: clamp(2px, 0.35vh, 4px);
+  overflow: hidden;
+}
+
+.sg-tree-fullscreen .sg-tree-node {
+  font-size: clamp(9.5px, 1.2vh, 12px);
+  padding: clamp(2px, 0.35vh, 4px) clamp(4px, 0.5vw, 8px);
+  border-radius: 4px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sg-tree-fullscreen .sg-tree-root-pill {
+  font-size: clamp(11px, 1.4vh, 14px);
+  padding: clamp(3px, 0.6vh, 6px) clamp(10px, 1.3vw, 16px);
+}
+
+.sg-tree-fullscreen .sg-tree-root-stem {
+  height: clamp(6px, 1.2vh, 12px);
+}
+
+.sg-tree-fullscreen .sg-tree-legend {
+  margin-top: clamp(6px, 1.2vh, 12px);
+  gap: clamp(8px, 1.5vw, 16px);
+}
+
+.sg-tree-fullscreen .sg-tree-legend .sg-tree-node {
+  font-size: clamp(10px, 1.15vh, 12px);
+  padding: clamp(3px, 0.4vh, 5px) clamp(8px, 1vw, 12px);
+}
+
+
 @media (max-width:600px) {
   .hero { padding:20px 18px; }
   .hero-slim { padding: 0 16px; height: 64px; min-height: 64px; }
@@ -819,14 +1175,60 @@ div[data-testid="stFormSubmitButton"] button p {
   background: transparent !important;
 }
 
-/* Fullscreen Dialogs / Modals */
-[data-testid="stDialog"], [data-testid="stModal"], [role="dialog"], [role="dialog"] > div {
+/* Fullscreen Dialogs / Modals (Dark Mode) */
+[data-testid="stDialogResizeHandle"],
+div[data-testid="stDialog"] [data-testid="stDialogResizeHandle"],
+div.stDialog [data-testid="stDialogResizeHandle"],
+div[role="dialog"] [data-testid="stDialogResizeHandle"],
+.stDialogResizeHandle,
+[class*="stDialogResizeHandle"],
+[class*="resizeHandle"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+[data-testid="stDialog"], [data-testid="stModal"], [role="dialog"], [role="dialog"] > div,
+div[data-testid="stDialog"] > div {
   background-color: var(--surface) !important;
   color: var(--text) !important;
 }
 
-[role="dialog"] h2, [role="dialog"] span, [role="dialog"] p {
+[role="dialog"] h2, [role="dialog"] span, [role="dialog"] p,
+div[data-testid="stDialog"] h2 {
   color: var(--text) !important;
+}
+
+/* Fullscreen Dialog Close Button in Dark Mode */
+[data-testid="stDialog"] button[aria-label="Close"],
+div[role="dialog"] button[aria-label="Close"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: #e5ecf8 !important;
+  transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+[data-testid="stDialog"] button[aria-label="Close"] svg,
+div[role="dialog"] button[aria-label="Close"] svg {
+  stroke: #e5ecf8 !important;
+  color: #e5ecf8 !important;
+}
+
+[data-testid="stDialog"] button[aria-label="Close"]:hover,
+div[role="dialog"] button[aria-label="Close"]:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 50% !important;
+  color: #ffffff !important;
 }
 
 /* ============================================================
@@ -1122,6 +1524,75 @@ span.sg-chip-missing,
   display: inline-block !important;
   font-size: 13px !important;
   font-weight: 600 !important;
+}
+
+/* ---------- Skill Graph Tree (Dark Mode Overrides) ---------- */
+.sg-tree-root-pill {
+  background: #16213a !important;
+  color: #e5ecf8 !important;
+  border: 1.5px solid #3b82f6 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+}
+
+.sg-tree-root-stem {
+  background: #60a5fa !important;
+}
+
+.sg-tree-card-col::before,
+.sg-tree-card-col::after {
+  background: #60a5fa !important;
+}
+
+.sg-tree-card {
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  background: #111a2e !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+.sg-tree-card-header {
+  background: #16213a !important;
+  color: #e5ecf8 !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+.sg-tree-card-body {
+  background: #111a2e !important;
+}
+
+.sg-node-matched,
+.sg-tree-node.sg-node-matched,
+span.sg-tree-node.sg-node-matched,
+div.sg-tree-node.sg-node-matched,
+.stApp .sg-node-matched,
+.stMarkdown .sg-node-matched {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 1px solid #3b82f6 !important;
+}
+
+.sg-node-partial,
+.sg-tree-node.sg-node-partial,
+span.sg-tree-node.sg-node-partial,
+div.sg-tree-node.sg-node-partial,
+.stApp .sg-node-partial,
+.stMarkdown .sg-node-partial {
+  background: #fbbf24 !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border: 1px solid #d97706 !important;
+}
+
+.sg-node-missing,
+.sg-tree-node.sg-node-missing,
+span.sg-tree-node.sg-node-missing,
+div.sg-tree-node.sg-node-missing,
+.stApp .sg-node-missing,
+.stMarkdown .sg-node-missing {
+  background: transparent !important;
+  color: #e5ecf8 !important;
+  -webkit-text-fill-color: #e5ecf8 !important;
+  border: 1.5px solid rgba(148, 163, 184, 0.45) !important;
 }
 </style>
 """
