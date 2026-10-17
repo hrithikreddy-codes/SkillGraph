@@ -1365,58 +1365,94 @@ def render_resume_analyzer(is_dark: bool = False):
                         st.markdown(f"- **{it}**: :gray[Not shown]")
 
         with st.container(border=True):
-            st.markdown("#### 📊 Skills Breakdown")
+            bar_icon = (
+                '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" '
+                'stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" '
+                'style="vertical-align: -2px; margin-right: 6px; display: inline-block;">'
+                '<line x1="3" y1="6" x2="21" y2="6"/>'
+                '<line x1="3" y1="12" x2="15" y2="12"/>'
+                '<line x1="3" y1="18" x2="9" y2="18"/>'
+                '</svg>'
+            )
+            st.markdown(f"#### {bar_icon}Match Overview", unsafe_allow_html=True)
             chart_df = pd.DataFrame([
-                {"Status": "Matched", "Count": scores["matched_count"]},
-                {"Status": "Partial", "Count": scores["partial_count"]},
-                {"Status": "Missing", "Count": scores["missing_count"]},
+                {"Status": "Matched", "Count": scores.get("matched_count", 0)},
+                {"Status": "Partial", "Count": scores.get("partial_count", 0)},
+                {"Status": "Missing", "Count": scores.get("missing_count", 0)},
             ])
+            max_val = max(int(chart_df["Count"].max()), 1)
+            x_max = max_val + (1 if max_val < 5 else max(2, int(max_val * 0.15)))
+
             text_color = "#e5ecf8" if is_dark else "#0f172a"
-            grid_color = "#24304d" if is_dark else "#e3e8f2"
+            grid_color = "rgba(148, 163, 184, 0.18)" if is_dark else "rgba(15, 23, 42, 0.08)"
+
+            base = alt.Chart(chart_df).encode(
+                y=alt.Y(
+                    "Status:N",
+                    sort=["Matched", "Partial", "Missing"],
+                    title=None,
+                    axis=alt.Axis(
+                        domain=False,
+                        ticks=False,
+                        labelColor=text_color,
+                        labelFontSize=13,
+                        labelFont="DM Sans, sans-serif",
+                        labelFontWeight=600,
+                        labelPadding=10,
+                    ),
+                ),
+                x=alt.X(
+                    "Count:Q",
+                    title="Number of skills",
+                    scale=alt.Scale(domain=[0, x_max]),
+                    axis=alt.Axis(
+                        format="d",
+                        tickMinStep=1,
+                        grid=True,
+                        gridColor=grid_color,
+                        domain=True,
+                        domainColor=grid_color,
+                        tickColor=grid_color,
+                        labelColor=text_color,
+                        titleColor=text_color,
+                        labelFont="DM Sans, sans-serif",
+                        titleFont="DM Sans, sans-serif",
+                        labelFontSize=12,
+                        titleFontSize=12,
+                        titlePadding=10,
+                    ),
+                ),
+            )
+
+            bars = base.mark_bar(cornerRadius=6, height=22).encode(
+                color=alt.Color(
+                    "Status:N",
+                    scale=alt.Scale(
+                        domain=["Matched", "Partial", "Missing"],
+                        range=["#22c55e", "#f59e0b", "#ef4444"],
+                    ),
+                    legend=None,
+                ),
+                tooltip=[
+                    alt.Tooltip("Status:N", title="Status"),
+                    alt.Tooltip("Count:Q", title="Count"),
+                ],
+            )
+
+            text = base.mark_text(
+                align="left",
+                baseline="middle",
+                dx=6,
+                fontSize=13,
+                fontWeight=600,
+                color=text_color,
+                font="DM Sans, sans-serif",
+            ).encode(
+                text=alt.Text("Count:Q", format="d")
+            )
+
             dist_chart = (
-                alt.Chart(chart_df)
-                .mark_bar(cornerRadius=6, height=26)
-                .encode(
-                    y=alt.Y(
-                        "Status:N",
-                        sort=None,
-                        title=None,
-                        axis=alt.Axis(
-                            labelColor=text_color,
-                            labelFontSize=13,
-                            labelFont="DM Sans, sans-serif",
-                            domainColor=grid_color,
-                            tickColor=grid_color,
-                        ),
-                    ),
-                    x=alt.X(
-                        "Count:Q",
-                        title="Number of Skills",
-                        axis=alt.Axis(
-                            grid=True,
-                            gridColor=grid_color,
-                            domainColor=grid_color,
-                            tickColor=grid_color,
-                            labelColor=text_color,
-                            titleColor=text_color,
-                            labelFont="DM Sans, sans-serif",
-                            titleFont="DM Sans, sans-serif",
-                            tickMinStep=1,
-                        ),
-                    ),
-                    color=alt.Color(
-                        "Status:N",
-                        scale=alt.Scale(
-                            domain=["Matched", "Partial", "Missing"],
-                            range=["#2563eb", "#fbbf24", "#60a5fa"],
-                        ),
-                        legend=None,
-                    ),
-                    tooltip=[
-                        alt.Tooltip("Status:N", title="Status"),
-                        alt.Tooltip("Count:Q", title="Skills Count"),
-                    ],
-                )
+                (bars + text)
                 .properties(height=140)
                 .configure_view(strokeWidth=0)
                 .configure(background="transparent")
