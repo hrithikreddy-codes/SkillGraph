@@ -15,7 +15,7 @@ Setup:
 import os
 import time
 import re
-import google.generativeai as genai
+genai = None
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -167,6 +167,8 @@ def _call_groq(prompt, temperature=0.2, seed=None):
 
 def _call_gemini(prompt, temperature=0.2, seed=None):
     """Tries Gemini models. Returns text if successful, or None if rate limited/failed."""
+    if genai is None:
+        return None
     keys = _get_api_keys("GEMINI_API_KEYS")
     if not keys:
         return None
