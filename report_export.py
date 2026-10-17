@@ -1005,7 +1005,24 @@ def _is_covered(target: str, steps: list) -> bool:
     return False
 
 
-def _generate_step_for_item(item: str, job_role: str, is_missing_skill: bool, gaps: dict, reasons: dict) -> dict:
+def _short_tool_name(clean_name: str) -> str:
+    """
+    Derives a short tool name from clean_name:
+    if it contains " with " or " using ", takes the part after it (e.g. "Jest");
+    otherwise returns clean_name unchanged.
+    """
+    s = clean_name.strip()
+    s_lower = s.lower()
+    if " with " in s_lower:
+        idx = s_lower.find(" with ")
+        return s[idx + 6:].strip()
+    if " using " in s_lower:
+        idx = s_lower.find(" using ")
+        return s[idx + 7:].strip()
+    return s
+
+
+def _generate_step_for_item(item: str, job_role: str, is_missing_skill: bool, gaps: dict, reasons: dict, project_name: str = None) -> dict:
     it_lower = item.lower()
 
     why_gap = ""
@@ -1027,52 +1044,54 @@ def _generate_step_for_item(item: str, job_role: str, is_missing_skill: bool, ga
         why_gap = f"Required for {job_role} but not demonstrated in the resume."
 
     clean_name = re.sub(r'^(experience with|knowledge of|proven track record in)\s+', '', item, flags=re.IGNORECASE).strip()
+    tool = _short_tool_name(clean_name)
+    proj_name = project_name.strip() if (project_name and str(project_name).strip()) else "a personal project"
 
     if "jest" in it_lower or "testing" in it_lower:
-        learn = f"Study test-driven development, unit testing patterns, and mocking with {clean_name}."
-        apply = f"Write unit and integration test suites using {clean_name} for core application modules."
-        prove = f"A working {clean_name} test suite covering core application logic with automated runs."
-        example_bullet = f"Wrote comprehensive unit and integration test suites using {clean_name} to validate application logic [add your real result here if you have one]"
+        learn = f"Study test-driven development, unit testing patterns, and mocking with {tool}."
+        apply = f"Write unit and integration test suites using {tool} for {proj_name}."
+        prove = f"A working {tool} test suite covering core application logic with automated runs."
+        example_bullet = f"Wrote unit and integration test suites using {tool} for {proj_name} [add your real result here if you have one]"
     elif "docker" in it_lower or "container" in it_lower:
-        learn = f"Study containerization fundamentals, multi-stage builds, and container orchestration with {clean_name}."
-        apply = f"Containerize an existing application and configure multi-container setups using {clean_name}."
-        prove = f"A working Dockerfile and container configuration successfully building and serving the service."
-        example_bullet = f"Containerized application services using {clean_name} to standardize development and deployment environments [add your real result here if you have one]"
+        learn = f"Study containerization fundamentals and image builds with {tool}."
+        apply = f"Containerize {proj_name} using {tool}."
+        prove = f"A working Dockerfile and container configuration successfully building and running the application."
+        example_bullet = f"Containerized {proj_name} using {tool}"
     elif "ci/cd" in it_lower or "github action" in it_lower or "pipeline" in it_lower:
-        learn = f"Study automated integration and deployment workflows using {clean_name}."
-        apply = f"Set up an automated pipeline using {clean_name} to test, lint, and build on code commits."
-        prove = f"An active {clean_name} workflow passing automated test and build steps on code updates."
-        example_bullet = f"Configured automated CI/CD pipeline using {clean_name} to execute test suites and build checks [add your real result here if you have one]"
+        learn = f"Study automated integration and deployment workflows using {tool}."
+        apply = f"Set up an automated pipeline using {tool} to test and build {proj_name} on code commits."
+        prove = f"An active {tool} workflow passing automated test and build steps on code updates."
+        example_bullet = f"Configured an automated CI/CD pipeline using {tool} for {proj_name} [add your real result here if you have one]"
     elif any(k in it_lower for k in ["aws", "cloud", "azure", "gcp", "ec2"]):
-        learn = f"Learn cloud deployment fundamentals, virtual instances, and access management with {clean_name}."
-        apply = f"Deploy an application service to a single cloud instance using {clean_name}."
-        prove = f"A live deployment accessible via public URL hosted on {clean_name}."
-        example_bullet = f"Deployed full-stack application to {clean_name} with configured security groups and live monitoring [add your real result here if you have one]"
+        learn = f"Learn cloud deployment fundamentals and hosting basics with {tool}."
+        apply = f"Deploy {proj_name} using {tool}."
+        prove = f"A live deployment accessible via public URL hosted on {tool}."
+        example_bullet = f"Deployed {proj_name} to {tool} [add your real result here if you have one]"
     elif any(k in it_lower for k in ["agile", "scrum", "kanban"]):
-        learn = f"Study Agile sprint cycles, backlog management, and milestone estimation practices."
-        apply = f"Organize personal or team project development using an Agile board and sprint milestones."
-        prove = f"A board and sprint notes for a personal project."
-        example_bullet = f"Applied Agile practices to plan and execute milestones for a personal project [add your real result here if you have one]"
+        learn = f"Study Agile sprint cycles, backlog management, and task estimation practices."
+        apply = f"Organize development of {proj_name} using an Agile board and sprint milestones."
+        prove = f"A board and sprint notes for {proj_name}."
+        example_bullet = f"Applied Agile practices to plan and execute milestones for {proj_name}"
     elif any(k in it_lower for k in ["git", "version control"]):
-        learn = f"Learn branch management, pull request workflows, and merge conflict resolution with Git."
-        apply = f"Use feature branches, semantic commits, and pull requests for project development."
-        prove = f"A public GitHub repository displaying structured branch merges and pull request histories."
-        example_bullet = f"Managed project version control and collaborative workflows using Git feature branches [add your real result here if you have one]"
+        learn = f"Learn branch management, pull request workflows, and merge conflict resolution with {tool}."
+        apply = f"Use feature branches, semantic commits, and pull requests while developing {proj_name}."
+        prove = f"A repository displaying structured branch merges and pull request histories for {proj_name}."
+        example_bullet = f"Managed version control and development workflows for {proj_name} using {tool}"
     elif any(k in it_lower for k in ["communication", "teamwork", "collaboration", "stakeholder"]):
-        learn = f"Study technical documentation standards, API documentation, and cross-functional handoff practices."
-        apply = f"Author comprehensive architecture documentation and technical guides for an active project."
-        prove = f"Detailed technical documentation and architecture decisions recorded in repository documentation."
-        example_bullet = f"Authored technical specifications and architecture documentation to align cross-functional requirements [add your real result here if you have one]"
+        learn = f"Study technical documentation standards and clear architecture communication."
+        apply = f"Author technical documentation and architecture notes for {proj_name}."
+        prove = f"Technical documentation and architecture decisions recorded for {proj_name}."
+        example_bullet = f"Authored technical specifications and architecture documentation for {proj_name}"
     elif any(k in it_lower for k in ["years", "experience"]):
-        learn = f"Deepen production-level practices and architectural patterns related to {clean_name}."
-        apply = f"Build and document end-to-end features reflecting industry standards for {clean_name}."
-        prove = f"Documented architecture and public code repository demonstrating deep competency in {clean_name}."
-        example_bullet = f"Designed and delivered features demonstrating practical competency in {clean_name} [add your real result here if you have one]"
+        learn = f"Deepen practical implementation patterns and best practices related to {tool}."
+        apply = f"Build and document features in {proj_name} demonstrating practical experience with {tool}."
+        prove = f"Working code and documentation demonstrating hands-on experience with {tool} in {proj_name}."
+        example_bullet = f"Designed and delivered features in {proj_name} using {tool}"
     else:
-        learn = f"Study core fundamentals, best practices, and practical implementation patterns for {clean_name}."
-        apply = f"Implement {clean_name} into a functional feature within an existing or new project codebase."
-        prove = f"A working codebase and documentation demonstrating hands-on proficiency with {clean_name}."
-        example_bullet = f"Implemented {clean_name} following industry best practices [add your real result here if you have one]"
+        learn = f"Study core fundamentals, best practices, and practical implementation patterns for {tool}."
+        apply = f"Implement {tool} into a functional feature within {proj_name}."
+        prove = f"A working codebase and documentation demonstrating hands-on use of {tool}."
+        example_bullet = f"Implemented {tool} in {proj_name}"
 
     priority = "High" if is_missing_skill else "Medium"
 
@@ -1216,10 +1235,29 @@ def analysis_to_html(result: Union[Dict[str, Any], str]) -> str:
         other_res = {}
     other_items = other_res.get("results", []) or []
 
+    # Derive project name if available in the resume
+    project_name = None
+    raw_projects = (
+        result.get("projects")
+        or result.get("resume_projects")
+        or result.get("project_name")
+        or result.get("project")
+        or (result.get("resume_data") if isinstance(result.get("resume_data"), dict) else {}).get("projects")
+        or (match_res if isinstance(match_res, dict) else {}).get("projects")
+        or (roadmap if isinstance(roadmap, dict) else {}).get("projects")
+    )
+    if isinstance(raw_projects, list) and raw_projects:
+        for p in raw_projects:
+            if p and str(p).strip():
+                project_name = str(p).strip()
+                break
+    elif isinstance(raw_projects, str) and raw_projects.strip():
+        project_name = raw_projects.strip()
+
     # Ensure every required skill marked missing gets a step in the Actionable Roadmap
     for sk in missing:
         if not _is_covered(sk, steps):
-            steps.append(_generate_step_for_item(sk, job_role, is_missing_skill=True, gaps=gaps, reasons=reasons))
+            steps.append(_generate_step_for_item(sk, job_role, is_missing_skill=True, gaps=gaps, reasons=reasons, project_name=project_name))
 
     # Ensure every requirement marked "Not shown" gets a step in the Actionable Roadmap
     for it in other_items:
@@ -1227,7 +1265,7 @@ def analysis_to_html(result: Union[Dict[str, Any], str]) -> str:
         st_stat = str(it.get("status", "")).strip().lower()
         if st_stat != "supported" and it_name:
             if not _is_covered(it_name, steps):
-                steps.append(_generate_step_for_item(it_name, job_role, is_missing_skill=False, gaps=gaps, reasons=reasons))
+                steps.append(_generate_step_for_item(it_name, job_role, is_missing_skill=False, gaps=gaps, reasons=reasons, project_name=project_name))
 
     # Cleanly sort and assign sequential orders
     if steps:
