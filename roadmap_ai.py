@@ -448,7 +448,9 @@ Rules:
      * Do NOT ask for mastery of advanced enterprise topics (Docker, microservices, CI/CD, system design); mention as awareness only if at all.
    - For Diploma, Degree and B.Tech / Engineering learners:
      * Job applications, internships, technical interview preparation, and production-grade tools are fine.
-   - The "Gain experience" phase (Phase 4) needs at least one real-world task suited to the level (freelance, volunteer, team project or internship). For School and Intermediate learners, use student-friendly real-world steps such as school tech/science clubs, student hackathons/contests, volunteer websites, or collaborative projects.
+   - The "Gain experience" phase (Phase 4) needs at least one external, real-world task suited to the learner's level (volunteering, a freelance or class project, a team project, a contest, or an internship), not only work on the learner's own projects:
+     * For School and Intermediate learners, use student-friendly external steps such as school tech/science clubs, student hackathons/contests, volunteer websites, or collaborative projects.
+     * For Diploma, Degree and B.Tech learners, use an internship, freelance project, open-source team contribution, or collaborative community project.
 
 8. Last Phase Job Market Research & Skill Gap Closing:
    - In Phase 5 ("Prepare for your career"), you MUST include:
@@ -461,13 +463,16 @@ Rules:
 
 10. Goal Field:
     - Add one short "goal" field per phase: a one-line outcome saying what the learner can do at the end (e.g., "You can build and deploy a small API", "You can conduct exploratory data analysis on a real-world dataset"). If omitted, it will default to empty.
+    - Each phase's "goal" must be achievable by that phase's own tasks. Don't claim more than the tasks produce (for example "two case studies" with only one Build task).
 
 11. Resources Field:
-    - Add a "resources" list per phase containing 1-2 well-known free resources, names only, no URLs (e.g., ["MDN Web Docs", "freeCodeCamp"] or ["Kaggle Learn", "Fast.ai"]).
+    - Add a "resources" list per phase containing 1-2 real, widely known names (for example "freeCodeCamp", "MDN Web Docs", "Nielsen Norman Group").
+    - Names only, no URLs. No parentheses, no notes, no generic phrases like "guides" or "free trials".
 
-12. Handling Existing Skills:
+12. Handling Existing Skills & Strengths:
     - If the user's skills list is empty or "None", assume a beginner.
     - If the user has existing skills, build on them and say in the Phase 1 blurb which known skills the plan builds on.
+    - If the learner listed strengths ({strengths_str}), mention at least one in a phase blurb where it helps.
 
 13. Meaningful Differentiation:
     - Make tasks differ meaningfully by interest ({interest_label}) and target career ({career}). Do NOT reuse generic tasks across fields.
@@ -489,7 +494,7 @@ Output format:
       "title": "Build your foundation",
       "when": "{phase_whens[0]}",
       "hours": {phase_hours[0]},
-      "blurb": "Short summary of what to achieve in this phase (if user had skills, explicitly state which known skills the plan builds on).",
+      "blurb": "Short summary of what to achieve in this phase (mentioning how a relevant strength helps, and if user had skills, stating which known skills the plan builds on).",
       "goal": "You can write basic scripts and use Git for version control.",
       "resources": ["freeCodeCamp", "MDN Web Docs"],
       "groups": [
@@ -516,7 +521,7 @@ Output format:
       "hours": {phase_hours[1]},
       "blurb": "Short summary of what to achieve in this phase.",
       "goal": "You can build a functional CRUD application with a database.",
-      "resources": ["Official Documentation", "Coursera Free Courses"],
+      "resources": ["W3Schools", "Harvard CS50"],
       "groups": [
         {{
           "name": "Databases",
@@ -540,7 +545,7 @@ Output format:
       "when": "{phase_whens[2]}",
       "hours": {phase_hours[2]},
       "blurb": "Short summary of what to achieve in this phase.",
-      "goal": "You have 2 full projects documented and hosted online.",
+      "goal": "You have a full project documented and hosted online.",
       "resources": ["The Odin Project", "Full Stack Open"],
       "groups": [
         {{
@@ -566,8 +571,8 @@ Output format:
       "when": "{phase_whens[3]}",
       "hours": {phase_hours[3]},
       "blurb": "Short summary of what to achieve in this phase.",
-      "goal": "You have collaborated with other developers on a shared codebase.",
-      "resources": ["GitHub Skills", "Open Source Guides"],
+      "goal": "You have collaborated with other developers on an external codebase.",
+      "resources": ["GitHub Skills", "Linux Foundation Mentorship"],
       "groups": [
         {{
           "name": "Testing & Code Quality",
@@ -580,7 +585,7 @@ Output format:
           "name": "Real-World Collaboration",
           "tasks": [
             "Awareness: large codebase navigation and open source triage",
-            "Practice: contribute documentation or a small fix to an open repo or student project",
+            "Practice: contribute to an external open-source team project or volunteer organization",
             "Build: collaborate on a feature using pull requests"
           ]
         }}
