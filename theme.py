@@ -272,12 +272,18 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
 
 /* ---------- Skill Graph HTML Tree (Light Mode) ---------- */
 :root {
+  --sg-fs-chrome: 108px;
   --tree-line: #3b82f6;
-  --tree-row-gap: 20px;
-  --tree-stub-height: 14px;
-  --tree-stem-height: 14px;
-  --tree-col-pad: 6px;
-  --tree-card-max-width: 220px;
+  --tree-card-width: 13.5em;
+  --tree-col-pad: 0.35em;
+  --tree-row-gap: 1.0em;
+  --tree-root-height: 2.4em;
+  --tree-stem-height: 0.8em;
+  --tree-stub-height: 0.8em;
+  --tree-header-height: 2.0em;
+  --tree-skill-height: 1.62em;
+  --tree-skill-gap: 0.25em;
+  --tree-body-pad: 0.85em;
 }
 
 .sg-tree-wrapper {
@@ -291,6 +297,15 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   position: relative;
 }
 
+.sg-tree-wrapper:not(.sg-tree-fullscreen) {
+  --tree-row-gap: 20px;
+  --tree-stub-height: 14px;
+  --tree-stem-height: 14px;
+  --tree-col-pad: 6px;
+  --tree-card-max-width: 220px;
+  --tree-card-width: 220px;
+}
+
 .sg-tree-graph-area {
   display: flex;
   flex-direction: column;
@@ -298,6 +313,14 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   width: 100%;
   position: relative;
   box-sizing: border-box;
+}
+
+.sg-tree-graph-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .sg-tree-root-container {
@@ -318,20 +341,21 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   font-family: 'DM Sans', Arial, sans-serif;
   font-weight: 700;
   font-size: 1.05em;
-  padding: 0.4em 1.4em;
-  border-radius: 9999px;
+  padding: 0.35em 1.2em;
+  border-radius: 999em;
   text-align: center;
   background: #1e3a8a;
   color: #ffffff;
-  border: 1.5px solid #1e3a8a;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+  border: 0.1em solid #1e3a8a;
+  box-shadow: 0 0.15em 0.5em rgba(15, 23, 42, 0.12);
   z-index: 3;
   line-height: 1.3;
+  box-sizing: border-box;
 }
 
 .sg-tree-root-stem {
-  width: 2px;
-  height: var(--tree-stem-height, 14px);
+  width: 0.15em;
+  height: var(--tree-stem-height, 0.8em);
   background: var(--tree-line, #3b82f6);
   margin: 0 auto;
   z-index: 1;
@@ -353,7 +377,7 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   align-items: stretch;
   width: 100%;
   position: relative;
-  margin-bottom: var(--tree-row-gap, 20px);
+  margin-bottom: var(--tree-row-gap, 1.0em);
   box-sizing: border-box;
 }
 
@@ -366,10 +390,10 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   content: "";
   position: absolute;
   top: 0;
-  bottom: calc(-1 * var(--tree-row-gap, 20px));
+  bottom: calc(-1 * var(--tree-row-gap, 1.0em));
   left: 50%;
   transform: translateX(-50%);
-  width: 2px;
+  width: 0.15em;
   background: var(--tree-line, #3b82f6);
   z-index: 1;
   pointer-events: none;
@@ -381,12 +405,12 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding-top: var(--tree-stub-height, 14px);
-  padding-left: var(--tree-col-pad, 6px);
-  padding-right: var(--tree-col-pad, 6px);
+  padding-top: var(--tree-stub-height, 0.8em);
+  padding-left: var(--tree-col-pad, 0.35em);
+  padding-right: var(--tree-col-pad, 0.35em);
   box-sizing: border-box;
   flex: 1 1 0;
-  max-width: var(--tree-card-max-width, 220px);
+  max-width: var(--tree-card-width, 13.5em);
   min-width: 0;
 }
 
@@ -397,7 +421,7 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   top: 0;
   right: 50%;
   width: 50%;
-  height: 2px;
+  height: 0.15em;
   background: var(--tree-line, #3b82f6);
   z-index: 2;
 }
@@ -409,12 +433,24 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   top: 0;
   left: 50%;
   width: 50%;
-  height: var(--tree-stub-height, 14px);
-  border-top: 2px solid var(--tree-line, #3b82f6);
-  border-left: 2px solid var(--tree-line, #3b82f6);
+  height: var(--tree-stub-height, 0.8em);
+  border-top: 0.15em solid var(--tree-line, #3b82f6);
+  border-left: 0.15em solid var(--tree-line, #3b82f6);
   box-sizing: border-box;
   z-index: 2;
   background: transparent;
+}
+
+.sg-tree-wrapper:not(.sg-tree-fullscreen) .sg-tree-root-stem,
+.sg-tree-wrapper:not(.sg-tree-fullscreen) .sg-tree-row:not(:last-child)::before {
+  width: 2px;
+}
+.sg-tree-wrapper:not(.sg-tree-fullscreen) .sg-tree-card-col::before {
+  height: 2px;
+}
+.sg-tree-wrapper:not(.sg-tree-fullscreen) .sg-tree-card-col::after {
+  border-top-width: 2px;
+  border-left-width: 2px;
 }
 
 /* First card in row: omit left half of horizontal bar */
@@ -442,11 +478,11 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   position: relative;
   z-index: 3;
   width: 100%;
-  border-radius: 8px;
+  border-radius: 0.5em;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 0.15em 0.5em rgba(15, 23, 42, 0.05);
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 0.08em solid #e2e8f0;
   box-sizing: border-box;
 }
 
@@ -458,11 +494,12 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   text-align: center;
   background: #1e3a8a;
   color: #ffffff;
-  border-bottom: 1px solid #1e3a8a;
+  border-bottom: 0.08em solid #1e3a8a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.3;
+  box-sizing: border-box;
 }
 
 .sg-tree-card-body {
@@ -481,7 +518,7 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
   font-size: 0.82em;
   font-weight: 500;
   padding: 0.25em 0.5em;
-  border-radius: 4px;
+  border-radius: 0.25em;
   line-height: 1.3;
   text-align: left;
   box-sizing: border-box;
@@ -493,19 +530,19 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
 .sg-node-matched {
   background: #2563eb !important;
   color: #ffffff !important;
-  border: 1px solid #1d4ed8 !important;
+  border: 0.08em solid #1d4ed8 !important;
 }
 
 .sg-node-partial {
   background: #fbbf24 !important;
   color: #0f172a !important;
-  border: 1px solid #f59e0b !important;
+  border: 0.08em solid #f59e0b !important;
 }
 
 .sg-node-missing {
   background: transparent !important;
   color: #1e293b !important;
-  border: 1.5px solid #94a3b8 !important;
+  border: 0.1em solid #94a3b8 !important;
 }
 
 .sg-tree-legend {
@@ -543,18 +580,33 @@ div[role="dialog"] [data-testid="stDialogResizeHandle"],
   height: 0 !important;
 }
 
+/* Stop background page from scrolling when dialog is open */
+body:has([data-testid="stDialog"]) [data-testid="stMain"],
+body:has([data-testid="stDialog"]) {
+  overflow: hidden !important;
+}
+
+[data-testid="stDialog"] {
+  overflow: hidden !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  padding: 24px 0 !important;
+  box-sizing: border-box !important;
+}
+
 div[data-testid="stDialog"] > div,
 div[role="dialog"] {
   width: 95vw !important;
   max-width: 95vw !important;
-  height: calc(100vh - 32px) !important;
-  max-height: calc(100vh - 32px) !important;
-  margin: auto !important;
+  height: calc(100dvh - 48px) !important;
+  max-height: calc(100dvh - 48px) !important;
+  margin: 0 auto !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
   box-sizing: border-box !important;
-  padding: 1rem 1.5rem !important;
+  padding: 16px 24px !important;
 }
 
 div[data-testid="stDialog"] *,
@@ -581,12 +633,6 @@ div[data-testid="stDialog"] .stMarkdown,
 div[role="dialog"] .stMarkdown,
 div[data-testid="stDialog"] [data-testid="stMarkdownContainer"],
 div[role="dialog"] [data-testid="stMarkdownContainer"] {
-  height: 100% !important;
-  max-height: 100% !important;
-  flex: 1 1 auto !important;
-  display: flex !important;
-  flex-direction: column !important;
-  min-height: 0 !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
   padding: 0 !important;
@@ -603,6 +649,7 @@ div[role="dialog"] h2 {
   font-weight: 700 !important;
   color: var(--text) !important;
   flex-shrink: 0 !important;
+  line-height: 1.3 !important;
 }
 
 div[data-testid="stDialog"] button[aria-label="Close"],
@@ -626,17 +673,16 @@ div[role="dialog"] button[aria-label="Close"]:hover {
   border-radius: 50% !important;
 }
 
-/* Fullscreen Tree rules: CSS flex column filling dialog body with em-based sizing derived from min(vw, vh) */
+/* Fullscreen Tree rules: explicit 100dvh - chrome height, size container, legend pinned below */
 .sg-tree-fullscreen {
   display: flex !important;
   flex-direction: column !important;
   justify-content: space-between !important;
   align-items: center !important;
   width: 100% !important;
-  height: 100% !important;
-  max-height: 100% !important;
+  height: calc(100dvh - var(--sg-fs-chrome, 108px)) !important;
+  max-height: calc(100dvh - var(--sg-fs-chrome, 108px)) !important;
   min-height: 0 !important;
-  flex: 1 1 auto !important;
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
@@ -644,23 +690,27 @@ div[role="dialog"] button[aria-label="Close"]:hover {
 }
 
 .sg-tree-fullscreen .sg-tree-graph-area {
+  container-type: size;
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
   align-items: center !important;
   width: 100% !important;
-  flex: 1 1 auto !important;
+  flex: 1 1 0 !important;
   min-height: 0 !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
   padding: 0 !important;
   margin: 0 auto !important;
-  font-size: clamp(10px, min(1.4vw, 1.8vh), 18px);
-  --tree-row-gap: 1.2em;
-  --tree-stub-height: 1.0em;
-  --tree-stem-height: 1.0em;
-  --tree-col-pad: 0.35em;
-  --tree-card-max-width: 16em;
+}
+
+.sg-tree-fullscreen .sg-tree-graph-inner {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  font-size: clamp(8px, min(100cqw / var(--sg-w, 50), 100cqh / var(--sg-h, 30)), 28px);
 }
 
 .sg-tree-fullscreen .sg-tree-root-container {
@@ -683,35 +733,6 @@ div[role="dialog"] button[aria-label="Close"]:hover {
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-}
-
-/* Sizing derived from min(vw, vh) based on number of rows */
-.sg-tree-fullscreen[data-rows="1"] .sg-tree-graph-area {
-  font-size: clamp(11px, min(1.5vw, 2.2vh), 20px);
-  --tree-row-gap: 1.5em;
-  --tree-stub-height: 1.1em;
-  --tree-stem-height: 1.1em;
-  --tree-col-pad: 0.4em;
-  --tree-card-max-width: 18em;
-}
-
-.sg-tree-fullscreen[data-rows="2"] .sg-tree-graph-area {
-  font-size: clamp(9.5px, min(1.25vw, 1.55vh), 14.5px);
-  --tree-row-gap: 1.1em;
-  --tree-stub-height: 0.9em;
-  --tree-stem-height: 0.9em;
-  --tree-col-pad: 0.35em;
-  --tree-card-max-width: 15em;
-}
-
-.sg-tree-fullscreen[data-rows="3"] .sg-tree-graph-area,
-.sg-tree-fullscreen[data-rows="4"] .sg-tree-graph-area {
-  font-size: clamp(8px, min(1.0vw, 1.15vh), 12px);
-  --tree-row-gap: 0.85em;
-  --tree-stub-height: 0.75em;
-  --tree-stem-height: 0.75em;
-  --tree-col-pad: 0.3em;
-  --tree-card-max-width: 13.5em;
 }
 
 
@@ -1632,8 +1653,8 @@ span.sg-chip-missing,
 .sg-tree-root-pill {
   background: #16213a !important;
   color: #e5ecf8 !important;
-  border: 1.5px solid #3b82f6 !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0.15em 0.8em rgba(0, 0, 0, 0.4) !important;
 }
 
 .sg-tree-root-stem {
@@ -1654,15 +1675,15 @@ span.sg-chip-missing,
 }
 
 .sg-tree-card {
-  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
   background: #111a2e !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 0.15em 0.8em rgba(0, 0, 0, 0.3) !important;
 }
 
 .sg-tree-card-header {
   background: #16213a !important;
   color: #e5ecf8 !important;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2) !important;
+  border-bottom-color: rgba(148, 163, 184, 0.2) !important;
 }
 
 .sg-tree-card-body {
@@ -1678,7 +1699,7 @@ div.sg-tree-node.sg-node-matched,
   background: #2563eb !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
-  border: 1px solid #3b82f6 !important;
+  border-color: #3b82f6 !important;
 }
 
 .sg-node-partial,
@@ -1690,7 +1711,7 @@ div.sg-tree-node.sg-node-partial,
   background: #fbbf24 !important;
   color: #0f172a !important;
   -webkit-text-fill-color: #0f172a !important;
-  border: 1px solid #d97706 !important;
+  border-color: #d97706 !important;
 }
 
 .sg-node-missing,
@@ -1702,7 +1723,7 @@ div.sg-tree-node.sg-node-missing,
   background: transparent !important;
   color: #e5ecf8 !important;
   -webkit-text-fill-color: #e5ecf8 !important;
-  border: 1.5px solid rgba(148, 163, 184, 0.45) !important;
+  border-color: rgba(148, 163, 184, 0.45) !important;
 }
 </style>
 """

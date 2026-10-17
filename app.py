@@ -1055,6 +1055,35 @@ def build_skill_tree_html(job_role: str, match_results: dict, is_fullscreen: boo
         num_rows = 0
         category_rows = []
 
+    # Metrics in em matching CSS variables in theme.py
+    card_width_em = 13.5
+    col_pad_em = 0.35
+    row_gap_em = 1.0
+    root_height_em = 2.4
+    stem_height_em = 0.8
+    stub_height_em = 0.8
+    header_height_em = 2.0
+    skill_row_height_em = 1.62
+    skill_gap_em = 0.25
+    body_pad_em = 0.85
+
+    if is_fullscreen and category_rows:
+        max_cards = max((len(r) for r in category_rows), default=1)
+        w_em = round(max_cards * (card_width_em + 2 * col_pad_em), 2)
+        w_em = max(w_em, 18.0)
+
+        row_heights = []
+        for r in category_rows:
+            tallest = max((len(categories[cat]) for cat in r), default=0)
+            skills_h = (tallest * skill_row_height_em + (tallest - 1) * skill_gap_em) if tallest > 0 else 0
+            row_heights.append(stub_height_em + header_height_em + body_pad_em + skills_h)
+
+        gaps_h = (len(category_rows) - 1) * row_gap_em if len(category_rows) > 1 else 0
+        h_em = round(root_height_em + stem_height_em + sum(row_heights) + gaps_h, 2)
+        inner_style = f' style="--sg-w: {w_em}; --sg-h: {h_em}; font-size: clamp(8px, min(100cqw / {w_em}, 100cqh / {h_em}), 28px);"'
+    else:
+        inner_style = ""
+
     rows_html = []
     for row_cats in category_rows:
         cards_html = []
@@ -1094,14 +1123,16 @@ def build_skill_tree_html(job_role: str, match_results: dict, is_fullscreen: boo
     )
 
     return clean(f"""
-        <div class="sg-tree-wrapper{fs_class}" data-rows="{num_rows}">
+        <div class="sg-tree-wrapper{fs_class}">
             <div class="sg-tree-graph-area">
-                <div class="sg-tree-root-container">
-                    <div class="sg-tree-root-pill">{safe_role}</div>
-                    <div class="sg-tree-root-stem"></div>
-                </div>
-                <div class="sg-tree-rows">
-                    {rows_str}
+                <div class="sg-tree-graph-inner"{inner_style}>
+                    <div class="sg-tree-root-container">
+                        <div class="sg-tree-root-pill">{safe_role}</div>
+                        <div class="sg-tree-root-stem"></div>
+                    </div>
+                    <div class="sg-tree-rows">
+                        {rows_str}
+                    </div>
                 </div>
             </div>
             {legend_html}
