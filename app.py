@@ -18,6 +18,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 from analyzer import (
+    JobExtractionError,
     _call_llm,
     assess_other_requirements,
     build_graph,
@@ -979,10 +980,6 @@ def render_resume_analyzer(is_dark: bool = False):
 
                 with st.spinner("Analyzing your resume against the target role..."):
                     try:
-                        test_llm = _call_llm("test", temperature=0.0)
-                        if test_llm and ("⏱️" in test_llm or "❌" in test_llm):
-                            raise RuntimeError(test_llm)
-
                         resume_data = extract_resume_skills(final_resume_text)
                         if extra_skills:
                             curr_skills = resume_data.get("skills", [])
@@ -993,12 +990,20 @@ def render_resume_analyzer(is_dark: bool = False):
                                     seen_skills.add(es.lower())
                             resume_data["skills"] = curr_skills
 
-                        job_data = extract_job_skills(final_job_text)
+                        try:
+                            job_data = extract_job_skills(final_job_text)
+                        except JobExtractionError as e:
+                            st.session_state.ra_results = None
+                            st.error(str(e))
+                            st.stop()
+
                         if not job_data.get("required_skills"):
-                            raise ValueError(
+                            st.session_state.ra_results = None
+                            st.error(
                                 "Could not extract any required skills from the job description or role. "
                                 "Please provide a more detailed job posting or role description."
                             )
+                            st.stop()
 
                         match_results = compare(final_resume_text, resume_data, job_data)
                         scores = score_breakdown(match_results)

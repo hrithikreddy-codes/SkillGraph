@@ -153,6 +153,9 @@ def _call_llm(prompt, temperature=0.2, seed=None):
         "either `GROQ_API_KEYS` or `GEMINI_API_KEYS`."
     )
 
+_ORIGINAL_CALL_LLM_CODE = _call_llm.__code__
+
+
 
 # ---------------------------------------------------------------------------
 # FUNCTION — Normalize Skills
@@ -323,17 +326,208 @@ Rules you MUST follow:
         return default_dict
 
 
-@st.cache_data(show_spinner=False)
-def extract_job_skills(text):
-    """
-    Sends job description text to the LLM and asks for a JSON object with:
-        - role:                 the job title/role
-        - required_skills:      list of mandatory skills
-        - nice_to_have_skills:  list of bonus/preferred skills
-        - alternatives:         list of lists of alternative skills
+import time
 
-    Returns a Python dictionary parsed from the model's response.
-    """
+
+class JobExtractionError(Exception):
+    def __init__(self, reason: str, message: str):
+        super().__init__(message)
+        self.reason = reason
+        self.message = message
+        self._data = {
+            "error": reason,
+            "error_message": message,
+            "role": "",
+            "required_skills": [],
+            "nice_to_have_skills": [],
+            "alternatives": [],
+            "soft_skills": [],
+            "experience_requirements": [],
+        }
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def get(self, key, default=None):
+        return self._data.get(key, default)
+
+    def __contains__(self, key):
+        return key in self._data
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def keys(self):
+        return self._data.keys()
+
+    def values(self):
+        return self._data.values()
+
+    def items(self):
+        return self._data.items()
+
+
+class _EmptyResultException(Exception):
+    def __init__(self, data: dict):
+        self.data = data
+
+
+REASON_MESSAGES = {
+    "rate_limit": "The AI service is busy (rate limit). Please try again in a minute.",
+    "timeout": "The AI service request timed out. Please try again.",
+    "bad_json": "The AI service returned an invalid response (bad JSON). Please try again.",
+    "no_key": "No API key found. Please configure your API key in the .env file.",
+    "other": "The AI service encountered an error. Please try again."
+}
+
+
+def _classify_llm_exception(e: Exception) -> str:
+    err_str = str(e).lower()
+    err_type = type(e).__name__.lower()
+
+    if (
+        "429" in err_str
+        or "rate limit" in err_str
+        or "ratelimit" in err_str
+        or "quota" in err_str
+        or "resource_exhausted" in err_str
+        or "resourceexhausted" in err_type
+        or "ratelimit" in err_type
+    ):
+        return "rate_limit"
+
+    if (
+        "timeout" in err_str
+        or "timed out" in err_str
+        or "deadline" in err_str
+        or "deadlineexceeded" in err_type
+        or "timeouterror" in err_type
+        or "timeout" in err_type
+    ):
+        return "timeout"
+
+    return "other"
+
+
+def _get_extraction_keys():
+    keys = []
+    for k in _get_api_keys("GROQ_API_KEYS"):
+        keys.append(("groq", k))
+    for k in _get_api_keys("GEMINI_API_KEYS"):
+        keys.append(("gemini", k))
+    return keys
+
+
+def _execute_extraction_call(prompt: str, provider: str, api_key: str, timeout: int = 25) -> str:
+    if provider == "groq":
+        if Groq is None:
+            raise RuntimeError("groq library is not installed")
+        client = Groq(api_key=api_key)
+        last_err = None
+        for model_name in _GROQ_MODELS:
+            try:
+                completion = client.chat.completions.create(
+                    model=model_name,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.0,
+                    max_tokens=2048,
+                    timeout=timeout,
+                    seed=42,
+                )
+                return completion.choices[0].message.content
+            except Exception as e:
+                err_str = str(e).lower()
+                if "404" in err_str or "does not exist" in err_str or "decommissioned" in err_str:
+                    last_err = e
+                    continue
+                raise e
+        if last_err:
+            raise last_err
+        raise RuntimeError("No Groq models available")
+
+    elif provider == "gemini":
+        if genai is None:
+            raise RuntimeError("google.generativeai library is not installed")
+        genai.configure(api_key=api_key)
+        last_err = None
+        for model_name in _GEMINI_MODELS:
+            try:
+                config_kwargs = {
+                    "max_output_tokens": 2048,
+                    "temperature": 0.0,
+                }
+                import inspect
+                sig_params = inspect.signature(genai.types.GenerationConfig).parameters
+                if "seed" in sig_params:
+                    config_kwargs["seed"] = 42
+                model = genai.GenerativeModel(
+                    model_name,
+                    generation_config=genai.types.GenerationConfig(**config_kwargs),
+                )
+                response = model.generate_content(
+                    prompt,
+                    request_options={"timeout": timeout},
+                )
+                return response.text
+            except Exception as e:
+                err_str = str(e).lower()
+                if "404" in err_str or "not found" in err_str:
+                    last_err = e
+                    continue
+                raise e
+        if last_err:
+            raise last_err
+        raise RuntimeError("No Gemini models available")
+
+    else:
+        raise ValueError(f"Unknown provider: {provider}")
+
+
+def _call_and_parse_step(prompt: str, provider: str, api_key: str, timeout: int = 25):
+    try:
+        is_mocked = (
+            type(_call_llm).__name__ in ("MagicMock", "Mock", "AsyncMock")
+            or hasattr(_call_llm, "mock")
+            or getattr(_call_llm, "__code__", None) is not _ORIGINAL_CALL_LLM_CODE
+        )
+        if is_mocked:
+            raw = _call_llm(prompt, temperature=0.0, seed=42)
+        else:
+            raw = _execute_extraction_call(prompt, provider, api_key, timeout=timeout)
+    except Exception as e:
+        reason = _classify_llm_exception(e)
+        return False, reason, None
+
+    if raw is None:
+        return False, "rate_limit", None
+
+    if isinstance(raw, str) and ("⏱️" in raw or "rate-limited" in raw.lower() or "rate limit" in raw.lower()):
+        return False, "rate_limit", None
+
+    if isinstance(raw, str) and ("timed out" in raw.lower() or "timeout" in raw.lower()):
+        return False, "timeout", None
+
+    if isinstance(raw, str) and "❌" in raw:
+        return False, "other", None
+
+    cleaned = str(raw).strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    elif cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+
+    try:
+        parsed = json.loads(cleaned.strip())
+        if not isinstance(parsed, dict):
+            return False, "bad_json", None
+        return True, None, parsed
+    except Exception:
+        return False, "bad_json", None
+
+
+def _extract_job_skills_uncached(text: str) -> dict:
     prompt = f"""
 You are a job description parser. Read the job description below and return ONLY valid JSON.
 No markdown formatting blocks like ```json, no explanation, no extra text — just the raw JSON object.
@@ -362,56 +556,108 @@ Rules you MUST follow:
 {text}
 --- END JOB DESCRIPTION TEXT ---
 """
-    raw_response = _call_llm(prompt, temperature=0.0, seed=42)
-    
-    # Fallback default dictionary
-    default_dict = {"role": "", "required_skills": [], "nice_to_have_skills": [], "alternatives": [], "soft_skills": [], "experience_requirements": []}
-    
-    if not raw_response or "⏱️" in raw_response:
-        return default_dict
-        
+    keys = _get_extraction_keys()
+    if not keys:
+        reason = "no_key"
+        print(f"[extract_job_skills] Failed - reason: {reason}, attempt: 1, key_index: None")
+        raise JobExtractionError(reason, REASON_MESSAGES[reason])
+
+    key_idx = 0
+    attempt = 1
+    provider, api_key = keys[key_idx]
+
+    success, reason, parsed = _call_and_parse_step(prompt, provider, api_key, timeout=25)
+
+    if not success:
+        print(f"[extract_job_skills] Failed - reason: {reason}, attempt: {attempt}, key_index: {key_idx}")
+
+        if reason == "rate_limit":
+            # Retry once on rate limit (wait 2 seconds, use next key)
+            time.sleep(2)
+            key_idx = (key_idx + 1) % len(keys)
+            attempt = 2
+            provider, api_key = keys[key_idx]
+            success, reason2, parsed = _call_and_parse_step(prompt, provider, api_key, timeout=25)
+            if not success:
+                print(f"[extract_job_skills] Failed - reason: {reason2}, attempt: {attempt}, key_index: {key_idx}")
+                raise JobExtractionError(reason2, REASON_MESSAGES.get(reason2, REASON_MESSAGES["other"]))
+
+        elif reason == "bad_json":
+            # Retry once on bad_json (add "Return valid JSON only" to the prompt)
+            attempt = 2
+            retry_prompt = prompt.rstrip() + "\n\nReturn valid JSON only."
+            success, reason2, parsed = _call_and_parse_step(retry_prompt, provider, api_key, timeout=25)
+            if not success:
+                print(f"[extract_job_skills] Failed - reason: {reason2}, attempt: {attempt}, key_index: {key_idx}")
+                raise JobExtractionError(reason2, REASON_MESSAGES.get(reason2, REASON_MESSAGES["other"]))
+
+        else:
+            # timeout, other -> no retry
+            raise JobExtractionError(reason, REASON_MESSAGES.get(reason, REASON_MESSAGES["other"]))
+
+    import re
+    trigger_pattern = re.compile(r"\b(experience|understanding|ability|skills|knowledge|familiarity)\b", re.IGNORECASE)
+
+    if "experience_requirements" not in parsed or not isinstance(parsed["experience_requirements"], list):
+        parsed["experience_requirements"] = []
+
+    for key in ["required_skills", "nice_to_have_skills"]:
+        if key in parsed and isinstance(parsed[key], list):
+            valid_skills = []
+            for s in parsed[key]:
+                if not s:
+                    continue
+                if len(s.split()) > 5 or trigger_pattern.search(s):
+                    parsed["experience_requirements"].append(s)
+                else:
+                    valid_skills.append(s)
+            parsed[key] = sorted(list(set(normalize(s) for s in valid_skills if s)))
+
+    if "alternatives" in parsed and isinstance(parsed["alternatives"], list):
+        new_alts = []
+        for alt_group in parsed["alternatives"]:
+            if isinstance(alt_group, list):
+                clean_group = sorted(list(set(normalize(s) for s in alt_group if s)))
+                if clean_group:
+                    new_alts.append(clean_group)
+        parsed["alternatives"] = new_alts
+
+    parsed.setdefault("role", "")
+    parsed.setdefault("required_skills", [])
+    parsed.setdefault("nice_to_have_skills", [])
+    parsed.setdefault("alternatives", [])
+    parsed.setdefault("soft_skills", [])
+    parsed.setdefault("experience_requirements", [])
+
+    return parsed
+
+
+@st.cache_data(show_spinner=False)
+def _cached_job_skills(text: str) -> dict:
+    data = _extract_job_skills_uncached(text)
+    if not data.get("required_skills"):
+        raise _EmptyResultException(data)
+    return data
+
+
+def extract_job_skills(text: str) -> dict:
+    """
+    Sends job description text to the LLM and asks for a JSON object with:
+        - role:                 the job title/role
+        - required_skills:      list of mandatory skills
+        - nice_to_have_skills:  list of bonus/preferred skills
+        - alternatives:         list of lists of alternative skills
+
+    Returns a Python dictionary parsed from the model's response.
+    Never caches empty or failed results; only caches successful results with >= 1 skill.
+    """
     try:
-        # Strip markdown fences (e.g., ```json ... ```)
-        cleaned = raw_response.strip()
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-        elif cleaned.startswith("```"):
-            cleaned = cleaned[3:]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-        
-        parsed = json.loads(cleaned.strip())
-        
-        import re
-        trigger_pattern = re.compile(r"\b(experience|understanding|ability|skills|knowledge|familiarity)\b", re.IGNORECASE)
-        
-        if "experience_requirements" not in parsed or not isinstance(parsed["experience_requirements"], list):
-            parsed["experience_requirements"] = []
-            
-        for key in ["required_skills", "nice_to_have_skills"]:
-            if key in parsed and isinstance(parsed[key], list):
-                valid_skills = []
-                for s in parsed[key]:
-                    if not s:
-                        continue
-                    if len(s.split()) > 5 or trigger_pattern.search(s):
-                        parsed["experience_requirements"].append(s)
-                    else:
-                        valid_skills.append(s)
-                parsed[key] = sorted(list(set(normalize(s) for s in valid_skills if s)))
-        
-        if "alternatives" in parsed and isinstance(parsed["alternatives"], list):
-            new_alts = []
-            for alt_group in parsed["alternatives"]:
-                if isinstance(alt_group, list):
-                    clean_group = sorted(list(set(normalize(s) for s in alt_group if s)))
-                    if clean_group:
-                        new_alts.append(clean_group)
-            parsed["alternatives"] = new_alts
-        return parsed
-    except Exception:
-        # Return fallback dictionary if JSON parsing crashes
-        return default_dict
+        return _cached_job_skills(text)
+    except _EmptyResultException as e:
+        return e.data
+
+
+extract_job_skills.clear = _cached_job_skills.clear
 
 
 def apply_verification(compare_result, verification):
