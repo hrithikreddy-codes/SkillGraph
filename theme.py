@@ -26,6 +26,12 @@ CSS = r"""
   --amber: #fbbf24;
   --when-bg: #fef3c7;
   --when-text: #92400e;
+
+  /* Card and Expander Shapes & Shadow */
+  --sg-card-radius: 18px;
+  --sg-card-border-width: 1px;
+  --sg-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.06);
+  --sg-expander-radius: 18px;
 }
 
 .stApp { background: var(--bg); color: var(--text); }
@@ -257,7 +263,38 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
 .bar { height: 100%; background: linear-gradient(90deg, #3b82f6, #2563eb); border-radius: 999px; transition: width .8s cubic-bezier(.2, .8, .2, 1); }
 .pcount { color: var(--muted); font-size: 14px; margin: 8px 0 20px; }
 
-[data-testid="stVerticalBlockBorderWrapper"] { background: var(--surface); border-radius: 18px; border: 1px solid var(--line); }
+/* Cards & Bordered Containers in Light Mode */
+[data-testid="stVerticalBlockBorderWrapper"],
+.stVerticalBlock.st-emotion-cache-1s3lgy2,
+[data-testid="stVerticalBlock"][class*="1s3lgy2"],
+div[data-testid="stVerticalBlock"]:has(> div .phase-top),
+div[data-testid="stVerticalBlock"]:has(> div [data-testid="stMetric"]),
+div[data-testid="stVerticalBlock"]:has(> div [data-testid="stVegaLiteChart"]),
+div[data-testid="stVerticalBlock"]:has(> div .sg-tree-wrapper),
+div[data-testid="stVerticalBlock"]:has(> div .sg-chip-matched),
+div[data-testid="stVerticalBlock"]:has(> div .form-title),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .phase-top),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stMetric"]),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stVegaLiteChart"]),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .sg-tree-wrapper),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .sg-chip-matched),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .form-title),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stExpander"]):not(:has(> [data-testid="stVerticalBlock"])),
+div[data-testid="stVerticalBlock"]:has(.phase-top):not(:has([data-testid="stVerticalBlock"])),
+[data-testid="stForm"] {
+  background: var(--surface) !important;
+  border: var(--sg-card-border-width) solid var(--line) !important;
+  border-radius: var(--sg-card-radius) !important;
+  box-shadow: var(--sg-card-shadow) !important;
+}
+
+/* Expanders in Light Mode */
+[data-testid="stExpander"],
+.stApp [data-testid="stExpander"],
+[data-testid="stExpander"] details {
+  border-radius: var(--sg-expander-radius) !important;
+  overflow: hidden !important;
+}
 .phase-top { display: flex; align-items: center; gap: 14px; }
 .badge { flex: 0 0 40px; height: 40px; border-radius: 50%; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-family: 'Sora', sans-serif; font-weight: 700; }
 .phase-title { font-family: 'Sora', sans-serif; font-size: 19px; font-weight: 700; margin: 0; }
@@ -942,6 +979,17 @@ a * {
   cursor: grabbing !important;
 }
 
+/* While thumb is held down, lock cursor everywhere to grabbing and disable text selection */
+body:has([data-testid="stSlider"] [role="slider"]:active),
+body:has([data-testid="stSlider"] [role="slider"]:active) * {
+  cursor: grabbing !important;
+}
+
+body:has([data-testid="stSlider"] [role="slider"]:active) {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
 /* Value text above the thumb gets default */
 [data-testid="stSlider"] div[data-testid="stSliderThumbValue"],
 [data-testid="stSlider"] div[data-testid="stSliderThumbValue"] *,
@@ -1061,6 +1109,12 @@ DARK_CSS = r"""
   --when-bg: #2d2615;
   --when-text: #fde68a;
   --deep: #93c5fd;
+
+  /* Card and Expander Shapes & Shadow */
+  --sg-card-radius: 18px;
+  --sg-card-border-width: 1px;
+  --sg-card-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --sg-expander-radius: 18px;
 }
 
 /* Base App Dark Overrides */
@@ -1532,24 +1586,29 @@ label[data-baseweb="checkbox"][aria-checked="true"] > span:first-child {
   color: #0f172a !important;
 }
 
-/* Bordered Containers & Forms */
-[data-testid="stVerticalBlockBorderWrapper"], [data-testid="stForm"], .result-head {
-  background: var(--surface) !important;
-  border: 1px solid rgba(148, 163, 184, 0.2) !important;
-  border-color: rgba(148, 163, 184, 0.2) !important;
-  border-radius: 18px !important;
-  box-shadow: var(--shadow) !important;
-}
-
-/* Phase Cards on Career Roadmap */
-[data-testid="stVerticalBlockBorderWrapper"]:has(.phase-top),
+/* Cards & Bordered Containers in Dark Mode */
 [data-testid="stVerticalBlockBorderWrapper"],
-[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .phase-top),
-div[data-testid="stVerticalBlock"]:has(.phase-top):not(:has([data-testid="stVerticalBlock"])) {
+.stVerticalBlock.st-emotion-cache-1s3lgy2,
+[data-testid="stVerticalBlock"][class*="1s3lgy2"],
+div[data-testid="stVerticalBlock"]:has(> div .phase-top),
+div[data-testid="stVerticalBlock"]:has(> div [data-testid="stMetric"]),
+div[data-testid="stVerticalBlock"]:has(> div [data-testid="stVegaLiteChart"]),
+div[data-testid="stVerticalBlock"]:has(> div .sg-tree-wrapper),
+div[data-testid="stVerticalBlock"]:has(> div .sg-chip-matched),
+div[data-testid="stVerticalBlock"]:has(> div .form-title),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .phase-top),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stMetric"]),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stVegaLiteChart"]),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .sg-tree-wrapper),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .sg-chip-matched),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .form-title),
+div[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] [data-testid="stExpander"]):not(:has(> [data-testid="stVerticalBlock"])),
+div[data-testid="stVerticalBlock"]:has(.phase-top):not(:has([data-testid="stVerticalBlock"])),
+[data-testid="stForm"] {
   background: var(--surface) !important;
-  border: 1px solid rgba(148, 163, 184, 0.2) !important;
-  border-radius: 18px !important;
-  box-shadow: var(--shadow) !important;
+  border: var(--sg-card-border-width) solid rgba(148, 163, 184, 0.2) !important;
+  border-radius: var(--sg-card-radius) !important;
+  box-shadow: var(--sg-card-shadow) !important;
 }
 
 /* Alert Boxes (st.info, st.success, st.error, st.warning) */
@@ -1800,10 +1859,13 @@ li[role="option"] *,
 }
 
 /* 7d. Expanders */
-.stApp [data-testid="stExpander"] {
+.stApp [data-testid="stExpander"],
+[data-testid="stExpander"],
+[data-testid="stExpander"] details {
   background-color: var(--surface-2) !important;
-  border: 1px solid var(--line) !important;
-  border-radius: 12px !important;
+  border: var(--sg-card-border-width) solid var(--line) !important;
+  border-radius: var(--sg-expander-radius) !important;
+  overflow: hidden !important;
 }
 
 .stApp [data-testid="stExpander"] details,
@@ -2310,6 +2372,17 @@ a * {
 [data-testid="stSlider"] div[style*="translate(-50%, -50%)"]:active *,
 [data-testid="stSlider"] input[type="range"]:active {
   cursor: grabbing !important;
+}
+
+/* While thumb is held down, lock cursor everywhere to grabbing and disable text selection */
+body:has([data-testid="stSlider"] [role="slider"]:active),
+body:has([data-testid="stSlider"] [role="slider"]:active) * {
+  cursor: grabbing !important;
+}
+
+body:has([data-testid="stSlider"] [role="slider"]:active) {
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 
 /* Value text above the thumb gets default */
