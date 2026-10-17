@@ -928,5 +928,121 @@ input::placeholder {
   -webkit-text-fill-color: #5b6475 !important;
   opacity: 1 !important;
 }
+
+/* ------------------------------------------------------------
+   DARK MODE OVERRIDES: CHIPS & SPINNERS
+   ------------------------------------------------------------ */
+
+/* 1. Career Roadmap hero chips — style lightning user-skill chip to match other chips */
+.result-head span.tag[style*="#dbeafe"],
+.result-head span.tag[style*="1e40af"],
+.result-head .tag[style*="#dbeafe"],
+.result-head .tag[style*="1e40af"],
+span.tag[style*="#dbeafe"],
+span.tag[style*="1e40af"] {
+  background: var(--tag-bg) !important;
+  color: var(--tag-text) !important;
+  -webkit-text-fill-color: var(--tag-text) !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  margin: 4px 6px 4px 0 !important;
+  display: inline-block !important;
+  border: none !important;
+}
+
+/* 2. Spinner and status text in dark mode */
+.stSpinner,
+[data-testid="stSpinner"],
+[data-testid="stStatusWidget"] {
+  color: var(--text) !important;
+}
+
+.stSpinner p,
+.stSpinner span,
+.stSpinner div,
+.stSpinner [role="status"],
+.stSpinner [role="status"] p,
+.stSpinner [role="status"] span,
+[data-testid="stSpinner"] p,
+[data-testid="stSpinner"] span,
+[data-testid="stSpinner"] div,
+[data-testid="stSpinner"] [role="status"],
+[data-testid="stSpinner"] [role="status"] p,
+[data-testid="stSpinner"] [role="status"] span,
+[data-testid="stSpinner"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stStatusWidget"] p,
+[data-testid="stStatusWidget"] span {
+  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text) !important;
+}
+
+.stSpinner [data-testid="stSpinnerIcon"],
+[data-testid="stSpinner"] [data-testid="stSpinnerIcon"],
+.stSpinner span[class*="eafbkhs"],
+[data-testid="stSpinner"] span[class*="eafbkhs"],
+div[data-testid="stSpinner"] > div > span:first-child,
+.stSpinner > div > span:first-child {
+  border-color: rgba(96, 165, 250, 0.25) !important;
+  border-top-color: #60a5fa !important;
+}
+
+.stSpinner svg,
+.stSpinner [data-testid="stSpinnerIcon"] svg,
+[data-testid="stSpinner"] svg,
+[data-testid="stSpinner"] [data-testid="stSpinnerIcon"] svg {
+  color: #60a5fa !important;
+  fill: #60a5fa !important;
+}
+
+/* 3. Skills Breakdown chips in dark mode */
+span.tag[style*="#dcfce7"],
+span.tag[style*="15803d"],
+.tag[style*="#dcfce7"],
+.tag[style*="15803d"] {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: #86efac !important;
+  -webkit-text-fill-color: #86efac !important;
+  border: 1px solid rgba(34, 197, 94, 0.4) !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  margin: 4px 6px 4px 0 !important;
+  display: inline-block !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+span.tag[style*="#fef3c7"],
+span.tag[style*="b45309"],
+.tag[style*="#fef3c7"],
+.tag[style*="b45309"] {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fcd34d !important;
+  -webkit-text-fill-color: #fcd34d !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  margin: 4px 6px 4px 0 !important;
+  display: inline-block !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+span.tag[style*="#fee2e2"],
+span.tag[style*="b91c1c"],
+.tag[style*="#fee2e2"],
+.tag[style*="b91c1c"] {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #fca5a5 !important;
+  -webkit-text-fill-color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  margin: 4px 6px 4px 0 !important;
+  display: inline-block !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
 </style>
 """
