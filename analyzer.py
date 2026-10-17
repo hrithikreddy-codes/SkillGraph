@@ -13,11 +13,85 @@ Setup:
 """
 
 import os
+import time
+import re
 import google.generativeai as genai
 from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
+
+# ---------------------------------------------------------------------------
+# Rate limit tracking & cooldown helpers (Groq / Gemini)
+# ---------------------------------------------------------------------------
+
+last_rate_limit_at: float = 0.0
+
+
+def set_last_rate_limit_at(ts: float | None = None) -> float:
+    """Updates the shared module-level last_rate_limit_at timestamp."""
+    global last_rate_limit_at
+    last_rate_limit_at = time.time() if ts is None else float(ts)
+    return last_rate_limit_at
+
+
+def wait_for_rate_limit_cooldown(start_time: float | None = None, max_wait: float = 15.0):
+    """
+    Before any Groq call, if a rate limit happened less than 15 seconds ago,
+    wait out the remainder (max 15 seconds). Never blocks longer than 30s in total.
+    """
+    global last_rate_limit_at
+    if last_rate_limit_at > 0:
+        elapsed = time.time() - last_rate_limit_at
+        if elapsed < 15.0:
+            remainder = 15.0 - elapsed
+            wait_time = min(15.0, max_wait, remainder)
+            if start_time is not None:
+                budget = max(0.0, 30.0 - (time.time() - start_time))
+                wait_time = min(wait_time, budget)
+            if wait_time > 0:
+                time.sleep(wait_time)
+
+
+def _extract_retry_after(e: Exception) -> float | None:
+    """Reads the Retry-After header or message from an exception if present."""
+    if e is None:
+        return None
+    # 1. Check response.headers
+    response = getattr(e, "response", None)
+    if response is not None:
+        headers = getattr(response, "headers", {})
+        if hasattr(headers, "get"):
+            ra = headers.get("retry-after") or headers.get("Retry-After") or headers.get("retry-after-ms")
+            if ra is not None:
+                try:
+                    val = float(ra)
+                    if headers.get("retry-after-ms") and val > 1000:
+                        val = val / 1000.0
+                    return val
+                except (ValueError, TypeError):
+                    pass
+    # 2. Check attribute on exception directly
+    if hasattr(e, "retry_after"):
+        try:
+            return float(getattr(e, "retry_after"))
+        except (ValueError, TypeError):
+            pass
+    # 3. Check error message string for "try again in Xs" or "retry after X"
+    msg = str(e)
+    match = re.search(r"try again in ([\d\.]+)s", msg, re.IGNORECASE)
+    if match:
+        try:
+            return float(match.group(1))
+        except (ValueError, TypeError):
+            pass
+    match_sec = re.search(r"retry[- ]after[:\s]+([\d\.]+)", msg, re.IGNORECASE)
+    if match_sec:
+        try:
+            return float(match_sec.group(1))
+        except (ValueError, TypeError):
+            pass
+    return None
 
 # ---------------------------------------------------------------------------
 # SHARED HELPER — Load API keys & call LLMs with auto-rotation
@@ -57,6 +131,7 @@ def _call_groq(prompt, temperature=0.2, seed=None):
         client = Groq(api_key=api_key)
         for model_name in _GROQ_MODELS:
             try:
+                wait_for_rate_limit_cooldown()
                 kwargs = {
                     "model": model_name,
                     "messages": [{"role": "user", "content": prompt}],
@@ -74,6 +149,7 @@ def _call_groq(prompt, temperature=0.2, seed=None):
                 
                 # If rate limited -> try next model/key
                 if "429" in error_msg or "rate limit" in error_msg or "quota" in error_msg:
+                    set_last_rate_limit_at()
                     continue
                     
                 # If it's a 401 Unauthorized, the key is actually bad
@@ -373,7 +449,7 @@ class _EmptyResultException(Exception):
 
 
 REASON_MESSAGES = {
-    "rate_limit": "The AI service is busy (rate limit). Please try again in a minute.",
+    "rate_limit": "The AI service is busy (rate limit). Please wait about a minute and try again.",
     "timeout": "The AI service request timed out. Please try again.",
     "bad_json": "The AI service returned an invalid response (bad JSON). Please try again.",
     "no_key": "No API key found. Please configure your API key in the .env file.",
@@ -418,10 +494,19 @@ def _get_extraction_keys():
     return keys
 
 
-def _execute_extraction_call(prompt: str, provider: str, api_key: str, timeout: int = 25) -> str:
+class _ParseStepResult(tuple):
+    def __new__(cls, success, reason, parsed, retry_after=None):
+        obj = super().__new__(cls, (success, reason, parsed))
+        obj.retry_after = retry_after
+        return obj
+
+
+def _execute_extraction_call(prompt: str, provider: str, api_key: str, timeout: int = 25, check_cooldown: bool = True, start_time: float | None = None) -> str:
     if provider == "groq":
         if Groq is None:
             raise RuntimeError("groq library is not installed")
+        if check_cooldown:
+            wait_for_rate_limit_cooldown(start_time=start_time)
         client = Groq(api_key=api_key)
         last_err = None
         for model_name in _GROQ_MODELS:
@@ -437,6 +522,8 @@ def _execute_extraction_call(prompt: str, provider: str, api_key: str, timeout: 
                 return completion.choices[0].message.content
             except Exception as e:
                 err_str = str(e).lower()
+                if "429" in err_str or "rate limit" in err_str or "quota" in err_str:
+                    set_last_rate_limit_at()
                 if "404" in err_str or "does not exist" in err_str or "decommissioned" in err_str:
                     last_err = e
                     continue
@@ -483,7 +570,7 @@ def _execute_extraction_call(prompt: str, provider: str, api_key: str, timeout: 
         raise ValueError(f"Unknown provider: {provider}")
 
 
-def _call_and_parse_step(prompt: str, provider: str, api_key: str, timeout: int = 25):
+def _call_and_parse_step(prompt: str, provider: str, api_key: str, timeout: int = 25, check_cooldown: bool = True, start_time: float | None = None):
     try:
         is_mocked = (
             type(_call_llm).__name__ in ("MagicMock", "Mock", "AsyncMock")
@@ -491,24 +578,31 @@ def _call_and_parse_step(prompt: str, provider: str, api_key: str, timeout: int 
             or getattr(_call_llm, "__code__", None) is not _ORIGINAL_CALL_LLM_CODE
         )
         if is_mocked:
+            if check_cooldown and provider == "groq":
+                wait_for_rate_limit_cooldown(start_time=start_time)
             raw = _call_llm(prompt, temperature=0.0, seed=42)
         else:
-            raw = _execute_extraction_call(prompt, provider, api_key, timeout=timeout)
+            raw = _execute_extraction_call(prompt, provider, api_key, timeout=timeout, check_cooldown=check_cooldown, start_time=start_time)
     except Exception as e:
         reason = _classify_llm_exception(e)
-        return False, reason, None
+        retry_after = _extract_retry_after(e) if reason == "rate_limit" else None
+        if reason == "rate_limit":
+            set_last_rate_limit_at()
+        return _ParseStepResult(False, reason, None, retry_after)
 
     if raw is None:
-        return False, "rate_limit", None
+        set_last_rate_limit_at()
+        return _ParseStepResult(False, "rate_limit", None, None)
 
     if isinstance(raw, str) and ("⏱️" in raw or "rate-limited" in raw.lower() or "rate limit" in raw.lower()):
-        return False, "rate_limit", None
+        set_last_rate_limit_at()
+        return _ParseStepResult(False, "rate_limit", None, None)
 
     if isinstance(raw, str) and ("timed out" in raw.lower() or "timeout" in raw.lower()):
-        return False, "timeout", None
+        return _ParseStepResult(False, "timeout", None, None)
 
     if isinstance(raw, str) and "❌" in raw:
-        return False, "other", None
+        return _ParseStepResult(False, "other", None, None)
 
     cleaned = str(raw).strip()
     if cleaned.startswith("```json"):
@@ -521,10 +615,10 @@ def _call_and_parse_step(prompt: str, provider: str, api_key: str, timeout: int 
     try:
         parsed = json.loads(cleaned.strip())
         if not isinstance(parsed, dict):
-            return False, "bad_json", None
-        return True, None, parsed
+            return _ParseStepResult(False, "bad_json", None, None)
+        return _ParseStepResult(True, None, parsed, None)
     except Exception:
-        return False, "bad_json", None
+        return _ParseStepResult(False, "bad_json", None, None)
 
 
 def _extract_job_skills_uncached(text: str) -> dict:
@@ -556,39 +650,59 @@ Rules you MUST follow:
 {text}
 --- END JOB DESCRIPTION TEXT ---
 """
+    start_time = time.time()
     keys = _get_extraction_keys()
     if not keys:
         reason = "no_key"
-        print(f"[extract_job_skills] Failed - reason: {reason}, attempt: 1, key_index: None")
+        elapsed = time.time() - start_time
+        print(f"{reason} (attempt 0, key index None, elapsed {elapsed:.2f}s)")
         raise JobExtractionError(reason, REASON_MESSAGES[reason])
 
     key_idx = 0
     attempt = 1
     provider, api_key = keys[key_idx]
 
-    success, reason, parsed = _call_and_parse_step(prompt, provider, api_key, timeout=25)
+    step_res = _call_and_parse_step(prompt, provider, api_key, timeout=25, check_cooldown=True, start_time=start_time)
+    success, reason, parsed = step_res[0], step_res[1], step_res[2]
+    retry_after = getattr(step_res, "retry_after", None) or (step_res[3] if len(step_res) > 3 else None)
 
     if not success:
-        print(f"[extract_job_skills] Failed - reason: {reason}, attempt: {attempt}, key_index: {key_idx}")
+        elapsed = time.time() - start_time
+        print(f"{reason} (attempt {attempt}, key index {key_idx}, elapsed {elapsed:.2f}s)")
 
         if reason == "rate_limit":
-            # Retry once on rate limit (wait 2 seconds, use next key)
-            time.sleep(2)
+            # On a rate limit (HTTP 429), read the Retry-After header if present.
+            # Wait that long, capped at 20 seconds, then retry once on the next key (or the same key if only one).
+            # If no header, wait 15 seconds. Never block longer than 30 seconds in total.
+            if retry_after is not None:
+                wait_time = min(20.0, max(0.0, float(retry_after)))
+            else:
+                wait_time = 15.0
+
+            remaining_budget = max(0.0, 30.0 - (time.time() - start_time))
+            wait_time = min(wait_time, remaining_budget)
+            if wait_time > 0:
+                time.sleep(wait_time)
+
             key_idx = (key_idx + 1) % len(keys)
             attempt = 2
             provider, api_key = keys[key_idx]
-            success, reason2, parsed = _call_and_parse_step(prompt, provider, api_key, timeout=25)
+            step_res2 = _call_and_parse_step(prompt, provider, api_key, timeout=25, check_cooldown=False, start_time=start_time)
+            success, reason2, parsed = step_res2[0], step_res2[1], step_res2[2]
             if not success:
-                print(f"[extract_job_skills] Failed - reason: {reason2}, attempt: {attempt}, key_index: {key_idx}")
+                elapsed = time.time() - start_time
+                print(f"{reason2} (attempt {attempt}, key index {key_idx}, elapsed {elapsed:.2f}s)")
                 raise JobExtractionError(reason2, REASON_MESSAGES.get(reason2, REASON_MESSAGES["other"]))
 
         elif reason == "bad_json":
             # Retry once on bad_json (add "Return valid JSON only" to the prompt)
             attempt = 2
             retry_prompt = prompt.rstrip() + "\n\nReturn valid JSON only."
-            success, reason2, parsed = _call_and_parse_step(retry_prompt, provider, api_key, timeout=25)
+            step_res2 = _call_and_parse_step(retry_prompt, provider, api_key, timeout=25, check_cooldown=True, start_time=start_time)
+            success, reason2, parsed = step_res2[0], step_res2[1], step_res2[2]
             if not success:
-                print(f"[extract_job_skills] Failed - reason: {reason2}, attempt: {attempt}, key_index: {key_idx}")
+                elapsed = time.time() - start_time
+                print(f"{reason2} (attempt {attempt}, key index {key_idx}, elapsed {elapsed:.2f}s)")
                 raise JobExtractionError(reason2, REASON_MESSAGES.get(reason2, REASON_MESSAGES["other"]))
 
         else:

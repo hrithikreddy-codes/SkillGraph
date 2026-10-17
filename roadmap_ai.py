@@ -4,29 +4,63 @@ roadmap_ai.py — AI-generated personalized career roadmaps via Groq.
 
 import json
 import time
+import sys
+import types
 import groq
 import httpx
 from groq import Groq
-from analyzer import _get_api_keys, _GROQ_MODELS
+import analyzer
+from analyzer import _get_api_keys, _GROQ_MODELS, REASON_MESSAGES
 
 
-_last_call_meta = {"attempts": 1, "key_idx": 0}
+class _RoadmapAiModule(types.ModuleType):
+    @property
+    def last_rate_limit_at(self):
+        return analyzer.last_rate_limit_at
+
+    @last_rate_limit_at.setter
+    def last_rate_limit_at(self, val):
+        analyzer.last_rate_limit_at = float(val)
 
 
-def _call_single_key(api_key, prompt, temperature=0.2):
+sys.modules[__name__].__class__ = _RoadmapAiModule
+
+
+def __getattr__(name):
+    if name == "last_rate_limit_at":
+        return analyzer.last_rate_limit_at
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+
+_last_call_meta = {"attempts": 1, "key_idx": 0, "retry_after": None}
+
+
+class _CallResult(tuple):
+    def __new__(cls, content, err, retry_after=None):
+        obj = super().__new__(cls, (content, err))
+        obj.retry_after = retry_after
+        return obj
+
+
+def _call_single_key(api_key, prompt, temperature=0.2, check_cooldown=True, start_time=None):
     """
     Attempts to call Groq with a single API key across _GROQ_MODELS with a 25-second timeout.
     Returns (content, error_type) where error_type can be 'timeout', 'rate_limit', 'other', or None.
+    Also provides .retry_after on the return value if rate-limited.
     """
+    if check_cooldown:
+        analyzer.wait_for_rate_limit_cooldown(start_time=start_time)
+
     try:
         client = Groq(api_key=api_key, timeout=25.0)
     except Exception as e:
         err_msg = str(e).lower()
         if isinstance(e, (groq.APITimeoutError, httpx.TimeoutException, TimeoutError)) or "timeout" in err_msg or "timed out" in err_msg:
-            return None, "timeout"
-        return None, "other"
+            return _CallResult(None, "timeout", None)
+        return _CallResult(None, "other", None)
 
     hit_rate_limit = False
+    rate_limit_err = None
     for model_name in _GROQ_MODELS:
         try:
             kwargs = {
@@ -37,54 +71,79 @@ def _call_single_key(api_key, prompt, temperature=0.2):
                 "timeout": 25,
             }
             completion = client.chat.completions.create(**kwargs)
-            return completion.choices[0].message.content, None
+            return _CallResult(completion.choices[0].message.content, None, None)
         except Exception as e:
             err_msg = str(e).lower()
             if isinstance(e, (groq.APITimeoutError, httpx.TimeoutException, TimeoutError)) or "timeout" in err_msg or "timed out" in err_msg:
-                return None, "timeout"
+                return _CallResult(None, "timeout", None)
             if isinstance(e, groq.RateLimitError) or "429" in err_msg or "rate limit" in err_msg or "quota" in err_msg:
                 hit_rate_limit = True
+                rate_limit_err = e
                 continue
             if "404" in err_msg or "does not exist" in err_msg:
                 continue
-            return None, "other"
+            return _CallResult(None, "other", None)
 
     if hit_rate_limit:
-        return None, "rate_limit"
-    return None, "other"
+        analyzer.last_rate_limit_at = time.time()
+        retry_after = analyzer._extract_retry_after(rate_limit_err) if rate_limit_err else None
+        return _CallResult(None, "rate_limit", retry_after)
+    return _CallResult(None, "other", None)
 
 
-def _execute_groq_call(prompt, keys, start_key_idx=0, max_attempts=2):
+def _execute_groq_call(prompt, keys, start_key_idx=0, max_attempts=2, start_time=None):
     """
     Executes Groq API call with single rate_limit or timeout retry:
-    - On rate limit, waits 2 seconds and retries once with the next key (or retries same key if only 1).
+    - On rate limit, reads Retry-After header if present. Waits that long, capped at 20s.
+      If no header, waits 15 seconds. Never blocks longer than 30 seconds in total.
+      Retries once on the next key (or the same key if only one).
     - On timeout, retries once with the next key (or same key if only 1).
     - Respects max_attempts (at most 2 attempts in total).
     - Returns (raw_text, error_reason)
     """
+    if start_time is None:
+        start_time = time.time()
+
     if not keys:
         return None, "no_key"
 
     current_idx = start_key_idx % len(keys)
-    content, err = _call_single_key(keys[current_idx], prompt)
+    res = _call_single_key(keys[current_idx], prompt, check_cooldown=True, start_time=start_time)
+    content, err = res[0], res[1]
+    retry_after = getattr(res, "retry_after", None) or (res[2] if len(res) > 2 else None)
     _last_call_meta["attempts"] = 1
     _last_call_meta["key_idx"] = current_idx
+    _last_call_meta["retry_after"] = retry_after
 
     if max_attempts >= 2:
         if err == "rate_limit":
-            time.sleep(2)
+            if retry_after is not None:
+                wait_time = min(20.0, max(0.0, float(retry_after)))
+            else:
+                wait_time = 15.0
+
+            remaining_budget = max(0.0, 30.0 - (time.time() - start_time))
+            wait_time = min(wait_time, remaining_budget)
+            if wait_time > 0:
+                time.sleep(wait_time)
+
             next_idx = (current_idx + 1) % len(keys)
-            content_retry, err_retry = _call_single_key(keys[next_idx], prompt)
+            res_retry = _call_single_key(keys[next_idx], prompt, check_cooldown=False, start_time=start_time)
+            content_retry, err_retry = res_retry[0], res_retry[1]
             _last_call_meta["attempts"] = 2
             _last_call_meta["key_idx"] = next_idx
+            _last_call_meta["retry_after"] = getattr(res_retry, "retry_after", None)
             if content_retry is not None:
                 return content_retry, None
             return None, err_retry or "rate_limit"
+
         elif err == "timeout":
             next_idx = (current_idx + 1) % len(keys)
-            content_retry, err_retry = _call_single_key(keys[next_idx], prompt)
+            res_retry = _call_single_key(keys[next_idx], prompt, check_cooldown=True, start_time=start_time)
+            content_retry, err_retry = res_retry[0], res_retry[1]
             _last_call_meta["attempts"] = 2
             _last_call_meta["key_idx"] = next_idx
+            _last_call_meta["retry_after"] = getattr(res_retry, "retry_after", None)
             if content_retry is not None:
                 return content_retry, None
             return None, err_retry or "timeout"
@@ -561,7 +620,7 @@ Output format:
         # Attempt 1
         _last_call_meta["attempts"] = 1
         _last_call_meta["key_idx"] = 0
-        raw_text, err = _execute_groq_call(prompt, keys, start_key_idx=0, max_attempts=2)
+        raw_text, err = _execute_groq_call(prompt, keys, start_key_idx=0, max_attempts=2, start_time=start_time)
         if err:
             reason = err
             elapsed = time.time() - start_time
@@ -590,7 +649,7 @@ Output format:
         current_key_idx = _last_call_meta.get("key_idx", 0)
         _last_call_meta["attempts"] = 1
         retry_raw_text, retry_err = _execute_groq_call(
-            retry_prompt, keys, start_key_idx=current_key_idx, max_attempts=remaining_attempts
+            retry_prompt, keys, start_key_idx=current_key_idx, max_attempts=remaining_attempts, start_time=start_time
         )
         total_attempts = attempts_used + _last_call_meta.get("attempts", 1)
         final_key_num = _last_call_meta.get("key_idx", current_key_idx)
