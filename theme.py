@@ -2297,15 +2297,23 @@ li[role="option"] *,
 
 /* 7d. Expanders */
 .stApp [data-testid="stExpander"],
-[data-testid="stExpander"],
-[data-testid="stExpander"] details {
+[data-testid="stExpander"] {
   background-color: var(--surface-2) !important;
-  border: var(--sg-card-border-width) solid var(--line) !important;
+  border-width: 0 !important;
+  box-shadow: inset 0 0 0 1px var(--line) !important;
   border-radius: var(--sg-expander-radius) !important;
   overflow: hidden !important;
 }
 
 .stApp [data-testid="stExpander"] details,
+[data-testid="stExpander"] details {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: none !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+}
+
 .stApp [data-testid="stExpander"] summary {
   background-color: var(--surface-2) !important;
   color: var(--text) !important;
@@ -2425,7 +2433,8 @@ span.sg-chip-skill,
   background: #1e2a4a !important;
   color: #e2e8f0 !important;
   -webkit-text-fill-color: #e2e8f0 !important;
-  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  border-width: 0 !important;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25) !important;
   border-radius: 999px !important;
   padding: 6px 12px !important;
   font-size: 13px !important;
@@ -2497,7 +2506,8 @@ span.sg-chip-matched,
   background: rgba(34, 197, 94, 0.15) !important;
   color: #86efac !important;
   -webkit-text-fill-color: #86efac !important;
-  border: 1px solid rgba(34, 197, 94, 0.4) !important;
+  border-width: 0 !important;
+  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.4) !important;
   border-radius: 999px !important;
   padding: 6px 12px !important;
   margin: 4px 6px 4px 0 !important;
@@ -2517,7 +2527,8 @@ span.sg-chip-partial,
   background: rgba(245, 158, 11, 0.15) !important;
   color: #fcd34d !important;
   -webkit-text-fill-color: #fcd34d !important;
-  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  border-width: 0 !important;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.4) !important;
   border-radius: 999px !important;
   padding: 6px 12px !important;
   margin: 4px 6px 4px 0 !important;
@@ -2537,7 +2548,8 @@ span.sg-chip-missing,
   background: rgba(239, 68, 68, 0.15) !important;
   color: #fca5a5 !important;
   -webkit-text-fill-color: #fca5a5 !important;
-  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  border-width: 0 !important;
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.4) !important;
   border-radius: 999px !important;
   padding: 6px 12px !important;
   margin: 4px 6px 4px 0 !important;
