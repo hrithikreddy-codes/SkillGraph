@@ -2009,6 +2009,48 @@ def main():
     if is_dark:
         st.markdown(DARK_CSS, unsafe_allow_html=True)
 
+    current_theme = "dark" if is_dark else "light"
+    st.components.v1.html(
+        f"""
+        <style>
+          html, body {{
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }}
+        </style>
+        <script>
+          try {{
+            var pDoc = window.parent && window.parent.document;
+            if (pDoc && pDoc.documentElement) {{
+              pDoc.documentElement.dataset.sgTheme = "{current_theme}";
+              if (window.frameElement) {{
+                window.frameElement.style.display = "none";
+                window.frameElement.style.height = "0";
+                window.frameElement.style.margin = "0";
+                window.frameElement.style.padding = "0";
+                var el = window.frameElement;
+                while (el && el !== pDoc.body) {{
+                  if (el.getAttribute("data-testid") === "stElementContainer" || el.classList.contains("element-container")) {{
+                    el.style.display = "none";
+                    break;
+                  }}
+                  el.style.display = "none";
+                  el = el.parentElement;
+                }}
+              }}
+            }} else {{
+              console.warn("sg-theme: parent not accessible");
+            }}
+          }} catch (e) {{
+            console.warn("sg-theme: parent not accessible");
+          }}
+        </script>
+        """,
+        height=0,
+    )
+
     st.session_state.setdefault("profile", None)
     has_results = bool(st.session_state.get("profile") or st.session_state.get("ra_results"))
     render_hero(slim=has_results)
