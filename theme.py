@@ -32,6 +32,7 @@ CSS = r"""
   --sg-card-border-width: 1px;
   --sg-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.06);
   --sg-expander-radius: 18px;
+  --sg-card-inner-radius: 10px;
 }
 
 .stApp { background: var(--bg); color: var(--text); }
@@ -235,7 +236,192 @@ body:has(.st-key-theme_btn:hover) .theme-toggle-icon,
 [data-testid="stForm"] { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 28px; box-shadow: var(--shadow); }
 .form-title { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; margin: 0 0 4px; }
 .form-hint { color: var(--muted); margin: 0 0 18px; }
-[data-baseweb="select"] > div, .stTextInput input { border-radius: 12px !important; }
+/* ---------- Form Controls in Light Mode ---------- */
+/* 1. Base styles for controls: selectboxes, multiselects, inputs, textareas, file uploader dropzone */
+[data-baseweb="select"] > div,
+[data-testid="stSelectbox"] div[role="group"],
+[data-testid="stSelectbox"] .react-aria-ComboBox > div,
+[data-testid="stMultiSelect"] div[role="group"],
+[data-testid="stMultiSelect"] .react-aria-ComboBox > div,
+div[data-baseweb="input"],
+div[data-baseweb="base-input"],
+[data-testid="stTextInputRootElement"],
+[data-testid="stTextInput"] [data-testid="stTextInputRootElement"],
+[data-testid="stTextInput"] .react-aria-TextField > div {
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: var(--sg-card-inner-radius, 10px) !important;
+  min-height: 40px !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+div[data-baseweb="textarea"],
+[data-testid="stTextAreaRootElement"],
+[data-testid="stTextArea"] [data-testid="stTextAreaRootElement"] {
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: var(--sg-card-inner-radius, 10px) !important;
+  min-height: 80px !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-testid="stFileUploaderDropzone"],
+[data-testid="stFileUploader"] section {
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: var(--sg-card-inner-radius, 10px) !important;
+  min-height: 68px !important;
+  padding: 12px 16px !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* BaseWeb container padding if present */
+[data-baseweb="select"] > div,
+div[data-baseweb="input"],
+div[data-baseweb="base-input"] {
+  padding: 0 8px !important;
+}
+div[data-baseweb="textarea"] {
+  padding: 8px 10px !important;
+}
+
+/* 2. Hover state */
+[data-baseweb="select"] > div:hover,
+[data-testid="stSelectbox"] div[role="group"]:hover,
+[data-testid="stSelectbox"] .react-aria-ComboBox > div:hover,
+[data-testid="stMultiSelect"] div[role="group"]:hover,
+[data-testid="stMultiSelect"] .react-aria-ComboBox > div:hover,
+div[data-baseweb="input"]:hover,
+div[data-baseweb="base-input"]:hover,
+[data-testid="stTextInputRootElement"]:hover,
+[data-testid="stTextInput"] [data-testid="stTextInputRootElement"]:hover,
+[data-testid="stTextInput"] .react-aria-TextField > div:hover,
+div[data-baseweb="textarea"]:hover,
+[data-testid="stTextAreaRootElement"]:hover,
+[data-testid="stTextArea"] [data-testid="stTextAreaRootElement"]:hover,
+[data-testid="stFileUploaderDropzone"]:hover,
+[data-testid="stFileUploader"] section:hover {
+  border: 1px solid #94a3b8 !important;
+  border-color: #94a3b8 !important;
+}
+
+/* 2b. Focus and focus-within states */
+[data-baseweb="select"] > div:focus,
+[data-baseweb="select"] > div:focus-within,
+[data-testid="stSelectbox"] div[role="group"]:focus,
+[data-testid="stSelectbox"] div[role="group"]:focus-within,
+[data-testid="stSelectbox"] .react-aria-ComboBox > div:focus,
+[data-testid="stSelectbox"] .react-aria-ComboBox > div:focus-within,
+[data-testid="stMultiSelect"] div[role="group"]:focus,
+[data-testid="stMultiSelect"] div[role="group"]:focus-within,
+[data-testid="stMultiSelect"] .react-aria-ComboBox > div:focus,
+[data-testid="stMultiSelect"] .react-aria-ComboBox > div:focus-within,
+div[data-baseweb="input"]:focus,
+div[data-baseweb="input"]:focus-within,
+div[data-baseweb="base-input"]:focus,
+div[data-baseweb="base-input"]:focus-within,
+[data-testid="stTextInputRootElement"]:focus,
+[data-testid="stTextInputRootElement"]:focus-within,
+[data-testid="stTextInput"] [data-testid="stTextInputRootElement"]:focus,
+[data-testid="stTextInput"] [data-testid="stTextInputRootElement"]:focus-within,
+[data-testid="stTextInput"] .react-aria-TextField > div:focus,
+[data-testid="stTextInput"] .react-aria-TextField > div:focus-within,
+div[data-baseweb="textarea"]:focus,
+div[data-baseweb="textarea"]:focus-within,
+[data-testid="stTextAreaRootElement"]:focus,
+[data-testid="stTextAreaRootElement"]:focus-within,
+[data-testid="stTextArea"] [data-testid="stTextAreaRootElement"]:focus,
+[data-testid="stTextArea"] [data-testid="stTextAreaRootElement"]:focus-within,
+[data-testid="stFileUploaderDropzone"]:focus,
+[data-testid="stFileUploaderDropzone"]:focus-within,
+[data-testid="stFileUploader"] section:focus,
+[data-testid="stFileUploader"] section:focus-within {
+  border: 1px solid #2563eb !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  outline: none !important;
+}
+
+/* 3. Placeholder text */
+::placeholder,
+.stTextInput input::placeholder,
+.stTextArea textarea::placeholder,
+div[data-baseweb="input"] input::placeholder,
+div[data-baseweb="textarea"] textarea::placeholder,
+div[data-baseweb="base-input"] input::placeholder,
+div[data-baseweb="base-input"] textarea::placeholder,
+[data-baseweb="select"] input::placeholder,
+[data-baseweb="select"] div[data-placeholder="true"],
+[data-baseweb="select"] div[aria-hidden="true"],
+[data-testid="stSelectbox"] input::placeholder,
+[data-testid="stMultiSelect"] input::placeholder,
+[data-testid="stTextInput"] input::placeholder,
+[data-testid="stTextArea"] textarea::placeholder,
+textarea::placeholder,
+input::placeholder {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+  opacity: 1 !important;
+}
+
+/* 3b. Dropdown arrow remains visible */
+[data-baseweb="select"] svg,
+[data-testid="stSelectbox"] svg,
+[data-testid="stMultiSelect"] svg {
+  color: #64748b !important;
+  fill: #64748b !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+[data-testid="stSelectbox"] button:hover svg,
+[data-testid="stMultiSelect"] button:hover svg {
+  color: #0f172a !important;
+  fill: #0f172a !important;
+}
+
+/* 4. Inner wrapper elements remain transparent with no border/shadow */
+div[data-baseweb="input"] input,
+div[data-baseweb="textarea"] textarea,
+div[data-baseweb="base-input"] input,
+div[data-baseweb="base-input"] textarea,
+[data-testid="stTextInputField"],
+[data-testid="stTextAreaRootElement"] textarea,
+[data-testid="stSelectbox"] input,
+[data-testid="stMultiSelect"] input,
+[data-testid="stSelectbox"] button,
+[data-testid="stMultiSelect"] button,
+[data-testid="stMultiSelectTagsContainer"],
+[data-baseweb="select"] input,
+[data-baseweb="select"] [role="combobox"],
+[data-baseweb="select"] span,
+[data-baseweb="select"] div {
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+div[data-baseweb="input"] input:focus,
+div[data-baseweb="textarea"] textarea:focus,
+div[data-baseweb="base-input"] input:focus,
+div[data-baseweb="base-input"] textarea:focus,
+[data-testid="stTextInputField"]:focus,
+[data-testid="stTextAreaRootElement"] textarea:focus,
+[data-testid="stSelectbox"] input:focus,
+[data-testid="stMultiSelect"] input:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
 .stApp label p { font-weight: 600; }
 
 /* ---------- Buttons ---------- */
