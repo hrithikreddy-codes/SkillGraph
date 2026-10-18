@@ -2089,31 +2089,37 @@ button[data-testid="baseButton-secondary"] p {
 /* Primary Buttons ("Generate my roadmap", "Analyze Resume & Match Skills") */
 .stButton button[kind="primary"],
 .stButton button[data-testid="baseButton-primary"],
+.stButton button[data-testid="stBaseButton-primary"],
 button[kind="primary"],
 button[data-testid="baseButton-primary"],
+button[data-testid="stBaseButton-primary"],
 div[data-testid="stFormSubmitButton"] button {
   background: linear-gradient(90deg, #2563eb, #1d4ed8) !important;
   color: #ffffff !important;
-  border: none !important;
+  border: 1px solid transparent !important;
   font-weight: 700 !important;
 }
 
 .stButton button[kind="primary"]:hover,
 .stButton button[data-testid="baseButton-primary"]:hover,
+.stButton button[data-testid="stBaseButton-primary"]:hover,
 button[kind="primary"]:hover,
 button[data-testid="baseButton-primary"]:hover,
+button[data-testid="stBaseButton-primary"]:hover,
 div[data-testid="stFormSubmitButton"] button:hover {
   background: linear-gradient(90deg, #1d4ed8, #1e40af) !important;
   color: #ffffff !important;
-  border: none !important;
+  border: 1px solid transparent !important;
   box-shadow: 0 10px 22px rgba(37, 99, 235, 0.45) !important;
   transform: translateY(-2px);
 }
 
 .stButton button[kind="primary"] p,
 .stButton button[data-testid="baseButton-primary"] p,
+.stButton button[data-testid="stBaseButton-primary"] p,
 button[kind="primary"] p,
 button[data-testid="baseButton-primary"] p,
+button[data-testid="stBaseButton-primary"] p,
 div[data-testid="stFormSubmitButton"] button p {
   color: #ffffff !important;
 }
