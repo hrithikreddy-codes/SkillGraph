@@ -47,6 +47,29 @@ LIGHT_RULES = r"""
   margin: 0 !important;
   padding: 0 !important;
 }
+
+/* Hide Streamlit heading anchor link icons and action containers */
+[data-testid="stHeaderActionElements"],
+[data-testid="stHeadingWithActionElements"] [data-testid="stHeaderActionElements"],
+[data-testid="stHeadingWithActionElements"] a,
+a[data-testid="stHeaderActionElements"],
+a[aria-label="Link to heading"],
+.stHeadingActionElements,
+h1 a[href^="#"],
+h2 a[href^="#"],
+h3 a[href^="#"],
+h4 a[href^="#"],
+h5 a[href^="#"],
+h6 a[href^="#"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
 .block-container { max-width: 860px; padding-top: 1.5rem; padding-bottom: 3rem; }
 
 /* ---------- Theme icon button top right ---------- */
@@ -1160,13 +1183,13 @@ a * {
   cursor: pointer !important;
 }
 
-/* Slider thumb: grab & grabbing */
+/* Slider thumb: pointer */
 [data-testid="stSlider"] [role="slider"],
 [data-testid="stSlider"] [role="slider"] *,
 [data-testid="stSlider"] div[style*="translate(-50%, -50%)"],
 [data-testid="stSlider"] div[style*="translate(-50%, -50%)"] *,
 [data-testid="stSlider"] input[type="range"] {
-  cursor: grab !important;
+  cursor: pointer !important;
 }
 
 [data-testid="stSlider"] [role="slider"]:active,
@@ -1174,13 +1197,13 @@ a * {
 [data-testid="stSlider"] div[style*="translate(-50%, -50%)"]:active,
 [data-testid="stSlider"] div[style*="translate(-50%, -50%)"]:active *,
 [data-testid="stSlider"] input[type="range"]:active {
-  cursor: grabbing !important;
+  cursor: pointer !important;
 }
 
-/* While thumb is held down, lock cursor everywhere to grabbing and disable text selection */
+/* While thumb is held down, lock cursor everywhere to pointer and disable text selection */
 body:has([data-testid="stSlider"] [role="slider"]:active),
 body:has([data-testid="stSlider"] [role="slider"]:active) * {
-  cursor: grabbing !important;
+  cursor: pointer !important;
 }
 
 body:has([data-testid="stSlider"] [role="slider"]:active) {
@@ -1325,6 +1348,29 @@ DARK_RULES = r"""
   pointer-events: none !important;
   height: 0 !important;
   width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Hide Streamlit heading anchor link icons and action containers */
+[data-testid="stHeaderActionElements"],
+[data-testid="stHeadingWithActionElements"] [data-testid="stHeaderActionElements"],
+[data-testid="stHeadingWithActionElements"] a,
+a[data-testid="stHeaderActionElements"],
+a[aria-label="Link to heading"],
+.stHeadingActionElements,
+h1 a[href^="#"],
+h2 a[href^="#"],
+h3 a[href^="#"],
+h4 a[href^="#"],
+h5 a[href^="#"],
+h6 a[href^="#"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
 }
@@ -2666,13 +2712,13 @@ a * {
   cursor: pointer !important;
 }
 
-/* Slider thumb: grab & grabbing */
+/* Slider thumb: pointer */
 [data-testid="stSlider"] [role="slider"],
 [data-testid="stSlider"] [role="slider"] *,
 [data-testid="stSlider"] div[style*="translate(-50%, -50%)"],
 [data-testid="stSlider"] div[style*="translate(-50%, -50%)"] *,
 [data-testid="stSlider"] input[type="range"] {
-  cursor: grab !important;
+  cursor: pointer !important;
 }
 
 [data-testid="stSlider"] [role="slider"]:active,
@@ -2680,13 +2726,13 @@ a * {
 [data-testid="stSlider"] div[style*="translate(-50%, -50%)"]:active,
 [data-testid="stSlider"] div[style*="translate(-50%, -50%)"]:active *,
 [data-testid="stSlider"] input[type="range"]:active {
-  cursor: grabbing !important;
+  cursor: pointer !important;
 }
 
-/* While thumb is held down, lock cursor everywhere to grabbing and disable text selection */
+/* While thumb is held down, lock cursor everywhere to pointer and disable text selection */
 & body:has([data-testid="stSlider"] [role="slider"]:active),
 & body:has([data-testid="stSlider"] [role="slider"]:active) * {
-  cursor: grabbing !important;
+  cursor: pointer !important;
 }
 
 & body:has([data-testid="stSlider"] [role="slider"]:active) {
