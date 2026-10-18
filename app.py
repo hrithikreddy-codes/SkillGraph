@@ -2263,6 +2263,56 @@ def main():
                 }}, true);
               }}
 
+              // 3. Bind drag-and-drop highlight listeners on window.parent.document
+              if (!pWin.__sgDragoverBound) {{
+                pWin.__sgDragoverBound = true;
+                try {{
+                  pDoc.addEventListener("dragenter", function(e) {{
+                    try {{
+                      var dz = e.target && e.target.closest && e.target.closest('[data-testid="stFileUploaderDropzone"]');
+                      if (dz) {{
+                        dz.classList.add("sg-dragover");
+                      }}
+                    }} catch (err) {{}}
+                  }}, true);
+
+                  pDoc.addEventListener("dragover", function(e) {{
+                    try {{
+                      var dz = e.target && e.target.closest && e.target.closest('[data-testid="stFileUploaderDropzone"]');
+                      if (dz) {{
+                        dz.classList.add("sg-dragover");
+                      }}
+                    }} catch (err) {{}}
+                  }}, true);
+
+                  pDoc.addEventListener("dragleave", function(e) {{
+                    try {{
+                      var dz = e.target && e.target.closest && e.target.closest('[data-testid="stFileUploaderDropzone"]');
+                      if (dz) {{
+                        if (!e.relatedTarget || !dz.contains(e.relatedTarget)) {{
+                          dz.classList.remove("sg-dragover");
+                        }}
+                      }}
+                    }} catch (err) {{}}
+                  }}, true);
+
+                  pDoc.addEventListener("drop", function(e) {{
+                    try {{
+                      var dz = e.target && e.target.closest && e.target.closest('[data-testid="stFileUploaderDropzone"]');
+                      if (dz) {{
+                        dz.classList.remove("sg-dragover");
+                      }}
+                      var activeList = pDoc.querySelectorAll('[data-testid="stFileUploaderDropzone"].sg-dragover');
+                      for (var i = 0; i < activeList.length; i++) {{
+                        activeList[i].classList.remove("sg-dragover");
+                      }}
+                    }} catch (err) {{}}
+                  }}, true);
+                }} catch (dragErr) {{
+                  console.warn("sg-dragover: bind error", dragErr);
+                }}
+              }}
+
               // Hide component iframe and container
               if (window.frameElement) {{
                 window.frameElement.style.display = "none";

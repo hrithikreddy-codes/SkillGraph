@@ -370,6 +370,15 @@ div[data-baseweb="textarea"]:focus-within,
   outline: none !important;
 }
 
+/* Dragover highlight on file uploader dropzone */
+[data-testid="stFileUploaderDropzone"].sg-dragover,
+[data-testid="stFileUploader"] section.sg-dragover {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+  background-color: #eff6ff !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
 /* 3. Placeholder text */
 ::placeholder,
 .stTextInput input::placeholder,
@@ -1567,6 +1576,15 @@ div[data-baseweb="textarea"]:focus-within,
   border-color: #3b82f6 !important;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
   outline: none !important;
+}
+
+/* Dragover highlight on file uploader dropzone */
+[data-testid="stFileUploaderDropzone"].sg-dragover,
+[data-testid="stFileUploader"] section.sg-dragover {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+  background-color: #0f1c36 !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
 /* 3. Placeholder text */
