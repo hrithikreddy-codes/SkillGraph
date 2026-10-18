@@ -480,6 +480,38 @@ div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px)
 .bar { height: 100%; background: linear-gradient(90deg, #3b82f6, #2563eb); border-radius: 999px; transition: width .8s cubic-bezier(.2, .8, .2, 1); }
 .pcount { color: var(--muted); font-size: 14px; margin: 8px 0 20px; }
 
+/* ---------- Markdown Inline Code & Horizontal Rules in Light Mode ---------- */
+code:not(pre code),
+:not(pre) > code,
+.stMarkdown :not(pre) > code,
+[data-testid="stMarkdownContainer"] :not(pre) > code {
+  background-color: #eef2f7 !important;
+  color: #15803d !important;
+  -webkit-text-fill-color: #15803d !important;
+  border: 1px solid rgba(100, 116, 139, 0.25) !important;
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+  white-space: pre-wrap !important;
+  -webkit-box-decoration-break: clone !important;
+  box-decoration-break: clone !important;
+}
+
+hr,
+[data-testid="stDivider"],
+div[data-testid="stMarkdownContainer"] hr {
+  border: none !important;
+  border-top: 1px solid rgba(49, 51, 63, 0.2) !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  height: 0 !important;
+  margin: 1.5em 0 !important;
+  padding: 0 !important;
+  opacity: 1 !important;
+}
+
 /* Page-level wrappers must NEVER look like cards */
 .stMainBlockContainer,
 [data-testid="stMainBlockContainer"],
@@ -1442,6 +1474,38 @@ h6 a[href^="#"] {
 
 .stApp label p {
   color: var(--text) !important;
+}
+
+/* ---------- Markdown Inline Code & Horizontal Rules in Dark Mode ---------- */
+code:not(pre code),
+:not(pre) > code,
+.stMarkdown :not(pre) > code,
+[data-testid="stMarkdownContainer"] :not(pre) > code {
+  background-color: rgba(148, 163, 184, 0.12) !important;
+  color: #86efac !important;
+  -webkit-text-fill-color: #86efac !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+  white-space: pre-wrap !important;
+  -webkit-box-decoration-break: clone !important;
+  box-decoration-break: clone !important;
+}
+
+hr,
+[data-testid="stDivider"],
+div[data-testid="stMarkdownContainer"] hr {
+  border: none !important;
+  border-top: 1px solid rgba(148, 163, 184, 0.25) !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  height: 0 !important;
+  margin: 1.5em 0 !important;
+  padding: 0 !important;
+  opacity: 1 !important;
 }
 
 /* Preserve hero and banner contrast */
