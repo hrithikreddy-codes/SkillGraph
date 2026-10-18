@@ -2,8 +2,7 @@
 theme.py - Light and Dark theme styling definitions for SkillGraph.
 """
 
-CSS = r"""
-<style>
+LIGHT_RULES = r"""
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
 
 :root {
@@ -1288,12 +1287,11 @@ div[data-testid="stDownloadButton"] button[disabled] *,
 [data-testid="stBaseButton-primary"][disabled] * {
   cursor: not-allowed !important;
 }
-</style>
 """
 
-DARK_CSS = r"""
-<style>
-:root {
+DARK_RULES = r"""
+:root[data-sg-theme="dark"] {
+
   --bg: #0b1220;
   --surface: #111a2e;
   --surface-2: #16213a;
@@ -1314,7 +1312,7 @@ DARK_CSS = r"""
   --sg-card-border-width: 1px;
   --sg-card-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
   --sg-expander-radius: 18px;
-}
+  --tree-line: #60a5fa;
 
 /* Base App Dark Overrides */
 [data-testid="stElementToolbar"],
@@ -2322,7 +2320,7 @@ span.sg-chip-missing,
 }
 
 /* ---------- Skill Graph Tree (Dark Mode Overrides) ---------- */
-:root {
+& {
   --tree-line: #60a5fa;
 }
 
@@ -2405,9 +2403,9 @@ div.sg-tree-node.sg-node-missing,
 /* ============================================================
    CURSOR STYLES: Default cursor for non-editable text & content
    ============================================================ */
-html,
-body,
-.stApp,
+&,
+  & body,
+  & .stApp,
 h1, h2, h3, h4, h5, h6,
 p, span, div, li, ul, ol,
 table, th, td, caption,
@@ -2587,12 +2585,12 @@ a * {
 }
 
 /* While thumb is held down, lock cursor everywhere to grabbing and disable text selection */
-body:has([data-testid="stSlider"] [role="slider"]:active),
-body:has([data-testid="stSlider"] [role="slider"]:active) * {
+& body:has([data-testid="stSlider"] [role="slider"]:active),
+& body:has([data-testid="stSlider"] [role="slider"]:active) * {
   cursor: grabbing !important;
 }
 
-body:has([data-testid="stSlider"] [role="slider"]:active) {
+& body:has([data-testid="stSlider"] [role="slider"]:active) {
   user-select: none !important;
   -webkit-user-select: none !important;
 }
@@ -2696,5 +2694,9 @@ div[data-testid="stDownloadButton"] button[disabled] *,
 [data-testid="stBaseButton-primary"][disabled] * {
   cursor: not-allowed !important;
 }
-</style>
+}
 """
+
+CSS = "<style>\n" + LIGHT_RULES.strip() + "\n\n" + DARK_RULES.strip() + "\n</style>\n"
+
+DARK_CSS = "<style>\n" + DARK_RULES.strip() + "\n</style>\n"
