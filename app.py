@@ -2166,7 +2166,7 @@ def main():
         st.markdown(DARK_CSS, unsafe_allow_html=True)
 
     st.iframe(
-        f"""
+        f"""<!DOCTYPE html><html><head><meta charset='utf-8'></head><body>
         <style>
           html, body {{
             margin: 0 !important;
@@ -2334,7 +2334,7 @@ def main():
             console.warn("sg-theme: parent not accessible");
           }}
         </script>
-        """,
+        </body></html>""",
     )
 
     st.session_state.setdefault("profile", None)
