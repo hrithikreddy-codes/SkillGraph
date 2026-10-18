@@ -1,5 +1,9 @@
 # Never commit secrets
 .env
 __pycache__/
-.vscode
-.geminidebug_last_run.json
+*.pyc
+.venv/
+.streamlit/secrets.toml
+.agents/
+.claude/
+env-backup.txt

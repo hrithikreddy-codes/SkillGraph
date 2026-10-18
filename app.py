@@ -1600,7 +1600,7 @@ def render_resume_analyzer(is_dark: bool = False):
                     with loading_placeholder.container():
                         with st.spinner(
                             "Analyzing your resume against the target role...\n\n"
-                            "This usually takes under a minute, but can take up to two or a little longer if the AI service is busy. Please keep this tab open."
+                            "This usually takes under two minute, but can take a litte longer if the AI service is busy. Please keep this tab open."
                         ):
                             resume_data = extract_resume_skills(final_resume_text)
                             if extra_skills:
