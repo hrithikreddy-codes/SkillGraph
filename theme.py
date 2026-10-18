@@ -1312,6 +1312,7 @@ DARK_RULES = r"""
   --sg-card-border-width: 1px;
   --sg-card-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
   --sg-expander-radius: 18px;
+  --sg-card-inner-radius: 10px;
   --tree-line: #60a5fa;
 
 /* Base App Dark Overrides */
@@ -1346,8 +1347,42 @@ DARK_RULES = r"""
   color: var(--text) !important;
 }
 
-.stMarkdown, .stMarkdown p, .stMarkdown span, .stMarkdown li, .stMarkdown strong {
+.stMarkdown, .stMarkdown p, .stMarkdown span:not(.stMarkdownColoredText), .stMarkdown li, .stMarkdown strong {
   color: var(--text) !important;
+}
+
+/* Other Requirements status words in dark mode */
+[class*="st-key-sg_card_other_reqs"] .stMarkdownColoredText[style*="21, 130, 55"],
+[class*="st-key-sg_card_other_reqs"] .stMarkdownColoredText[style*="21,130,55"],
+[class*="st-key-sg_card_other_reqs"] .stMarkdownColoredText[style*="green"],
+[class*="st-key-sg_card_other_reqs"] span[style*="21, 130, 55"],
+[class*="st-key-sg_card_other_reqs"] span[style*="21,130,55"],
+[class*="st-key-sg_card_other_reqs"] span[style*="green"],
+.stMarkdown span.stMarkdownColoredText[style*="21, 130, 55"],
+.stMarkdown span.stMarkdownColoredText[style*="21,130,55"],
+.stMarkdown span.stMarkdownColoredText[style*="green"],
+.stMarkdownColoredText[style*="21, 130, 55"],
+.stMarkdownColoredText[style*="21,130,55"],
+.stMarkdownColoredText[style*="green"] {
+  color: #86efac !important;
+  -webkit-text-fill-color: #86efac !important;
+}
+
+[class*="st-key-sg_card_other_reqs"] .stMarkdownColoredText[style*="49, 51, 63"],
+[class*="st-key-sg_card_other_reqs"] .stMarkdownColoredText[style*="49,51,63"],
+[class*="st-key-sg_card_other_reqs"] .stMarkdownColoredText[style*="gray"],
+[class*="st-key-sg_card_other_reqs"] span[style*="49, 51, 63"],
+[class*="st-key-sg_card_other_reqs"] span[style*="49,51,63"],
+[class*="st-key-sg_card_other_reqs"] span[style*="gray"],
+.stMarkdown span.stMarkdownColoredText[style*="49, 51, 63"],
+.stMarkdown span.stMarkdownColoredText[style*="49,51,63"],
+.stMarkdown span.stMarkdownColoredText[style*="gray"],
+.stMarkdownColoredText[style*="49, 51, 63"],
+.stMarkdownColoredText[style*="49,51,63"],
+.stMarkdownColoredText[style*="gray"],
+[class*="st-key-sg_card_other_reqs"] .stMarkdownColoredText:not([style*="21, 130, 55"]):not([style*="21,130,55"]):not([style*="green"]) {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
 }
 
 .stApp label p {
@@ -1376,7 +1411,119 @@ div[data-testid="stMarkdownContainer"] p.phase-blurb {
   color: #94a3b8 !important;
 }
 
-/* Placeholder color in all inputs */
+/* ---------- Form Controls in Dark Mode ---------- */
+/* 1. Base styles for controls: selectboxes, multiselects, inputs, textareas, file uploader dropzone */
+[data-baseweb="select"] > div,
+[data-testid="stSelectbox"] div[role="group"],
+[data-testid="stSelectbox"] .react-aria-ComboBox > div,
+[data-testid="stMultiSelect"] div[role="group"],
+[data-testid="stMultiSelect"] .react-aria-ComboBox > div,
+div[data-baseweb="input"],
+div[data-baseweb="base-input"],
+[data-testid="stTextInputRootElement"],
+[data-testid="stTextInput"] [data-testid="stTextInputRootElement"],
+[data-testid="stTextInput"] .react-aria-TextField > div {
+  background-color: #0b1220 !important;
+  border: 1px solid rgba(148, 163, 184, 0.35) !important;
+  border-radius: var(--sg-card-inner-radius, 10px) !important;
+  min-height: 40px !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+div[data-baseweb="textarea"],
+[data-testid="stTextAreaRootElement"],
+[data-testid="stTextArea"] [data-testid="stTextAreaRootElement"] {
+  background-color: #0b1220 !important;
+  border: 1px solid rgba(148, 163, 184, 0.35) !important;
+  border-radius: var(--sg-card-inner-radius, 10px) !important;
+  min-height: 80px !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-testid="stFileUploaderDropzone"],
+[data-testid="stFileUploader"] section {
+  background-color: #0b1220 !important;
+  border: 1px solid rgba(148, 163, 184, 0.35) !important;
+  border-radius: var(--sg-card-inner-radius, 10px) !important;
+  min-height: 68px !important;
+  padding: 12px 16px !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* BaseWeb container padding if present */
+[data-baseweb="select"] > div,
+div[data-baseweb="input"],
+div[data-baseweb="base-input"] {
+  padding: 0 8px !important;
+}
+div[data-baseweb="textarea"] {
+  padding: 8px 10px !important;
+}
+
+/* 2. Hover state */
+[data-baseweb="select"] > div:hover,
+[data-testid="stSelectbox"] div[role="group"]:hover,
+[data-testid="stSelectbox"] .react-aria-ComboBox > div:hover,
+[data-testid="stMultiSelect"] div[role="group"]:hover,
+[data-testid="stMultiSelect"] .react-aria-ComboBox > div:hover,
+div[data-baseweb="input"]:hover,
+div[data-baseweb="base-input"]:hover,
+[data-testid="stTextInputRootElement"]:hover,
+[data-testid="stTextInput"] [data-testid="stTextInputRootElement"]:hover,
+[data-testid="stTextInput"] .react-aria-TextField > div:hover,
+div[data-baseweb="textarea"]:hover,
+[data-testid="stTextAreaRootElement"]:hover,
+[data-testid="stTextArea"] [data-testid="stTextAreaRootElement"]:hover,
+[data-testid="stFileUploaderDropzone"]:hover,
+[data-testid="stFileUploader"] section:hover {
+  border: 1px solid #64748b !important;
+  border-color: #64748b !important;
+}
+
+/* 2b. Focus and focus-within states */
+[data-baseweb="select"] > div:focus,
+[data-baseweb="select"] > div:focus-within,
+[data-testid="stSelectbox"] div[role="group"]:focus,
+[data-testid="stSelectbox"] div[role="group"]:focus-within,
+[data-testid="stSelectbox"] .react-aria-ComboBox > div:focus,
+[data-testid="stSelectbox"] .react-aria-ComboBox > div:focus-within,
+[data-testid="stMultiSelect"] div[role="group"]:focus,
+[data-testid="stMultiSelect"] div[role="group"]:focus-within,
+[data-testid="stMultiSelect"] .react-aria-ComboBox > div:focus,
+[data-testid="stMultiSelect"] .react-aria-ComboBox > div:focus-within,
+div[data-baseweb="input"]:focus,
+div[data-baseweb="input"]:focus-within,
+div[data-baseweb="base-input"]:focus,
+div[data-baseweb="base-input"]:focus-within,
+[data-testid="stTextInputRootElement"]:focus,
+[data-testid="stTextInputRootElement"]:focus-within,
+[data-testid="stTextInput"] [data-testid="stTextInputRootElement"]:focus,
+[data-testid="stTextInput"] [data-testid="stTextInputRootElement"]:focus-within,
+[data-testid="stTextInput"] .react-aria-TextField > div:focus,
+[data-testid="stTextInput"] .react-aria-TextField > div:focus-within,
+div[data-baseweb="textarea"]:focus,
+div[data-baseweb="textarea"]:focus-within,
+[data-testid="stTextAreaRootElement"]:focus,
+[data-testid="stTextAreaRootElement"]:focus-within,
+[data-testid="stTextArea"] [data-testid="stTextAreaRootElement"]:focus,
+[data-testid="stTextArea"] [data-testid="stTextAreaRootElement"]:focus-within,
+[data-testid="stFileUploaderDropzone"]:focus,
+[data-testid="stFileUploaderDropzone"]:focus-within,
+[data-testid="stFileUploader"] section:focus,
+[data-testid="stFileUploader"] section:focus-within {
+  border: 1px solid #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+  outline: none !important;
+}
+
+/* 3. Placeholder text */
 ::placeholder,
 .stTextInput input::placeholder,
 .stTextArea textarea::placeholder,
@@ -1387,106 +1534,69 @@ div[data-baseweb="base-input"] textarea::placeholder,
 [data-baseweb="select"] input::placeholder,
 [data-baseweb="select"] div[data-placeholder="true"],
 [data-baseweb="select"] div[aria-hidden="true"],
+[data-testid="stSelectbox"] input::placeholder,
+[data-testid="stMultiSelect"] input::placeholder,
+[data-testid="stTextInput"] input::placeholder,
+[data-testid="stTextArea"] textarea::placeholder,
 textarea::placeholder,
 input::placeholder {
-  color: #5b6475 !important;
-  -webkit-text-fill-color: #5b6475 !important;
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
   opacity: 1 !important;
 }
 
-/* Inputs & Textareas - 1px --line border, 1px #2563eb on focus with soft blue glow */
-div[data-baseweb="input"],
-div[data-baseweb="textarea"],
-div[data-baseweb="base-input"] {
-  background-color: var(--surface) !important;
-  border: 1px solid var(--line) !important;
-  border-radius: 12px !important;
-  outline: none !important;
-  box-shadow: none !important;
+/* 3b. Dropdown arrow */
+[data-baseweb="select"] svg,
+[data-testid="stSelectbox"] svg,
+[data-testid="stMultiSelect"] svg {
+  color: #94a3b8 !important;
+  fill: #94a3b8 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
-div[data-baseweb="input"]:focus-within,
-div[data-baseweb="textarea"]:focus-within,
-div[data-baseweb="base-input"]:focus-within {
-  border: 1px solid #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
-  outline: none !important;
+[data-testid="stSelectbox"] button:hover svg,
+[data-testid="stMultiSelect"] button:hover svg {
+  color: #e5ecf8 !important;
+  fill: #e5ecf8 !important;
 }
 
-.stTextInput input,
-.stTextArea textarea,
+/* 4. Inner wrapper elements remain transparent with no border/shadow */
 div[data-baseweb="input"] input,
 div[data-baseweb="textarea"] textarea,
 div[data-baseweb="base-input"] input,
 div[data-baseweb="base-input"] textarea,
-.stApp textarea,
-.stApp input[type="text"],
-textarea,
-input[type="text"] {
+[data-testid="stTextInputField"],
+[data-testid="stTextAreaRootElement"] textarea,
+[data-testid="stSelectbox"] input,
+[data-testid="stMultiSelect"] input,
+[data-testid="stSelectbox"] button,
+[data-testid="stMultiSelect"] button,
+[data-testid="stMultiSelectTagsContainer"],
+[data-baseweb="select"] input,
+[data-baseweb="select"] [role="combobox"],
+[data-baseweb="select"] span,
+[data-baseweb="select"] > div > div {
   background-color: transparent !important;
-  color: #0f172a !important;
-  caret-color: #0f172a !important;
-  -webkit-text-fill-color: #0f172a !important;
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
+  color: #e5ecf8 !important;
+  caret-color: #e5ecf8 !important;
+  -webkit-text-fill-color: #e5ecf8 !important;
 }
 
-.stTextInput input:focus,
-.stTextArea textarea:focus,
 div[data-baseweb="input"] input:focus,
 div[data-baseweb="textarea"] textarea:focus,
 div[data-baseweb="base-input"] input:focus,
-div[data-baseweb="base-input"] textarea:focus {
+div[data-baseweb="base-input"] textarea:focus,
+[data-testid="stTextInputField"]:focus,
+[data-testid="stTextAreaRootElement"] textarea:focus,
+[data-testid="stSelectbox"] input:focus,
+[data-testid="stMultiSelect"] input:focus {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
-}
-
-/* Selectboxes and Multiselects */
-[data-baseweb="select"] > div {
-  background-color: var(--surface-2) !important;
-  color: var(--text) !important;
-  border: 1px solid var(--line) !important;
-  border-radius: 12px !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-[data-baseweb="select"] > div:hover {
-  background-color: var(--surface-2) !important;
-  border-color: var(--blue) !important;
-}
-
-[data-baseweb="select"] > div:focus-within {
-  background-color: var(--surface-2) !important;
-  border: 1px solid #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
-  outline: none !important;
-}
-
-[data-baseweb="select"] input {
-  background-color: transparent !important;
-  color: #0f172a !important;
-  caret-color: #0f172a !important;
-  -webkit-text-fill-color: #0f172a !important;
-  border: none !important;
-  outline: none !important;
-}
-
-[data-baseweb="select"] [role="combobox"] {
-  background-color: transparent !important;
-}
-
-[data-baseweb="select"] span,
-[data-baseweb="select"] div {
-  color: #0f172a !important;
-  -webkit-text-fill-color: #0f172a !important;
-}
-
-[data-baseweb="select"] svg {
-  fill: #475569 !important;
-  color: #475569 !important;
 }
 
 /* Open Dropdown Menus */
@@ -1662,20 +1772,7 @@ label[data-baseweb="checkbox"][aria-checked="true"] > span:first-child {
   color: var(--text) !important;
 }
 
-/* File Uploader in Dark Mode — styled to match white input fields */
-[data-testid="stFileUploaderDropzone"],
-[data-testid="stFileUploader"] section {
-  background-color: #ffffff !important;
-  border: 1px dashed #cbd5e1 !important;
-  border-radius: 12px !important;
-  color: #475569 !important;
-}
-
-[data-testid="stFileUploaderDropzone"]:hover,
-[data-testid="stFileUploader"] section:hover {
-  border-color: #94a3b8 !important;
-}
-
+/* File Uploader in Dark Mode */
 [data-testid="stFileUploaderDropzone"] small,
 [data-testid="stFileUploaderDropzone"] span,
 [data-testid="stFileUploaderDropzone"] div,
@@ -1684,26 +1781,28 @@ label[data-baseweb="checkbox"][aria-checked="true"] > span:first-child {
 [data-testid="stFileUploader"] section span,
 [data-testid="stFileUploader"] section div,
 [data-testid="stFileUploader"] section p {
-  color: #475569 !important;
-  -webkit-text-fill-color: #475569 !important;
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
 }
 
 [data-testid="stFileUploaderDropzone"] svg,
 [data-testid="stFileUploader"] section svg {
-  fill: #475569 !important;
-  color: #475569 !important;
+  fill: #94a3b8 !important;
+  color: #94a3b8 !important;
 }
 
+/* File uploader Browse button */
 .stApp [data-testid="stFileUploaderDropzone"] button,
 .stApp [data-testid="stFileUploader"] section button,
 .stApp [data-testid="stFileUploader"] button[kind="secondary"],
 .stApp [data-testid="stFileUploader"] button[data-testid="baseButton-secondary"],
 [data-testid="stFileUploaderDropzone"] button,
 [data-testid="stFileUploader"] section button {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  -webkit-text-fill-color: #0f172a !important;
-  border: 1px solid #cbd5e1 !important;
+  background-color: #16213a !important;
+  color: #e5ecf8 !important;
+  -webkit-text-fill-color: #e5ecf8 !important;
+  border: 1px solid rgba(148, 163, 184, 0.35) !important;
+  border-radius: 8px !important;
   box-shadow: none !important;
 }
 
@@ -1713,10 +1812,10 @@ label[data-baseweb="checkbox"][aria-checked="true"] > span:first-child {
 .stApp [data-testid="stFileUploader"] button[data-testid="baseButton-secondary"]:hover,
 [data-testid="stFileUploaderDropzone"] button:hover,
 [data-testid="stFileUploader"] section button:hover {
-  background-color: #f1f5f9 !important;
-  color: #0f172a !important;
-  -webkit-text-fill-color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  background-color: #1e2c52 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: #64748b !important;
 }
 
 .stApp [data-testid="stFileUploaderDropzone"] button p,
@@ -1725,23 +1824,23 @@ label[data-baseweb="checkbox"][aria-checked="true"] > span:first-child {
 .stApp [data-testid="stFileUploader"] section button span,
 [data-testid="stFileUploaderDropzone"] button p,
 [data-testid="stFileUploader"] section button p {
-  color: #0f172a !important;
-  -webkit-text-fill-color: #0f172a !important;
+  color: #e5ecf8 !important;
+  -webkit-text-fill-color: #e5ecf8 !important;
 }
 
 /* File chip after upload */
 [data-testid="stFileUploaderFileData"],
 [data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] {
-  background-color: #f1f5f9 !important;
-  border: 1px solid #cbd5e1 !important;
+  background-color: #16213a !important;
+  border: 1px solid rgba(148, 163, 184, 0.35) !important;
   border-radius: 8px !important;
-  color: #0f172a !important;
+  color: #e5ecf8 !important;
 }
 
 [data-testid="stFileUploaderFileName"],
 [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] {
-  color: #0f172a !important;
-  -webkit-text-fill-color: #0f172a !important;
+  color: #e5ecf8 !important;
+  -webkit-text-fill-color: #e5ecf8 !important;
   font-weight: 600;
 }
 
@@ -1751,8 +1850,8 @@ label[data-baseweb="checkbox"][aria-checked="true"] > span:first-child {
 [data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] small,
 [data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] span,
 [data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] div {
-  color: #475569 !important;
-  -webkit-text-fill-color: #475569 !important;
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
 }
 
 .stApp [data-testid="stFileUploaderFileData"] button,
@@ -1761,26 +1860,26 @@ label[data-baseweb="checkbox"][aria-checked="true"] > span:first-child {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  color: #475569 !important;
+  color: #94a3b8 !important;
 }
 
 .stApp [data-testid="stFileUploaderFileData"] button:hover,
 .stApp [data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] button:hover,
 [data-testid="stFileUploaderFileData"] button:hover {
-  background-color: #e2e8f0 !important;
-  color: #0f172a !important;
+  background-color: #1e2c52 !important;
+  color: #ffffff !important;
 }
 
 [data-testid="stFileUploaderFileData"] svg,
 [data-testid="stFileUploaderFileData"] button svg,
 [data-testid="stFileUploader"] [data-testid="stFileUploaderFileData"] svg {
-  fill: #475569 !important;
-  color: #475569 !important;
+  fill: #94a3b8 !important;
+  color: #94a3b8 !important;
 }
 
 [data-testid="stFileUploaderFileData"] button:hover svg {
-  fill: #0f172a !important;
-  color: #0f172a !important;
+  fill: #ffffff !important;
+  color: #ffffff !important;
 }
 
 /* Page-level wrappers must NEVER look like cards */
@@ -2120,7 +2219,7 @@ li[role="option"] *,
   border: 1px solid var(--line) !important;
 }
 
-/* Final text box text color override: crisp dark text on white inputs */
+/* Final text box text color in dark mode: light text on dark controls */
 .stApp textarea,
 .stApp input[type="text"],
 .stApp input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="range"]),
@@ -2133,9 +2232,9 @@ li[role="option"] *,
 .stApp div[data-baseweb="select"] div[aria-selected],
 textarea,
 input[type="text"] {
-  color: #0f172a !important;
-  caret-color: #0f172a !important;
-  -webkit-text-fill-color: #0f172a !important;
+  color: #e5ecf8 !important;
+  caret-color: #e5ecf8 !important;
+  -webkit-text-fill-color: #e5ecf8 !important;
 }
 
 .stApp textarea::placeholder,
@@ -2149,8 +2248,8 @@ input[type="text"] {
 .stApp div[data-baseweb="select"] div[aria-hidden="true"],
 textarea::placeholder,
 input::placeholder {
-  color: #5b6475 !important;
-  -webkit-text-fill-color: #5b6475 !important;
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
   opacity: 1 !important;
 }
 
