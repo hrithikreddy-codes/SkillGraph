@@ -19,6 +19,26 @@ LOGO_SVG = (
     '</svg>'
 )
 
+SUN_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" '
+    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+    'class="theme-toggle-svg sg-sun">'
+    '<circle cx="12" cy="12" r="4"/>'
+    '<path d="M12 2v2"/><path d="M12 20v2"/>'
+    '<path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/>'
+    '<path d="M2 12h2"/><path d="M20 12h2"/>'
+    '<path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>'
+    '</svg>'
+)
+
+MOON_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" '
+    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+    'class="theme-toggle-svg sg-moon">'
+    '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
+    '</svg>'
+)
+
 
 def base_html_template(title: str, content: str, footer_text: str = "Personalized Career Roadmap & Skills Intelligence") -> str:
     """
@@ -70,7 +90,7 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
     }}
 
     @media (prefers-color-scheme: dark) {{
-      :root {{
+      :root:not([data-theme="light"]) {{
         --primary: #3b82f6;
         --deep: #93c5fd;
         --amber: #fbbf24;
@@ -104,6 +124,41 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
         --low-bg: #082f49;
         --low-text: #bae6fd;
       }}
+    }}
+
+    :root[data-theme="dark"] {{
+      --primary: #3b82f6;
+      --deep: #93c5fd;
+      --amber: #fbbf24;
+      --bg: #0b1220;
+      --card-bg: #111a2e;
+      --text: #e5ecf8;
+      --muted: #9aa8c2;
+      --border: #24304d;
+      --item-bg: #16213a;
+      --code-bg: #16213a;
+      --code-text: #e5ecf8;
+      --tag-bg: #1c2c52;
+      --when-bg: #1e293b;
+      --progress-bg: #1e293b;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      --checked-text: #64748b;
+
+      /* Badges */
+      --matched-bg: #1e3a8a;
+      --matched-text: #bfdbfe;
+      --matched-border: #2563eb;
+
+      --partial-bg: #451a03;
+      --partial-text: #fde68a;
+      --partial-border: #92400e;
+
+      --missing-bg: #450a0a;
+      --missing-text: #fecaca;
+      --missing-border: #991b1b;
+
+      --low-bg: #082f49;
+      --low-text: #bae6fd;
     }}
 
     * {{
@@ -484,6 +539,84 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
       margin-top: 24px;
     }}
 
+    /* Theme toggle button */
+    .theme-toggle-btn {{
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 1000;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      color: var(--text);
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }}
+
+    .theme-toggle-btn:hover {{
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }}
+
+    .theme-toggle-btn:focus-visible {{
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }}
+
+    .theme-toggle-svg {{
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      pointer-events: none;
+    }}
+
+    .sg-sun {{
+      display: none !important;
+    }}
+
+    .sg-moon {{
+      display: block !important;
+    }}
+
+    @media (prefers-color-scheme: dark) {{
+      :root:not([data-theme="light"]) .sg-sun {{
+        display: block !important;
+      }}
+      :root:not([data-theme="light"]) .sg-moon {{
+        display: none !important;
+      }}
+    }}
+
+    :root[data-theme="dark"] .sg-sun {{
+      display: block !important;
+    }}
+
+    :root[data-theme="dark"] .sg-moon {{
+      display: none !important;
+    }}
+
+    @media (max-width: 640px) {{
+      body {{
+        padding-top: 60px;
+      }}
+      .header-card {{
+        padding-right: 48px;
+      }}
+      .theme-toggle-btn {{
+        top: 12px;
+        right: 12px;
+      }}
+    }}
+
     @media print {{
       :root {{
         --primary: #2563eb !important;
@@ -583,6 +716,9 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }}
+      .theme-toggle-btn {{
+        display: none !important;
+      }}
       .footer {{
         display: none !important;
       }}
@@ -590,10 +726,86 @@ def base_html_template(title: str, content: str, footer_text: str = "Personalize
   </style>
 </head>
 <body>
+  <button id="theme-toggle" class="theme-toggle-btn" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">
+    {SUN_SVG}
+    {MOON_SVG}
+  </button>
   <div class="container">
     {content}
     <div class="footer">SkillGraph &copy; 2026 &bull; {safe_footer}</div>
   </div>
+  <script>
+  (function() {{
+    try {{
+      var updateLabel = function(isDark) {{
+        try {{
+          var btn = document.getElementById("theme-toggle");
+          if (btn) {{
+            var label = isDark ? "Switch to light mode" : "Switch to dark mode";
+            btn.setAttribute("aria-label", label);
+            btn.setAttribute("title", label);
+          }}
+        }} catch (e) {{}}
+      }};
+
+      var stored = null;
+      try {{
+        stored = localStorage.getItem("sg-export-theme");
+      }} catch (e) {{}}
+
+      if (stored === "light" || stored === "dark") {{
+        document.documentElement.dataset.theme = stored;
+      }}
+
+      var current = document.documentElement.dataset.theme;
+      var isDark = false;
+      if (current === "dark") {{
+        isDark = true;
+      }} else if (current === "light") {{
+        isDark = false;
+      }} else {{
+        isDark = !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      }}
+      updateLabel(isDark);
+
+      try {{
+        var mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+        if (mq && mq.addEventListener) {{
+          mq.addEventListener("change", function(e) {{
+            try {{
+              if (!document.documentElement.dataset.theme) {{
+                updateLabel(e.matches);
+              }}
+            }} catch (err) {{}}
+          }});
+        }}
+      }} catch (e) {{}}
+
+      var btn = document.getElementById("theme-toggle");
+      if (btn) {{
+        btn.addEventListener("click", function() {{
+          try {{
+            var cur = document.documentElement.dataset.theme;
+            var curDark = false;
+            if (cur === "dark") {{
+              curDark = true;
+            }} else if (cur === "light") {{
+              curDark = false;
+            }} else {{
+              curDark = !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+            }}
+            var next = curDark ? "light" : "dark";
+            document.documentElement.dataset.theme = next;
+            try {{
+              localStorage.setItem("sg-export-theme", next);
+            }} catch (e) {{}}
+            updateLabel(!curDark);
+          }} catch (e) {{}}
+        }});
+      }}
+    }} catch (e) {{}}
+  }})();
+  </script>
 </body>
 </html>"""
 
