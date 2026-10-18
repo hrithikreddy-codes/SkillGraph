@@ -457,9 +457,99 @@ div[data-baseweb="base-input"] textarea:focus,
 
 /* ---------- Buttons ---------- */
 div[data-testid="stFormSubmitButton"] button, .stButton button, .stDownloadButton button {
-  border-radius: 12px; font-weight: 700; padding: .7rem 1.2rem; border: 1px solid var(--line); transition: transform .15s, box-shadow .15s; }
-div[data-testid="stFormSubmitButton"] button { width: 100%; background: linear-gradient(90deg, #2563eb, #1d4ed8); color: #fff; border: none; font-size: 17px; }
-div[data-testid="stFormSubmitButton"] button:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(37, 99, 235, .35); color: #fff; }
+  border-radius: 12px; font-weight: 700; padding: .7rem 1.2rem; border: 1px solid var(--line); transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+div[data-testid="stFormSubmitButton"] button { width: 100%; font-size: 17px; }
+
+/* Primary Buttons in Light Mode ("Generate my roadmap", "Analyze Resume & Match Skills") */
+div[data-testid="stFormSubmitButton"] button,
+.stButton button[kind="primary"],
+.stButton button[data-testid="baseButton-primary"],
+.stButton button[data-testid="stBaseButton-primary"],
+button[kind="primary"],
+button[data-testid="baseButton-primary"],
+button[data-testid="stBaseButton-primary"] {
+  background: linear-gradient(90deg, #2563eb, #1d4ed8) !important;
+  color: #fff !important;
+  border: 1px solid transparent !important;
+  font-weight: 700 !important;
+}
+
+div[data-testid="stFormSubmitButton"] button p,
+.stButton button[kind="primary"] p,
+.stButton button[data-testid="baseButton-primary"] p,
+.stButton button[data-testid="stBaseButton-primary"] p,
+button[kind="primary"] p,
+button[data-testid="baseButton-primary"] p,
+button[data-testid="stBaseButton-primary"] p {
+  color: #fff !important;
+}
+
+/* Secondary Buttons in Light Mode: hover and focus-visible */
+.stButton button:not([kind="primary"]):not([data-testid="baseButton-primary"]):not([data-testid="stBaseButton-primary"]):hover,
+.stButton button:not([kind="primary"]):not([data-testid="baseButton-primary"]):not([data-testid="stBaseButton-primary"]):focus-visible,
+.stDownloadButton button:hover,
+.stDownloadButton button:focus-visible,
+button[kind="secondary"]:hover,
+button[kind="secondary"]:focus-visible,
+button[data-testid="baseButton-secondary"]:hover,
+button[data-testid="baseButton-secondary"]:focus-visible,
+button[data-testid="stBaseButton-secondary"]:hover,
+button[data-testid="stBaseButton-secondary"]:focus-visible {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  outline: none !important;
+}
+
+/* Primary Buttons in Light Mode: hover */
+div[data-testid="stFormSubmitButton"] button:hover,
+.stButton button[kind="primary"]:hover,
+.stButton button[data-testid="baseButton-primary"]:hover,
+.stButton button[data-testid="stBaseButton-primary"]:hover,
+button[kind="primary"]:hover,
+button[data-testid="baseButton-primary"]:hover,
+button[data-testid="stBaseButton-primary"]:hover {
+  background: linear-gradient(90deg, #1d4ed8, #1e40af) !important;
+  color: #fff !important;
+  border: 1px solid transparent !important;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.35) !important;
+}
+
+/* Light Mode: active press state */
+div[data-testid="stFormSubmitButton"] button:active,
+.stButton button:active,
+.stDownloadButton button:active,
+button[kind="primary"]:active,
+button[kind="secondary"]:active,
+button[data-testid="baseButton-primary"]:active,
+button[data-testid="stBaseButton-primary"]:active,
+button[data-testid="baseButton-secondary"]:active,
+button[data-testid="stBaseButton-secondary"]:active {
+  filter: brightness(0.95);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  div[data-testid="stFormSubmitButton"] button:hover,
+  .stButton button[kind="primary"]:hover,
+  .stButton button[data-testid="baseButton-primary"]:hover,
+  .stButton button[data-testid="stBaseButton-primary"]:hover,
+  button[kind="primary"]:hover,
+  button[data-testid="baseButton-primary"]:hover,
+  button[data-testid="stBaseButton-primary"]:hover {
+    transform: translateY(-2px);
+  }
+
+  div[data-testid="stFormSubmitButton"] button:active,
+  .stButton button:active,
+  .stDownloadButton button:active,
+  button[kind="primary"]:active,
+  button[kind="secondary"]:active,
+  button[data-testid="baseButton-primary"]:active,
+  button[data-testid="stBaseButton-primary"]:active,
+  button[data-testid="baseButton-secondary"]:active,
+  button[data-testid="stBaseButton-secondary"]:active {
+    transform: translateY(0) scale(0.98);
+  }
+}
 
 /* ---------- Results ---------- */
 .result-head { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 28px; margin-bottom: 18px;
@@ -2063,26 +2153,36 @@ div[data-testid="stElementContainer"]:has(> .foot),
 .stButton button,
 .stDownloadButton button,
 button[kind="secondary"],
-button[data-testid="baseButton-secondary"] {
+button[data-testid="baseButton-secondary"],
+button[data-testid="stBaseButton-secondary"] {
   background-color: var(--surface) !important;
   color: var(--text) !important;
   border: 1px solid var(--line) !important;
   box-shadow: var(--shadow) !important;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease !important;
 }
 
-.stButton button:hover,
+.stButton button:not([kind="primary"]):not([data-testid="baseButton-primary"]):not([data-testid="stBaseButton-primary"]):hover,
+.stButton button:not([kind="primary"]):not([data-testid="baseButton-primary"]):not([data-testid="stBaseButton-primary"]):focus-visible,
 .stDownloadButton button:hover,
+.stDownloadButton button:focus-visible,
 button[kind="secondary"]:hover,
-button[data-testid="baseButton-secondary"]:hover {
+button[kind="secondary"]:focus-visible,
+button[data-testid="baseButton-secondary"]:hover,
+button[data-testid="baseButton-secondary"]:focus-visible,
+button[data-testid="stBaseButton-secondary"]:hover,
+button[data-testid="stBaseButton-secondary"]:focus-visible {
   background-color: var(--surface-2) !important;
   color: var(--text) !important;
   border-color: var(--blue) !important;
+  outline: none !important;
 }
 
 .stButton button p,
 .stDownloadButton button p,
 button[kind="secondary"] p,
-button[data-testid="baseButton-secondary"] p {
+button[data-testid="baseButton-secondary"] p,
+button[data-testid="stBaseButton-secondary"] p {
   color: var(--text) !important;
 }
 
@@ -2098,6 +2198,7 @@ div[data-testid="stFormSubmitButton"] button {
   color: #ffffff !important;
   border: 1px solid transparent !important;
   font-weight: 700 !important;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease !important;
 }
 
 .stButton button[kind="primary"]:hover,
@@ -2111,7 +2212,6 @@ div[data-testid="stFormSubmitButton"] button:hover {
   color: #ffffff !important;
   border: 1px solid transparent !important;
   box-shadow: 0 10px 22px rgba(37, 99, 235, 0.45) !important;
-  transform: translateY(-2px);
 }
 
 .stButton button[kind="primary"] p,
@@ -2122,6 +2222,43 @@ button[data-testid="baseButton-primary"] p,
 button[data-testid="stBaseButton-primary"] p,
 div[data-testid="stFormSubmitButton"] button p {
   color: #ffffff !important;
+}
+
+/* Dark Mode: active press state */
+div[data-testid="stFormSubmitButton"] button:active,
+.stButton button:active,
+.stDownloadButton button:active,
+button[kind="primary"]:active,
+button[kind="secondary"]:active,
+button[data-testid="baseButton-primary"]:active,
+button[data-testid="stBaseButton-primary"]:active,
+button[data-testid="baseButton-secondary"]:active,
+button[data-testid="stBaseButton-secondary"]:active {
+  filter: brightness(0.95) !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stButton button[kind="primary"]:hover,
+  .stButton button[data-testid="baseButton-primary"]:hover,
+  .stButton button[data-testid="stBaseButton-primary"]:hover,
+  button[kind="primary"]:hover,
+  button[data-testid="baseButton-primary"]:hover,
+  button[data-testid="stBaseButton-primary"]:hover,
+  div[data-testid="stFormSubmitButton"] button:hover {
+    transform: translateY(-2px) !important;
+  }
+
+  div[data-testid="stFormSubmitButton"] button:active,
+  .stButton button:active,
+  .stDownloadButton button:active,
+  button[kind="primary"]:active,
+  button[kind="secondary"]:active,
+  button[data-testid="baseButton-primary"]:active,
+  button[data-testid="stBaseButton-primary"]:active,
+  button[data-testid="baseButton-secondary"]:active,
+  button[data-testid="stBaseButton-secondary"]:active {
+    transform: translateY(0) scale(0.98) !important;
+  }
 }
 
 /* Theme Button in Dark Mode */
