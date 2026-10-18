@@ -65,7 +65,7 @@ GRAPH_ICON_SVG = (
 SUN_SVG = (
     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" '
     'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
-    'class="theme-toggle-svg">'
+    'class="theme-toggle-svg sg-sun">'
     '<circle cx="12" cy="12" r="4"/>'
     '<path d="M12 2v2"/><path d="M12 20v2"/>'
     '<path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/>'
@@ -76,7 +76,7 @@ SUN_SVG = (
 MOON_SVG = (
     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" '
     'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
-    'class="theme-toggle-svg">'
+    'class="theme-toggle-svg sg-moon">'
     '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
     '</svg>'
 )
@@ -1987,29 +1987,62 @@ def render_resume_analyzer(is_dark: bool = False):
 
 
 def main():
-    if "theme" not in st.session_state:
-        st.session_state["theme"] = "dark" if st.query_params.get("theme") == "dark" else "light"
-
-    is_dark = (st.session_state["theme"] == "dark")
-    st.session_state["theme_toggle"] = is_dark
-    st.query_params["theme"] = "dark" if is_dark else "light"
+    initial_theme = "dark" if st.query_params.get("theme") == "dark" else "light"
+    is_dark = (initial_theme == "dark")
+    st.session_state["theme"] = initial_theme
 
     btn_help = "Switch to light mode" if is_dark else "Switch to dark mode"
-    if st.button("", key="theme_btn", help=btn_help):
-        new_theme = "light" if is_dark else "dark"
-        st.session_state["theme"] = new_theme
-        st.session_state["theme_toggle"] = (new_theme == "dark")
-        st.query_params["theme"] = new_theme
-        st.rerun()
-
-    toggle_svg = SUN_SVG if is_dark else MOON_SVG
-    st.markdown(f'<div class="theme-toggle-icon">{toggle_svg}</div>', unsafe_allow_html=True)
+    toggle_html = f"""
+    <style>
+      #sg-theme-toggle {{
+        position: fixed;
+        top: 14px;
+        right: 18px;
+        z-index: 1000;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin: 0;
+        cursor: pointer !important;
+        transition: all 0.2s ease;
+        color: var(--text);
+        box-sizing: border-box;
+      }}
+      #sg-theme-toggle * {{
+        cursor: pointer !important;
+      }}
+      #sg-theme-toggle:hover {{
+        background: var(--surface-2);
+        border-color: var(--blue);
+        transform: translateY(-1px);
+      }}
+      #sg-theme-toggle .theme-toggle-svg {{
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        pointer-events: none;
+      }}
+      :root[data-sg-theme="dark"] .sg-moon {{ display: none !important; }}
+      :root:not([data-sg-theme="dark"]) .sg-sun {{ display: none !important; }}
+    </style>
+    <button id="sg-theme-toggle" type="button" aria-label="Toggle theme" title="{btn_help}">
+      {SUN_SVG}
+      {MOON_SVG}
+    </button>
+    """
+    st.markdown(toggle_html, unsafe_allow_html=True)
 
     st.markdown(CSS, unsafe_allow_html=True)
     if is_dark:
         st.markdown(DARK_CSS, unsafe_allow_html=True)
 
-    current_theme = "dark" if is_dark else "light"
     st.components.v1.html(
         f"""
         <style>
@@ -2022,9 +2055,93 @@ def main():
         </style>
         <script>
           try {{
-            var pDoc = window.parent && window.parent.document;
-            if (pDoc && pDoc.documentElement) {{
-              pDoc.documentElement.dataset.sgTheme = "{current_theme}";
+            var pWin = window.parent;
+            var pDoc = pWin && pWin.document;
+            if (!pDoc || !pDoc.documentElement) {{
+              console.warn("sg-theme: parent not accessible");
+            }} else {{
+              // 1. On load: pick theme from ?theme= if present, else localStorage, else prefers-color-scheme
+              var theme = null;
+              try {{
+                var urlParams = new URLSearchParams(pWin.location.search);
+                var qTheme = urlParams.get("theme");
+                if (qTheme === "dark" || qTheme === "light") {{
+                  theme = qTheme;
+                }}
+              }} catch (e) {{}}
+
+              if (!theme) {{
+                try {{
+                  if (pWin.localStorage) {{
+                    var stored = pWin.localStorage.getItem("sg-theme");
+                    if (stored === "dark" || stored === "light") {{
+                      theme = stored;
+                    }}
+                  }}
+                }} catch (e) {{}}
+              }}
+
+              if (!theme) {{
+                try {{
+                  if (pWin.matchMedia && pWin.matchMedia("(prefers-color-scheme: dark)").matches) {{
+                    theme = "dark";
+                  }} else {{
+                    theme = "light";
+                  }}
+                }} catch (e) {{
+                  theme = "light";
+                }}
+              }}
+
+              // Set attribute as early as the script allows
+              pDoc.documentElement.dataset.sgTheme = theme;
+
+              // Update initial toggle title if toggle exists in DOM
+              var initialToggle = pDoc.getElementById("sg-theme-toggle");
+              if (initialToggle) {{
+                initialToggle.setAttribute("title", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
+              }}
+
+              // 2. Bind ONE click listener on window.parent.document that delegates to #sg-theme-toggle
+              if (!pWin.__sgThemeToggleBound) {{
+                pWin.__sgThemeToggleBound = true;
+                pDoc.addEventListener("click", function(e) {{
+                  try {{
+                    var btn = e.target && e.target.closest && e.target.closest("#sg-theme-toggle");
+                    if (!btn) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    var current = pDoc.documentElement.dataset.sgTheme === "dark" ? "dark" : "light";
+                    var next = current === "dark" ? "light" : "dark";
+
+                    // Flip document.documentElement.dataset.sgTheme
+                    pDoc.documentElement.dataset.sgTheme = next;
+
+                    // Save to window.parent.localStorage under "sg-theme"
+                    try {{
+                      if (pWin.localStorage) {{
+                        pWin.localStorage.setItem("sg-theme", next);
+                      }}
+                    }} catch (err) {{}}
+
+                    // Update ?theme= value in URL with history.replaceState (no navigation)
+                    try {{
+                      var url = new URL(pWin.location.href);
+                      url.searchParams.set("theme", next);
+                      pWin.history.replaceState(null, "", url.toString());
+                    }} catch (err) {{}}
+
+                    // Update toggle's title tooltip
+                    var nextTitle = next === "dark" ? "Switch to light mode" : "Switch to dark mode";
+                    btn.setAttribute("title", nextTitle);
+                  }} catch (clickErr) {{
+                    console.warn("sg-theme: click error", clickErr);
+                  }}
+                }}, true);
+              }}
+
+              // Hide component iframe and container
               if (window.frameElement) {{
                 window.frameElement.style.display = "none";
                 window.frameElement.style.height = "0";
@@ -2040,8 +2157,6 @@ def main():
                   el = el.parentElement;
                 }}
               }}
-            }} else {{
-              console.warn("sg-theme: parent not accessible");
             }}
           }} catch (e) {{
             console.warn("sg-theme: parent not accessible");
