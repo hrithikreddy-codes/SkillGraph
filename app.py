@@ -2165,7 +2165,7 @@ def main():
     if is_dark:
         st.markdown(DARK_CSS, unsafe_allow_html=True)
 
-    st.components.v1.html(
+    st.iframe(
         f"""
         <style>
           html, body {{
@@ -2335,7 +2335,6 @@ def main():
           }}
         </script>
         """,
-        height=0,
     )
 
     st.session_state.setdefault("profile", None)
