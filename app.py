@@ -1825,89 +1825,211 @@ def render_resume_analyzer(is_dark: bool = False):
                 '</svg>'
             )
             st.markdown(f"#### {bar_icon}Match Overview", unsafe_allow_html=True)
-            chart_df = pd.DataFrame([
-                {"Status": "Matched", "Count": scores.get("matched_count", 0)},
-                {"Status": "Partial", "Count": scores.get("partial_count", 0)},
-                {"Status": "Missing", "Count": scores.get("missing_count", 0)},
-            ])
-            max_val = max(int(chart_df["Count"].max()), 1)
-            x_max = max_val + (1 if max_val < 5 else max(2, int(max_val * 0.15)))
+            matched_count = int(scores.get("matched_count", 0))
+            partial_count = int(scores.get("partial_count", 0))
+            missing_count = int(scores.get("missing_count", 0))
+            max_c = max(matched_count, partial_count, missing_count, 1)
 
-            text_color = "#e5ecf8" if is_dark else "#0f172a"
-            grid_color = "rgba(148, 163, 184, 0.18)" if is_dark else "rgba(15, 23, 42, 0.08)"
+            if max_c <= 10:
+                step = 1
+            elif max_c <= 20:
+                step = 2
+            elif max_c <= 50:
+                step = 5
+            else:
+                step = max(1, round(max_c / 10))
+            ticks = list(range(0, max_c + 1, step))
+            if ticks[-1] != max_c:
+                ticks.append(max_c)
 
-            base = alt.Chart(chart_df).encode(
-                y=alt.Y(
-                    "Status:N",
-                    sort=["Matched", "Partial", "Missing"],
-                    title=None,
-                    axis=alt.Axis(
-                        domain=False,
-                        ticks=False,
-                        labelColor=text_color,
-                        labelFontSize=13,
-                        labelFont="DM Sans, sans-serif",
-                        labelFontWeight=600,
-                        labelPadding=10,
-                    ),
-                ),
-                x=alt.X(
-                    "Count:Q",
-                    title="Number of skills",
-                    scale=alt.Scale(domain=[0, x_max]),
-                    axis=alt.Axis(
-                        format="d",
-                        tickMinStep=1,
-                        grid=True,
-                        gridColor=grid_color,
-                        domain=True,
-                        domainColor=grid_color,
-                        tickColor=grid_color,
-                        labelColor=text_color,
-                        titleColor=text_color,
-                        labelFont="DM Sans, sans-serif",
-                        titleFont="DM Sans, sans-serif",
-                        labelFontSize=12,
-                        titleFontSize=12,
-                        titlePadding=10,
-                    ),
-                ),
+            gridlines_html = "".join(
+                f'<div class="sg-chart-gridline" style="left: {(t / max_c) * 100:.2f}%;"></div>'
+                for t in ticks
             )
 
-            bars = base.mark_bar(cornerRadius=6, height=22).encode(
-                color=alt.Color(
-                    "Status:N",
-                    scale=alt.Scale(
-                        domain=["Matched", "Partial", "Missing"],
-                        range=["#22c55e", "#f59e0b", "#ef4444"],
-                    ),
-                    legend=None,
-                ),
-                tooltip=[
-                    alt.Tooltip("Status:N", title="Status"),
-                    alt.Tooltip("Count:Q", title="Count"),
-                ],
+            row_items = [
+                ("Matched", matched_count, "#22c55e"),
+                ("Partial", partial_count, "#f59e0b"),
+                ("Missing", missing_count, "#ef4444"),
+            ]
+            rows_html = "".join(
+                f'''<div class="sg-chart-bar-row">
+                  <div class="sg-chart-bar" style="width: {(cnt / max_c) * 100:.2f}%; background-color: {clr};"></div>
+                  <span class="sg-chart-count" style="left: calc({(cnt / max_c) * 100:.2f}% + 8px);">{cnt}</span>
+                </div>'''
+                for lbl, cnt, clr in row_items
             )
 
-            text = base.mark_text(
-                align="left",
-                baseline="middle",
-                dx=6,
-                fontSize=13,
-                fontWeight=600,
-                color=text_color,
-                font="DM Sans, sans-serif",
-            ).encode(
-                text=alt.Text("Count:Q", format="d")
+            ticks_html = "".join(
+                f'''<div class="sg-chart-tick-wrap" style="left: {(t / max_c) * 100:.2f}%;">
+                  <div class="sg-chart-tick-mark"></div>
+                  <span class="sg-chart-tick-label">{t}</span>
+                </div>'''
+                for t in ticks
             )
 
-            dist_chart = (
-                (bars + text)
-                .properties(height=140)
-                .configure_view(strokeWidth=0)
-                .configure(background="transparent")
-            )
-            st.altair_chart(dist_chart, width="stretch")
+            overview_chart_html = f"""
+            <style>
+              :root {{
+                --sg-chart-text: #334155;
+                --sg-chart-grid: rgba(100, 116, 139, 0.25);
+              }}
+              :root[data-sg-theme="dark"] {{
+                --sg-chart-text: #e5ecf8;
+                --sg-chart-grid: rgba(148, 163, 184, 0.25);
+              }}
+              .sg-chart-wrap {{
+                font-family: 'DM Sans', Arial, sans-serif;
+                padding: 10px 0 4px;
+                user-select: none;
+              }}
+              .sg-chart-body {{
+                display: flex;
+                align-items: stretch;
+                gap: 12px;
+              }}
+              .sg-chart-labels {{
+                width: 65px;
+                flex-shrink: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                gap: 14px;
+              }}
+              .sg-chart-label {{
+                height: 22px;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--sg-chart-text, #334155);
+                line-height: 1;
+              }}
+              .sg-chart-track-area {{
+                flex: 1;
+                position: relative;
+                margin-right: 36px;
+              }}
+              .sg-chart-grid-layer {{
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+              }}
+              .sg-chart-gridline {{
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                width: 1px;
+                background-color: var(--sg-chart-grid, rgba(100, 116, 139, 0.25));
+              }}
+              .sg-chart-bars-layer {{
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                gap: 14px;
+              }}
+              .sg-chart-bar-row {{
+                height: 22px;
+                position: relative;
+                display: flex;
+                align-items: center;
+              }}
+              .sg-chart-bar {{
+                height: 22px;
+                border-radius: 6px;
+                transition: width 0.3s ease;
+              }}
+              .sg-chart-count {{
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--sg-chart-text, #334155);
+                line-height: 1;
+                white-space: nowrap;
+              }}
+              .sg-chart-axis-row {{
+                display: flex;
+                gap: 12px;
+                margin-top: 6px;
+              }}
+              .sg-chart-axis-spacer {{
+                width: 65px;
+                flex-shrink: 0;
+              }}
+              .sg-chart-axis-track {{
+                flex: 1;
+                position: relative;
+                margin-right: 36px;
+                height: 22px;
+                border-top: 1px solid var(--sg-chart-grid, rgba(100, 116, 139, 0.25));
+              }}
+              .sg-chart-tick-wrap {{
+                position: absolute;
+                top: 0;
+                transform: translateX(-50%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+              }}
+              .sg-chart-tick-mark {{
+                width: 1px;
+                height: 4px;
+                background-color: var(--sg-chart-grid, rgba(100, 116, 139, 0.25));
+              }}
+              .sg-chart-tick-label {{
+                font-size: 12px;
+                font-weight: 500;
+                color: var(--sg-chart-text, #334155);
+                margin-top: 2px;
+                line-height: 1;
+              }}
+              .sg-chart-title-row {{
+                display: flex;
+                gap: 12px;
+                margin-top: 4px;
+              }}
+              .sg-chart-title {{
+                flex: 1;
+                margin-right: 36px;
+                text-align: center;
+                font-size: 12px;
+                font-weight: 500;
+                color: var(--sg-chart-text, #334155);
+              }}
+            </style>
+            <div class="sg-chart-wrap">
+              <div class="sg-chart-body">
+                <div class="sg-chart-labels">
+                  <div class="sg-chart-label">Matched</div>
+                  <div class="sg-chart-label">Partial</div>
+                  <div class="sg-chart-label">Missing</div>
+                </div>
+                <div class="sg-chart-track-area">
+                  <div class="sg-chart-grid-layer">
+                    {gridlines_html}
+                  </div>
+                  <div class="sg-chart-bars-layer">
+                    {rows_html}
+                  </div>
+                </div>
+              </div>
+              <div class="sg-chart-axis-row">
+                <div class="sg-chart-axis-spacer"></div>
+                <div class="sg-chart-axis-track">
+                  {ticks_html}
+                </div>
+              </div>
+              <div class="sg-chart-title-row">
+                <div class="sg-chart-axis-spacer"></div>
+                <div class="sg-chart-title">Number of skills</div>
+              </div>
+            </div>
+            """
+            st.markdown(overview_chart_html, unsafe_allow_html=True)
 
         with st.container(border=True, key="sg_card_skill_graph"):
             st.markdown(f"#### {GRAPH_ICON_SVG}Skill Graph", unsafe_allow_html=True)
