@@ -17,13 +17,22 @@ A personalized career roadmap generator and resume skill-gap analyzer built with
 - **Groq LLMs**: Uses Groq-hosted LLMs; model names are set in roadmap_ai.py and analyzer.py.
 - **Retry and Rate-Limit Handling**: Automatically rotates across comma-separated API keys, tracks cooldown windows, and reads `Retry-After` response headers to safely handle free-tier API throttling.
 
+## Project Structure
+
+- `app.py`: Streamlit interface and tabs
+- `analyzer.py`: resume analysis and skill-gap logic
+- `roadmap_ai.py`: roadmap generation
+- `report_export.py`: downloadable HTML roadmap and report
+- `file_reader.py`: resume file parsing
+- `theme.py`: light and dark styling
+
 ## Setup
 
 Developed with Python 3.14.
 
 1. Clone the repository and enter the directory:
    ```bash
-   git clone <repository-url> && cd SkillGraph
+   git clone https://github.com/hrithikreddy-codes/SkillGraph.git && cd SkillGraph
    ```
 2. Install dependencies:
    ```bash
@@ -33,7 +42,7 @@ Developed with Python 3.14.
    ```bash
    cp .env.example .env
    ```
-4. Get a free API key from the Groq console and paste it after `GROQ_API_KEYS=` in `.env` before running.
+4. Get a free API key at [console.groq.com](https://console.groq.com) and paste it after `GROQ_API_KEYS=` in `.env` before running. To use several keys, separate them with commas and no spaces.
 5. Launch the application:
    ```bash
    streamlit run app.py
@@ -44,6 +53,14 @@ Developed with Python 3.14.
 - **Groq Free-Tier Rate Limits**: Free-tier API keys have strict rate limits; key rotation helps, but high-frequency requests can trigger cooldown waits.
 - **Analysis Duration**: A complete resume analysis and verification pipeline takes about 2 minutes to run.
 - **Privacy**: Uploaded resume and job description text is sent to Groq for analysis.
+
+## Credits
+
+SkillGraph was built by our team for a hackathon:
+
+- Akanksha
+- Srinivas
+- Hrithik (@hrithikreddy-codes)
 
 ## Development Note
 
