@@ -1,28 +1,25 @@
 """
-analyzer.py — AI-powered resume analysis functions (Gemini + Groq)
+analyzer.py — AI-powered resume analysis functions (Groq)
 ===================================================================
 All AI logic lives here. The Streamlit UI (app.py) imports from this file.
 
 Setup:
     Put your API keys in your .env file:
-        GEMINI_API_KEYS=key1,key2
         GROQ_API_KEYS=groq_key1,groq_key2
     
-    The system will try Groq first (because it is insanely fast). If Groq
-    is rate-limited or unavailable, it falls back to Gemini.
+    The system uses Groq for resume and job match analysis.
 """
 
 import os
 import time
 import re
-genai = None
 from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
 # ---------------------------------------------------------------------------
-# Rate limit tracking & cooldown helpers (Groq / Gemini)
+# Rate limit tracking & cooldown helpers (Groq)
 # ---------------------------------------------------------------------------
 
 last_rate_limit_at: float = 0.0
@@ -104,15 +101,12 @@ def _get_api_keys(env_var_name):
         keys = [k.strip() for k in raw.split(",") if k.strip()]
         if keys:
             return keys
-    # Fallback to singular just in case (e.g., GEMINI_API_KEY instead of KEYS)
+    # Fallback to singular just in case (e.g., GROQ_API_KEY instead of KEYS)
     single = os.getenv(env_var_name.replace("_KEYS", "_KEY"), "")
     if single.strip():
         return [single.strip()]
     return []
 
-
-# Gemini Models
-_GEMINI_MODELS = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-3.8-flash"]
 
 # Groq Models
 _GROQ_MODELS = [
@@ -125,7 +119,7 @@ def _call_groq(prompt, temperature=0.2, seed=None):
     """Tries Groq models. Returns text if successful, or None if rate limited/failed."""
     keys = _get_api_keys("GROQ_API_KEYS")
     if not keys:
-        return None  # No Groq keys provided, skip to Gemini
+        return None  # No Groq keys provided
         
     for api_key in keys:
         client = Groq(api_key=api_key)
@@ -165,70 +159,22 @@ def _call_groq(prompt, temperature=0.2, seed=None):
                 
     return None
 
-def _call_gemini(prompt, temperature=0.2, seed=None):
-    """Tries Gemini models. Returns text if successful, or None if rate limited/failed."""
-    if genai is None:
-        return None
-    keys = _get_api_keys("GEMINI_API_KEYS")
-    if not keys:
-        return None
-
-    for api_key in keys:
-        genai.configure(api_key=api_key)
-        for model_name in _GEMINI_MODELS:
-            try:
-                config_kwargs = {
-                    "max_output_tokens": 2048,
-                    "temperature": temperature,
-                }
-                import inspect
-                if seed is not None and "seed" in inspect.signature(genai.types.GenerationConfig).parameters:
-                    config_kwargs["seed"] = seed
-                    
-                model = genai.GenerativeModel(
-                    model_name,
-                    generation_config=genai.types.GenerationConfig(**config_kwargs),
-                )
-                response = model.generate_content(
-                    prompt,
-                    request_options={"timeout": 60},
-                )
-                return response.text
-            except Exception as e:
-                error_msg = str(e).lower()
-                
-                # If the key itself is invalid, stop and tell the user
-                if "400" in error_msg or "invalid" in error_msg or "api_key_invalid" in error_msg:
-                    return f"❌ Gemini API error: Invalid API Key. Please check GEMINI_API_KEYS in your .env file.\n\n(Error details: {e})"
-                    
-                if "429" in error_msg or "quota" in error_msg:
-                    continue
-                continue
-                
-    return None
-
 def _call_llm(prompt, temperature=0.2, seed=None):
     """
     Master function: 
-    1. Tries Groq (fastest)
-    2. Falls back to Gemini
-    3. Returns an error message if all fail.
+    1. Tries Groq
+    2. Returns an error message if failed.
     """
     # 1. Try Groq
     groq_result = _call_groq(prompt, temperature=temperature, seed=seed)
     if groq_result:
         return groq_result
         
-    # 2. Try Gemini
-    gemini_result = _call_gemini(prompt, temperature=temperature, seed=seed)
-    if gemini_result:
-        return gemini_result
-        
-    # 3. Both failed
+    # 2. Failed
     return (
-        "⏱️ **All API keys (Groq & Gemini) are rate-limited or missing.**\n\n"
+        "⏱️ **All Groq API keys are rate-limited or missing.**\n\n"
         "Please check your `.env` file and make sure you have valid API keys for "
-        "either `GROQ_API_KEYS` or `GEMINI_API_KEYS`."
+        "`GROQ_API_KEYS`."
     )
 
 _ORIGINAL_CALL_LLM_CODE = _call_llm.__code__
@@ -491,8 +437,6 @@ def _get_extraction_keys():
     keys = []
     for k in _get_api_keys("GROQ_API_KEYS"):
         keys.append(("groq", k))
-    for k in _get_api_keys("GEMINI_API_KEYS"):
-        keys.append(("gemini", k))
     return keys
 
 
@@ -533,40 +477,6 @@ def _execute_extraction_call(prompt: str, provider: str, api_key: str, timeout: 
         if last_err:
             raise last_err
         raise RuntimeError("No Groq models available")
-
-    elif provider == "gemini":
-        if genai is None:
-            raise RuntimeError("google.generativeai library is not installed")
-        genai.configure(api_key=api_key)
-        last_err = None
-        for model_name in _GEMINI_MODELS:
-            try:
-                config_kwargs = {
-                    "max_output_tokens": 2048,
-                    "temperature": 0.0,
-                }
-                import inspect
-                sig_params = inspect.signature(genai.types.GenerationConfig).parameters
-                if "seed" in sig_params:
-                    config_kwargs["seed"] = 42
-                model = genai.GenerativeModel(
-                    model_name,
-                    generation_config=genai.types.GenerationConfig(**config_kwargs),
-                )
-                response = model.generate_content(
-                    prompt,
-                    request_options={"timeout": timeout},
-                )
-                return response.text
-            except Exception as e:
-                err_str = str(e).lower()
-                if "404" in err_str or "not found" in err_str:
-                    last_err = e
-                    continue
-                raise e
-        if last_err:
-            raise last_err
-        raise RuntimeError("No Gemini models available")
 
     else:
         raise ValueError(f"Unknown provider: {provider}")
