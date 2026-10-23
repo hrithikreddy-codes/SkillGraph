@@ -1,58 +1,261 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
+
+/* ==========================================================================
+   SkillGraph Theme Variables (Light Mode Default)
+   ========================================================================== */
 :root {
-    --bg-color: #0f172a;
-    --text-color: #f8fafc;
-    --card-bg: #1e293b;
-    --primary-color: #38bdf8;
-    --accent-color: #818cf8;
-    --border-color: #334155;
-    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: 'Sora', sans-serif;
+  --font-body: 'DM Sans', Arial, sans-serif;
+
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface-2: #dfe6f3;
+  --text: #0f172a;
+  --ink: var(--text);
+  --muted: #5b6475;
+  --line: #e3e8f2;
+  --tag-bg: #e0ecff;
+  --tag-text: #1e40af;
+  --note-bg: #eff6ff;
+  --shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+
+  /* Accents */
+  --blue: #2563eb;
+  --deep: #1e3a8a;
+  --sky: #60a5fa;
+  --amber: #fbbf24;
+  --when-bg: #fef3c7;
+  --when-text: #92400e;
+
+  /* Card and Expander Shapes & Shadow */
+  --sg-card-radius: 18px;
+  --sg-card-border-width: 1px;
+  --sg-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.06);
+  --sg-expander-radius: 18px;
+  --sg-card-inner-radius: 10px;
 }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+/* ==========================================================================
+   Dark Mode Overrides
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --surface: #111a2e;
+    --surface-2: #16213a;
+    --text: #e5ecf8;
+    --ink: #e5ecf8;
+    --muted: #9aa8c2;
+    --line: #24304d;
+    --tag-bg: #1c2c52;
+    --tag-text: #bcd2ff;
+    --note-bg: #14223f;
+    --shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    --when-bg: #2d2615;
+    --when-text: #fde68a;
+    --deep: #93c5fd;
+
+    --sg-card-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    --tree-line: #60a5fa;
+  }
+}
+
+[data-theme="dark"] {
+  --bg: #0b1220;
+  --surface: #111a2e;
+  --surface-2: #16213a;
+  --text: #e5ecf8;
+  --ink: #e5ecf8;
+  --muted: #9aa8c2;
+  --line: #24304d;
+  --tag-bg: #1c2c52;
+  --tag-text: #bcd2ff;
+  --note-bg: #14223f;
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --when-bg: #2d2615;
+  --when-text: #fde68a;
+  --deep: #93c5fd;
+
+  --sg-card-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --tree-line: #60a5fa;
+}
+
+[data-theme="light"] {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface-2: #dfe6f3;
+  --text: #0f172a;
+  --ink: var(--text);
+  --muted: #5b6475;
+  --line: #e3e8f2;
+  --tag-bg: #e0ecff;
+  --tag-text: #1e40af;
+  --note-bg: #eff6ff;
+  --shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  --when-bg: #fef3c7;
+  --when-text: #92400e;
+  --deep: #1e3a8a;
+  --sg-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+/* ==========================================================================
+   Base Layout & Typography
+   ========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  min-height: 100vh;
 }
 
 body {
-    font-family: var(--font-family);
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-main {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
+  font-family: var(--font-body);
+  background-color: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 .container {
-    background-color: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 3rem;
-    text-align: center;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-    max-width: 600px;
-    width: 100%;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
 }
 
-h1 {
-    font-size: 2.25rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+/* ==========================================================================
+   Header & Navigation
+   ========================================================================== */
+.site-header {
+  width: 100%;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-p {
-    color: #94a3b8;
-    font-size: 1.1rem;
-    line-height: 1.6;
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.brand-name {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+
+.theme-toggle-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: var(--shadow);
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--blue);
+  transform: translateY(-1px);
+}
+
+.theme-toggle-btn .sun-icon {
+  display: none;
+}
+
+.theme-toggle-btn .moon-icon {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle-btn .sun-icon {
+    display: block;
+  }
+  :root:not([data-theme="light"]) .theme-toggle-btn .moon-icon {
+    display: none;
+  }
+}
+
+[data-theme="dark"] .theme-toggle-btn .sun-icon {
+  display: block;
+}
+
+[data-theme="dark"] .theme-toggle-btn .moon-icon {
+  display: none;
+}
+
+[data-theme="light"] .theme-toggle-btn .sun-icon {
+  display: none;
+}
+
+[data-theme="light"] .theme-toggle-btn .moon-icon {
+  display: block;
+}
+
+/* ==========================================================================
+   Main Content & Centered Card
+   ========================================================================== */
+.main-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  box-sizing: border-box;
+}
+
+.card-wrapper {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.card {
+  background: var(--surface);
+  border: var(--sg-card-border-width, 1px) solid var(--line);
+  border-radius: var(--sg-card-radius, 18px);
+  box-shadow: var(--sg-card-shadow);
+  padding: 3rem 2.5rem;
+  text-align: center;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card h1 {
+  font-family: var(--font-heading);
+  font-size: clamp(1.85rem, 5vw, 2.5rem);
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.card p {
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
 }
